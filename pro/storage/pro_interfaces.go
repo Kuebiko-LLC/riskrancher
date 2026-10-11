@@ -58,6 +58,14 @@ type ProStoreInterface interface {
 	ListContestedProposals(ctx context.Context) ([]proModels.SeverityProposal, error)
 	EngagementOwnerForProposal(ctx context.Context, proposalID int) (string, error)
 
+	// --- 💎 EVIDENCE (screenshots attached to findings) ---
+	AddEvidence(ctx context.Context, ev *proModels.Evidence, web, thumb []byte) (int, error)
+	ListEvidenceForTicket(ctx context.Context, ticketID int) ([]proModels.Evidence, error)
+	GetEvidenceMeta(ctx context.Context, id int) (*proModels.Evidence, error)
+	GetEvidenceBlob(ctx context.Context, id int, thumb bool) ([]byte, string, error)
+	DeleteEvidence(ctx context.Context, id int) error
+	EngagementOwnerForTicket(ctx context.Context, ticketID int) (string, error)
+
 	// --- 💎 PRO PENTEST REPORTS (findings -> deliverable) ---
 	CreatePentestReport(ctx context.Context, report *proModels.PentestReport) (int, error)
 	UpdateReport(ctx context.Context, report *proModels.PentestReport) error

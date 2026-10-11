@@ -195,6 +195,24 @@ CREATE INDEX IF NOT EXISTS idx_sev_proposals_status ON severity_proposals(status
 CREATE INDEX IF NOT EXISTS idx_sev_proposals_ticket ON severity_proposals(ticket_id);
 
 -- ==========================================
+-- 5a3. EVIDENCE (screenshots/images attached to findings)
+-- ==========================================
+CREATE TABLE IF NOT EXISTS evidence (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    ticket_id    INTEGER NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
+    caption      TEXT,
+    content_type TEXT NOT NULL,          -- image/png or image/jpeg
+    width        INTEGER,
+    height       INTEGER,
+    size         INTEGER,                -- bytes of the web image
+    image_data   BLOB NOT NULL,          -- re-encoded, EXIF-stripped, bounded web image
+    thumb_data   BLOB NOT NULL,          -- thumbnail
+    created_by   TEXT,
+    created_at   DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_evidence_ticket ON evidence(ticket_id);
+
+-- ==========================================
 -- 5b. PENTEST REPORTS (findings -> deliverable)
 -- ==========================================
 CREATE TABLE IF NOT EXISTS pentest_reports (

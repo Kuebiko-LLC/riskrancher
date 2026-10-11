@@ -1,229 +1,184 @@
 {{define "pro_risk_tab_btn"}}
-    {{if isProActive}}
-        <button class="tab-btn" onclick="switchTab('tab-reviews', this)">
-            ⚖️ Risk Reviews
-            <span class="badge pro ml-xs" style="background: #dc2626; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">PRO</span>
-            {{if gt .PendingRiskCount 0}}
-                <span style="background: #ef4444; color: white; border-radius: 12px; padding: 2px 7px; font-size: 0.7rem; font-weight: bold; margin-left: 5px; box-shadow: 0 0 8px rgba(239, 68, 68, 0.6); animation: pulse 2s infinite;">{{.PendingRiskCount}}</span>
-            {{end}}
-        </button>
-    {{else}}
-        <button class="tab-btn" style="color: #94a3b8; cursor: not-allowed;" title="Activate RiskRancher Pro to unlock">
-            🔒 Risk Reviews (Pro)
-        </button>
-    {{end}}
+    <button class="tab-btn" onclick="switchTab('tab-reviews', this)">
+        ⚖️ Risk Reviews
+        {{if gt .PendingRiskCount 0}}
+            <span style="background: #ef4444; color: white; border-radius: 12px; padding: 2px 7px; font-size: 0.7rem; font-weight: bold; margin-left: 5px; box-shadow: 0 0 8px rgba(239, 68, 68, 0.6); animation: pulse 2s infinite;">{{.PendingRiskCount}}</span>
+        {{end}}
+    </button>
 {{end}}
 
 {{define "pro_risk_tab_content"}}
-    {{if isProActive}}
-        <div id="tab-reviews" class="tab-pane">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <div>
-                    <h3 style="margin: 0;">🛡️ Risk Request Adjudication</h3>
-                    <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Review exception and acceptance requests from IT. Grouped by affected asset for holistic risk evaluation.</p>
+    <div id="tab-reviews" class="tab-pane">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+                <h3 style="margin: 0;">🛡️ Risk Request Adjudication</h3>
+                <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Review exception and acceptance requests from IT. Grouped by affected asset for holistic risk evaluation.</p>
+            </div>
+            <button class="btn btn-primary" onclick="window.location.reload()">Refresh Queue</button>
+        </div>
+
+        <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+            <table style="font-size: 0.9rem; width: 100%; text-align: left; border-collapse: collapse;">
+                <thead id="riskTableHeader" style="background: #f8fafc; color: #475569;">
+                <tr style="border-bottom: 2px solid #e2e8f0;">
+                    <th style="padding: 12px; width: 20%;">Finding Details</th>
+                    <th style="padding: 12px; width: 15%; text-align: center;">Request Type</th>
+                    <th style="padding: 12px; width: 35%;">IT Justification</th>
+                    <th style="padding: 12px; width: 15%;">Target Deadline</th>
+                    <th style="padding: 12px; width: 15%; text-align: right;">Sheriff Actions</th>
+                </tr>
+                </thead>
+                <tbody id="riskTableBody">
+                {{range .RiskRequests}}
+                    <tr class="risk-row" data-asset="{{.AssetIdentifier}}" data-token="{{.MagicToken}}" data-id="{{.ID}}" style="background: #ffffff;">
+                        <td style="padding: 15px 10px 15px 12px; vertical-align: top; border-bottom: 1px solid #f1f5f9;">
+                            <strong>{{.Title}}</strong><br>
+                            <span class="badge {{.Severity | lower}}" style="margin-top: 4px; display: inline-block;">{{.Severity}}</span><br>
+                            <span style="font-size: 0.8rem; color: #64748b; font-family: monospace; margin-top: 4px; display: inline-block;">{{.AssetIdentifier}}</span>
+                        </td>
+                        <td class="risk-type-cell" style="padding: 15px 10px; vertical-align: top; text-align: center; border-bottom: 1px solid #f1f5f9;">Exception</td>
+                        <td style="padding: 15px 10px; vertical-align: top; border-bottom: 1px solid #f1f5f9;">
+                            <div class="risk-rationale-cell" style="background: #f8fafc; padding: 10px; border-left: 3px solid #cbd5e1; border-radius: 4px; font-size: 0.85rem; color: #334155; line-height: 1.4;">
+                                {{.Description}}
+                            </div>
+                        </td>
+                        <td style="color: #0f172a; font-weight: bold; padding: 15px 10px; vertical-align: top; border-bottom: 1px solid #f1f5f9;">
+                            {{.RemediationDueDate.Format "Jan 02, 2006"}}
+                            <div style="font-size: 0.75rem; color: #dc2626; margin-top: 4px; font-weight: normal;">SLA Paused</div>
+                            <div style="margin-top: 10px;">
+                                {{if .OwnerViewedAt}}
+                                    <span style="background: #dcfce7; color: #166534; padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; border: 1px solid #bbf7d0;">👀 Viewed</span>
+                                {{else}}
+                                    <span style="background: #f1f5f9; color: #94a3b8; padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; border: 1px solid #e2e8f0;">✉️ Unread</span>
+                                {{end}}
+                            </div>
+                        </td>
+                        <td style="text-align: right; vertical-align: top; padding: 15px 12px 15px 0; border-bottom: 1px solid #f1f5f9;">
+                            <button class="btn" style="padding: 6px 10px; font-size: 0.75rem; background: #3b82f6; margin-bottom: 5px; width: 100%; color: white;" onclick="prepMagistrateLink('{{.MagicToken}}', '{{.ID}}', event)">🔗 Copy Link</button><br>
+                            <button class="btn btn-secondary" style="padding: 6px 10px; font-size: 0.75rem; color: #dc2626; border-color: #fca5a5; width: 100%;" onclick="denyRisk('{{.MagicToken}}')">Deny Request</button>
+                        </td>
+                    </tr>
+                {{else}}
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 20px; color: #94a3b8;">No pending risk requests.</td>
+                    </tr>
+                {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{{end}}
+
+{{define "pro_source_routing"}}
+    <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; background: #fff;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="margin: 0; color: #0f172a;">🛤️ Source Routing</h3>
+            <button id="openRuleModal" class="btn" style="padding: 6px 12px; font-size: 0.85rem; background: #8b5cf6; color: white;">+ Add Rule</button>
+        </div>
+        <table style="font-size: 0.9rem; width: 100%;">
+            <thead><tr><th style="text-align: left;">Trigger</th><th style="text-align: left;">Match & Assignee</th><th style="text-align: right;">Actions</th></tr></thead>
+            <tbody>
+            {{range getProRules}}
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 8px 0;"><strong>{{.RuleType}}</strong></td>
+                    <td><span style="font-family: monospace; color: #2563eb;">{{.MatchValue}}</span><br><span style="font-size: 0.8rem; color: #475569;">&rarr; {{.Assignee}}</span></td>
+                    <td style="text-align: right;"><button class="btn btn-secondary" style="padding: 2px 6px; font-size: 0.75rem; color: #dc2626; border-color: #fca5a5;" onclick="deleteRule({{.ID}})" title="Delete Rule">🗑️</button></td>
+                </tr>
+            {{else}}
+                <tr><td colspan="3" style="text-align: center; color: #94a3b8; padding: 10px;">No active routing rules.</td></tr>
+            {{end}}
+            </tbody>
+        </table>
+    </div>
+
+    <div id="ruleModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="width: 450px;">
+            <h3>Create Dispatcher Rule</h3>
+            <label>Trigger Type:</label>
+            <select id="newRuleType" style="width: 100%; padding: 8px; margin-bottom: 15px;">
+                <option value="Source">Source (Scanner/Integration)</option>
+                <option value="Asset">Asset Identifier</option>
+            </select>
+            <label>Match Value:</label>
+            <div style="margin-bottom: 15px;">
+                <select id="newRuleMatchSource" style="width: 100%; padding: 8px;">
+                    <option value="Manual">Manual</option>
+                    {{range .Adapters}}
+                        <option value="{{.SourceName}}">{{.SourceName}} (via {{.Name}})</option>
+                    {{end}}
+                </select>
+                <input type="text" id="newRuleMatchAsset" style="width: 100%; padding: 8px; display: none;" placeholder="e.g. payment-gateway-prod">
+            </div>
+            <label>Assign To (Hold Ctrl/Cmd to select multiple):</label>
+            <select id="newRuleAssignee" multiple style="width: 100%; padding: 8px; margin-bottom: 15px; height: 120px;">
+                {{range .Users}}
+                    <option value="{{.Email}}">{{.FullName}} ({{.Email}})</option>
+                {{end}}
+            </select>
+            <div class="modal-actions">
+                <button id="cancelRule" class="btn btn-secondary">Cancel</button>
+                <button id="submitRule" class="btn" style="background: #8b5cf6; color: white;">Deploy Rule</button>
+            </div>
+        </div>
+    </div>
+{{end}}
+
+{{define "pro_verification_tab"}}
+    <a href="/dashboard?tab=verification" class="tab-btn {{if eq .CurrentTab "verification"}}active{{end}}">
+        🛡️ Pending Verification
+        {{if gt .CountVerification 0}}
+            <span class="notification-bubble" style="background: #eab308; color: #422006;">{{.CountVerification}}</span>
+        {{end}}
+    </a>
+{{end}}
+
+{{define "pro_sla_policy"}}
+    <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div>
+                <h3 style="margin: 0;">⏱️ SLA Policies & System Time</h3>
+                <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: #64748b;">Customizable Business Hours & Matrix</p>
+            </div>
+            <button class="btn btn-primary" id="saveConfigBtn" style="padding: 6px 12px; font-size: 0.85rem;">💾 Save Changes</button>
+        </div>
+
+        <div style="display: flex; gap: 30px;">
+            <div style="flex: 1; padding: 15px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">
+                <h4 style="margin-top: 0;">Base Configuration</h4>
+                <label>System Timezone:</label>
+                <select id="configTimezone" style="width: 100%; padding: 6px; margin-bottom: 10px;">
+                    <option value="UTC" {{if eq .Config.Timezone "UTC"}}selected{{end}}>UTC (Universal)</option>
+                    <option value="America/New_York" {{if eq .Config.Timezone "America/New_York"}}selected{{end}}>EST (New York)</option>
+                    <option value="America/Los_Angeles" {{if eq .Config.Timezone "America/Los_Angeles"}}selected{{end}}>PST (Los Angeles)</option>
+                </select>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <div style="flex: 1;"><label>Biz Start (Hour):</label><input type="number" id="configBizStart" value="{{.Config.BusinessStart}}" style="width: 100%; padding: 6px;"></div>
+                    <div style="flex: 1;"><label>Biz End (Hour):</label><input type="number" id="configBizEnd" value="{{.Config.BusinessEnd}}" style="width: 100%; padding: 6px;"></div>
                 </div>
-                <button class="btn btn-primary" onclick="window.location.reload()">Refresh Queue</button>
+                <div style="margin-bottom: 10px;">
+                    <label>Default Extension Days:</label>
+                    <input type="number" id="configDefExt" value="{{.Config.DefaultExtensionDays}}" style="width: 100%; padding: 6px;">
+                </div>
             </div>
 
-            <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
-                <table style="font-size: 0.9rem; width: 100%; text-align: left; border-collapse: collapse;">
-                    <thead id="riskTableHeader" style="background: #f8fafc; color: #475569;">
-                    <tr style="border-bottom: 2px solid #e2e8f0;">
-                        <th style="padding: 12px; width: 20%;">Finding Details</th>
-                        <th style="padding: 12px; width: 15%; text-align: center;">Request Type</th>
-                        <th style="padding: 12px; width: 35%;">IT Justification</th>
-                        <th style="padding: 12px; width: 15%;">Target Deadline</th>
-                        <th style="padding: 12px; width: 15%; text-align: right;">Sheriff Actions</th>
-                    </tr>
-                    </thead>
-                    <tbody id="riskTableBody">
-                    {{range .RiskRequests}}
-                        <tr class="risk-row" data-asset="{{.AssetIdentifier}}" data-token="{{.MagicToken}}" data-id="{{.ID}}" style="background: #ffffff;">
-                            <td style="padding: 15px 10px 15px 12px; vertical-align: top; border-bottom: 1px solid #f1f5f9;">
-                                <strong>{{.Title}}</strong><br>
-                                <span class="badge {{.Severity | lower}}" style="margin-top: 4px; display: inline-block;">{{.Severity}}</span><br>
-                                <span style="font-size: 0.8rem; color: #64748b; font-family: monospace; margin-top: 4px; display: inline-block;">{{.AssetIdentifier}}</span>
-                            </td>
-                            <td class="risk-type-cell" style="padding: 15px 10px; vertical-align: top; text-align: center; border-bottom: 1px solid #f1f5f9;">Exception</td>
-                            <td style="padding: 15px 10px; vertical-align: top; border-bottom: 1px solid #f1f5f9;">
-                                <div class="risk-rationale-cell" style="background: #f8fafc; padding: 10px; border-left: 3px solid #cbd5e1; border-radius: 4px; font-size: 0.85rem; color: #334155; line-height: 1.4;">
-                                    {{.Description}}
-                                </div>
-                            </td>
-                            <td style="color: #0f172a; font-weight: bold; padding: 15px 10px; vertical-align: top; border-bottom: 1px solid #f1f5f9;">
-                                {{.RemediationDueDate.Format "Jan 02, 2006"}}
-                                <div style="font-size: 0.75rem; color: #dc2626; margin-top: 4px; font-weight: normal;">SLA Paused</div>
-                                <div style="margin-top: 10px;">
-                                    {{if .OwnerViewedAt}}
-                                        <span style="background: #dcfce7; color: #166534; padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; border: 1px solid #bbf7d0;">👀 Viewed</span>
-                                    {{else}}
-                                        <span style="background: #f1f5f9; color: #94a3b8; padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; border: 1px solid #e2e8f0;">✉️ Unread</span>
-                                    {{end}}
-                                </div>
-                            </td>
-                            <td style="text-align: right; vertical-align: top; padding: 15px 12px 15px 0; border-bottom: 1px solid #f1f5f9;">
-                                <button class="btn" style="padding: 6px 10px; font-size: 0.75rem; background: #3b82f6; margin-bottom: 5px; width: 100%; color: white;" onclick="prepMagistrateLink('{{.MagicToken}}', '{{.ID}}', event)">🔗 Copy Link</button><br>
-                                <button class="btn btn-secondary" style="padding: 6px 10px; font-size: 0.75rem; color: #dc2626; border-color: #fca5a5; width: 100%;" onclick="denyRisk('{{.MagicToken}}')">Deny Request</button>
-                            </td>
-                        </tr>
-                    {{else}}
-                        <tr>
-                            <td colspan="5" style="text-align: center; padding: 20px; color: #94a3b8;">No pending risk requests.</td>
-                        </tr>
+            <div style="flex: 2;">
+                <h4 style="margin-top: 0;">SLA Matrix (Days)</h4>
+                <table style="font-size: 0.85rem; width: 100%; text-align: left;">
+                    <thead><tr><th style="padding-bottom: 5px;">Severity</th><th>Triage</th><th>Patch</th><th>Max Ext.</th></tr></thead>
+                    <tbody id="slaTableBody">
+                    {{range .SLAs}}
+                        {{if eq .Domain "Vulnerability"}}
+                            <tr class="sla-row" data-domain="Vulnerability" data-severity="{{.Severity}}">
+                                <td style="padding: 4px 0;"><span class="badge {{lower .Severity}}">{{.Severity}}</span></td>
+                                <td><input type="number" class="sla-triage" value="{{.DaysToTriage}}" style="width: 50px;"></td>
+                                <td><input type="number" class="sla-patch" value="{{.DaysToRemediate}}" style="width: 50px;"></td>
+                                <td><input type="number" class="sla-ext" value="{{.MaxExtensions}}" style="width: 50px;"></td>
+                            </tr>
+                        {{end}}
                     {{end}}
                     </tbody>
                 </table>
             </div>
         </div>
-    {{end}}
-{{end}}
-
-{{define "pro_source_routing"}}
-    {{if isProActive}}
-        <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; background: #fff;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 style="margin: 0; color: #0f172a;">🛤️ Source Routing <span class="badge pro" style="background: #dc2626; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">PRO</span></h3>
-                <button id="openRuleModal" class="btn" style="padding: 6px 12px; font-size: 0.85rem; background: #8b5cf6; color: white;">+ Add Rule</button>
-            </div>
-            <table style="font-size: 0.9rem; width: 100%;">
-                <thead><tr><th style="text-align: left;">Trigger</th><th style="text-align: left;">Match & Assignee</th><th style="text-align: right;">Actions</th></tr></thead>
-                <tbody>
-                {{range getProRules}}
-                    <tr style="border-bottom: 1px solid #f1f5f9;">
-                        <td style="padding: 8px 0;"><strong>{{.RuleType}}</strong></td>
-                        <td><span style="font-family: monospace; color: #2563eb;">{{.MatchValue}}</span><br><span style="font-size: 0.8rem; color: #475569;">&rarr; {{.Assignee}}</span></td>
-                        <td style="text-align: right;"><button class="btn btn-secondary" style="padding: 2px 6px; font-size: 0.75rem; color: #dc2626; border-color: #fca5a5;" onclick="deleteRule({{.ID}})" title="Delete Rule">🗑️</button></td>
-                    </tr>
-                {{else}}
-                    <tr><td colspan="3" style="text-align: center; color: #94a3b8; padding: 10px;">No active routing rules.</td></tr>
-                {{end}}
-                </tbody>
-            </table>
-        </div>
-
-        <div id="ruleModal" class="modal-overlay" style="display: none;">
-            <div class="modal-content" style="width: 450px;">
-                <h3>Create Dispatcher Rule</h3>
-                <label>Trigger Type:</label>
-                <select id="newRuleType" style="width: 100%; padding: 8px; margin-bottom: 15px;">
-                    <option value="Source">Source (Scanner/Integration)</option>
-                    <option value="Asset">Asset Identifier</option>
-                </select>
-                <label>Match Value:</label>
-                <div style="margin-bottom: 15px;">
-                    <select id="newRuleMatchSource" style="width: 100%; padding: 8px;">
-                        <option value="Manual">Manual</option>
-                        {{range .Adapters}}
-                            <option value="{{.SourceName}}">{{.SourceName}} (via {{.Name}})</option>
-                        {{end}}
-                    </select>
-                    <input type="text" id="newRuleMatchAsset" style="width: 100%; padding: 8px; display: none;" placeholder="e.g. payment-gateway-prod">
-                </div>
-                <label>Assign To (Hold Ctrl/Cmd to select multiple):</label>
-                <select id="newRuleAssignee" multiple style="width: 100%; padding: 8px; margin-bottom: 15px; height: 120px;">
-                    {{range .Users}}
-                        <option value="{{.Email}}">{{.FullName}} ({{.Email}})</option>
-                    {{end}}
-                </select>
-                <div class="modal-actions">
-                    <button id="cancelRule" class="btn btn-secondary">Cancel</button>
-                    <button id="submitRule" class="btn" style="background: #8b5cf6; color: white;">Deploy Rule</button>
-                </div>
-            </div>
-        </div>
-    {{else}}
-        <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; background: #f8fafc;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 style="margin: 0; color: #64748b;">🛤️ Source Routing</h3>
-                <button class="btn" disabled style="padding: 6px 12px; font-size: 0.85rem; background: #cbd5e1; color: white; cursor: not-allowed;">🔒 Pro Feature</button>
-            </div>
-            <div style="text-align: center; padding: 20px; border: 1px dashed #cbd5e1; border-radius: 6px; background: white;">
-                <p style="color: #475569; font-size: 0.9rem; margin-bottom: 10px;">Automate ticket assignment and triage based on asset tags or CVEs.</p>
-                <a href="https://RiskRancher.com/pro" target="_blank" style="color: #8b5cf6; text-decoration: none; font-weight: bold; font-size: 0.85rem;">Learn about RiskRancher Pro &rarr;</a>
-            </div>
-        </div>
-    {{end}}
-{{end}}
-
-{{define "pro_verification_tab"}}
-    {{if isProActive}}
-        <a href="/dashboard?tab=verification" class="tab-btn {{if eq .CurrentTab "verification"}}active{{end}}">
-            🛡️ Pending Verification
-            {{if gt .CountVerification 0}}
-                <span class="notification-bubble" style="background: #eab308; color: #422006;">{{.CountVerification}}</span>
-            {{end}}
-        </a>
-    {{else}}
-        <a href="javascript:void(0)" onclick="showUpsell('E2E Exception & Verification Pipeline')" class="tab-btn" style="color: #94a3b8;">
-            🔒 Pending Verification (Pro)
-        </a>
-    {{end}}
-{{end}}
-
-{{define "pro_sla_policy"}}
-    {{if isProActive}}
-        <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <div>
-                    <h3 style="margin: 0;">⏱️ SLA Policies & System Time <span class="badge pro" style="background: #dc2626; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">PRO</span></h3>
-                    <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: #64748b;">Customizable Business Hours & Matrix</p>
-                </div>
-                <button class="btn btn-primary" id="saveConfigBtn" style="padding: 6px 12px; font-size: 0.85rem;">💾 Save Changes</button>
-            </div>
-
-            <div style="display: flex; gap: 30px;">
-                <div style="flex: 1; padding: 15px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">
-                    <h4 style="margin-top: 0;">Base Configuration</h4>
-                    <label>System Timezone:</label>
-                    <select id="configTimezone" style="width: 100%; padding: 6px; margin-bottom: 10px;">
-                        <option value="UTC" {{if eq .Config.Timezone "UTC"}}selected{{end}}>UTC (Universal)</option>
-                        <option value="America/New_York" {{if eq .Config.Timezone "America/New_York"}}selected{{end}}>EST (New York)</option>
-                        <option value="America/Los_Angeles" {{if eq .Config.Timezone "America/Los_Angeles"}}selected{{end}}>PST (Los Angeles)</option>
-                    </select>
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <div style="flex: 1;"><label>Biz Start (Hour):</label><input type="number" id="configBizStart" value="{{.Config.BusinessStart}}" style="width: 100%; padding: 6px;"></div>
-                        <div style="flex: 1;"><label>Biz End (Hour):</label><input type="number" id="configBizEnd" value="{{.Config.BusinessEnd}}" style="width: 100%; padding: 6px;"></div>
-                    </div>
-                    <div style="margin-bottom: 10px;">
-                        <label>Default Extension Days:</label>
-                        <input type="number" id="configDefExt" value="{{.Config.DefaultExtensionDays}}" style="width: 100%; padding: 6px;">
-                    </div>
-                </div>
-
-                <div style="flex: 2;">
-                    <h4 style="margin-top: 0;">SLA Matrix (Days)</h4>
-                    <table style="font-size: 0.85rem; width: 100%; text-align: left;">
-                        <thead><tr><th style="padding-bottom: 5px;">Severity</th><th>Triage</th><th>Patch</th><th>Max Ext.</th></tr></thead>
-                        <tbody id="slaTableBody">
-                        {{range .SLAs}}
-                            {{if eq .Domain "Vulnerability"}}
-                                <tr class="sla-row" data-domain="Vulnerability" data-severity="{{.Severity}}">
-                                    <td style="padding: 4px 0;"><span class="badge {{lower .Severity}}">{{.Severity}}</span></td>
-                                    <td><input type="number" class="sla-triage" value="{{.DaysToTriage}}" style="width: 50px;"></td>
-                                    <td><input type="number" class="sla-patch" value="{{.DaysToRemediate}}" style="width: 50px;"></td>
-                                    <td><input type="number" class="sla-ext" value="{{.MaxExtensions}}" style="width: 50px;"></td>
-                                </tr>
-                            {{end}}
-                        {{end}}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    {{else}}
-        <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; position: relative;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <div>
-                    <h3 style="margin: 0;">⏱️ SLA Policies & System Time</h3>
-                    <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: #64748b;">Locked to Standard FedRAMP/NIST Default Timeframes</p>
-                </div>
-                <button class="btn" style="padding: 6px 12px; font-size: 0.85rem; background: #f8fafc; color: #64748b; border: 1px solid #cbd5e1;" onclick="showUpsell('Custom SLA Timers & Business Hours')">🔒 Customize (Pro)</button>
-            </div>
-            <div style="display: flex; gap: 30px; opacity: 0.7; pointer-events: none;">
-                <div style="padding: 20px; text-align: center; width: 100%; color: #94a3b8;">
-                    (Standard Default Timers Applied)
-                </div>
-            </div>
-        </div>
-    {{end}}
+    </div>
 {{end}}

@@ -45,8 +45,8 @@ func TestOpenEditionProRouteGate_BDD(t *testing.T) {
 				if rr.Code != http.StatusOK {
 					t.Errorf("Expected 200 OK, got %d", rr.Code)
 				}
-				if rr.Body.String() != "Welcome to Enterprise, RiskRancher Community" {
-					t.Errorf("Expected community context injection, got: %s", rr.Body.String())
+				if rr.Body.String() != "Welcome to Enterprise, RiskRancher" {
+					t.Errorf("Expected RiskRancher context injection, got: %s", rr.Body.String())
 				}
 			})
 		}

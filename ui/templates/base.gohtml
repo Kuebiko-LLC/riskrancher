@@ -16,8 +16,8 @@
             </h2>
         </div>
         <nav style="display: flex; align-items: center; gap: 15px;">
-            <span style="color: {{if isProActive}}#059669{{else}}#475569{{end}}; font-size: 0.9rem; font-family: monospace; padding-left: 15px; margin-left: 5px; font-weight: {{if isProActive}}bold{{else}}normal{{end}};">
-                {{if isProActive}}PRO Edition{{else}}Community Edition{{end}}
+            <span style="color: #059669; font-size: 0.9rem; font-family: monospace; padding-left: 15px; margin-left: 5px; font-weight: bold;">
+                Open Source
             </span>
             <button onclick="logout()" style="background: #f1f5f9; color: #dc2626; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.85rem;">Log Out</button>
         </nav>
@@ -35,7 +35,7 @@
         {{template "content" .}}
     </main>
     <footer style="text-align: center; padding: 20px; margin-top: 40px; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: 0.85rem;">
-        🐴 RiskRancher {{if isProActive}}PRO Edition{{else}}Core Edition{{end}} | Version: <strong>{{.Version}}</strong> | Build: <strong>{{.Commit}}</strong>
+        🐴 RiskRancher | Version: <strong>{{.Version}}</strong> | Build: <strong>{{.Commit}}</strong>
     </footer>
     </body>
     </html>

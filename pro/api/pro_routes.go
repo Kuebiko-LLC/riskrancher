@@ -318,13 +318,7 @@ func RegisterProRoutes(app *core.App, licenseManager *license.Manager) {
 	app.Router.Handle("GET /api/analytics/executive", execOnly(proAdminH.HandleExecDashboardData))
 
 	// ==========================================
-	// 💎 OUT OF BOX EXPERIENCE (OOBE)
-	// ==========================================
-	app.Router.Handle("GET /setup", proUI.HandleLicenseSetupUI())
-	app.Router.Handle("POST /api/pro/activate", proAdminH.HandleActivateLicense(licenseManager))
-
-	// ==========================================
-	// 💎 PRO STATIC ASSETS (JS/CSS)
+	// STATIC ASSETS (JS/CSS)
 	// ==========================================
 	// Serve files from pro/ui/static at the /static/pro/ path
 	proStaticFS := http.FileServer(http.FS(proUI.ProUIFS))

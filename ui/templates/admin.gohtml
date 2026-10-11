@@ -11,8 +11,8 @@
         <button class="tab-btn active" onclick="switchTab('tab-metrics', this)">📊 Metrics</button>
         <button class="tab-btn" onclick="switchTab('tab-performance', this)">📡 Performance</button>
         {{ block "pro_risk_tab_btn" .}}
-        <button class="tab-btn" style="color: #94a3b8; cursor: not-allowed;" title="Available in RiskRancher Pro">
-            🔒 Risk Reviews (Pro)
+        <button class="tab-btn" onclick="switchTab('tab-reviews', this)">
+            ⚖️ Risk Reviews
         </button>
         {{ end }}
         <button class="tab-btn" onclick="switchTab('tab-config', this)">⚙️ Configuration</button>

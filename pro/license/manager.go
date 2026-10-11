@@ -34,7 +34,7 @@ func NewManager(pubKey *rsa.PublicKey) *Manager {
 	return &Manager{
 		publicKey: pubKey,
 		isActive:  true,
-		company:   "RiskRancher Community",
+		company:   "RiskRancher",
 	}
 }
 

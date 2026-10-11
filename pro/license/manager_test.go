@@ -43,8 +43,8 @@ func TestOpenEditionManager_BDD(t *testing.T) {
 			if !manager.IsEnterpriseActive() {
 				t.Errorf("Expected the open edition to boot ACTIVE")
 			}
-			if manager.GetCompanyName() != "RiskRancher Community" {
-				t.Errorf("Expected 'RiskRancher Community', got: %s", manager.GetCompanyName())
+			if manager.GetCompanyName() != "RiskRancher" {
+				t.Errorf("Expected 'RiskRancher', got: %s", manager.GetCompanyName())
 			}
 		})
 	})

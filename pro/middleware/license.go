@@ -15,23 +15,13 @@ type LicenseClaims struct {
 	Expires int64  `json:"expires"` // Unix timestamp
 }
 
+// GlobalLicenseGate is a pass-through in the open-source edition (every feature
+// is unlocked, there is no activation screen). The manager and this wrapper are
+// kept so a commercial fork could reintroduce gating by booting the manager
+// inactive and restoring the redirect here.
 func GlobalLicenseGate(manager *license.Manager, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// If they have a valid license, let them through normally
-		if manager.IsEnterpriseActive() {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		// If unlicensed, ONLY allow access to the setup screen and CSS/JS
-		path := r.URL.Path
-		if path == "/setup" || path == "/api/pro/activate" || strings.HasPrefix(path, "/static/") {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		// Block everything else and force them to the activation screen
-		http.Redirect(w, r, "/setup", http.StatusTemporaryRedirect)
+		next.ServeHTTP(w, r)
 	})
 }
 

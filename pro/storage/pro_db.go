@@ -38,7 +38,7 @@ func InjectProSchema(db *sql.DB) {
 		log.Fatalf("🚨 PRO FATAL: Could not inject Pro Schema: %v", err)
 	}
 
-	log.Println("💎 RiskRancher Pro: Enterprise Schema Injected Successfully")
+	log.Println("🤠 RiskRancher: schema ready")
 }
 
 // ==========================================

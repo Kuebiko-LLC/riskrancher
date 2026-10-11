@@ -9,8 +9,8 @@
         <a href="/dashboard?tab=chute" class="tab-btn {{if eq .CurrentTab "chute"}}active{{end}}">🤠 The Chute (Assigned)</a>
 
         {{block "pro_verification_tab" .}}
-            <a href="javascript:void(0)" onclick="showUpsell('E2E Exception & Verification Pipeline')" class="tab-btn" style="color: #94a3b8;">
-                🔒 Pending Verification (Pro)
+            <a href="/dashboard?tab=verification" class="tab-btn">
+                🛡️ Pending Verification
             </a>
         {{end}}
 

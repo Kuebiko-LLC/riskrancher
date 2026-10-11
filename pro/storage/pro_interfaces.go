@@ -45,6 +45,16 @@ type ProStoreInterface interface {
 	AddFindingsToEngagement(ctx context.Context, engagementID int, ticketIDs []int) error
 	ListEngagementFindings(ctx context.Context, engagementID int) ([]core.Ticket, error)
 
+	// --- 💎 SEVERITY PROPOSALS (RangeHand <-> Bounty Hunter negotiation) ---
+	ProposeSeverityChange(ctx context.Context, ticketID int, toSeverity, justification, proposedBy string) (*proModels.SeverityProposal, error)
+	GetSeverityProposal(ctx context.Context, id int) (*proModels.SeverityProposal, error)
+	ListProposalsForTicket(ctx context.Context, ticketID int) ([]proModels.SeverityProposal, error)
+	AcceptSeverityProposal(ctx context.Context, proposalID int, actor string) error
+	ContestSeverityProposal(ctx context.Context, proposalID int, actor, note string) error
+	AdjudicateSeverityProposal(ctx context.Context, proposalID int, finalSeverity, actor, note string) error
+	ListPendingProposalsForOwner(ctx context.Context, ownerEmail string) ([]proModels.SeverityProposal, error)
+	ListContestedProposals(ctx context.Context) ([]proModels.SeverityProposal, error)
+
 	// --- 💎 PRO PENTEST REPORTS (findings -> deliverable) ---
 	CreatePentestReport(ctx context.Context, report *proModels.PentestReport) (int, error)
 	GetPentestReport(ctx context.Context, id int) (*proModels.PentestReport, error)

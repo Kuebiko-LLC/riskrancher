@@ -176,6 +176,25 @@ CREATE TABLE IF NOT EXISTS engagements (
 );
 
 -- ==========================================
+-- 5a2. SEVERITY PROPOSALS (RangeHand <-> Bounty Hunter negotiation)
+-- ==========================================
+CREATE TABLE IF NOT EXISTS severity_proposals (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    ticket_id       INTEGER NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
+    from_severity   TEXT,
+    to_severity     TEXT NOT NULL,
+    justification   TEXT NOT NULL,
+    proposed_by     TEXT NOT NULL,
+    status          TEXT NOT NULL DEFAULT 'Pending', -- Pending | Accepted | Contested | Resolved
+    resolved_by     TEXT,
+    resolution_note TEXT,
+    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+    resolved_at     DATETIME
+);
+CREATE INDEX IF NOT EXISTS idx_sev_proposals_status ON severity_proposals(status);
+CREATE INDEX IF NOT EXISTS idx_sev_proposals_ticket ON severity_proposals(ticket_id);
+
+-- ==========================================
 -- 5b. PENTEST REPORTS (findings -> deliverable)
 -- ==========================================
 CREATE TABLE IF NOT EXISTS pentest_reports (

@@ -9,12 +9,25 @@ import (
 )
 
 type templateRequest struct {
-	Name        string `json:"name"`
-	Title       string `json:"title"`
-	Severity    string `json:"severity"`
-	Description string `json:"description"`
-	Remediation string `json:"remediation"`
-	Tags        string `json:"tags"`
+	Name           string  `json:"name"`
+	Title          string  `json:"title"`
+	Severity       string  `json:"severity"`
+	Description    string  `json:"description"`
+	Remediation    string  `json:"remediation"`
+	Tags           string  `json:"tags"`
+	CVSSVector     string  `json:"cvss_vector"`
+	CVSSScore      float64 `json:"cvss_score"`
+	CWE            string  `json:"cwe"`
+	BusinessImpact string  `json:"business_impact"`
+}
+
+func (req templateRequest) toModel(id int, createdBy string) *proModels.FindingTemplate {
+	return &proModels.FindingTemplate{
+		ID: id, Name: req.Name, Title: req.Title, Severity: req.Severity,
+		Description: req.Description, Remediation: req.Remediation, Tags: req.Tags,
+		CVSSVector: req.CVSSVector, CVSSScore: req.CVSSScore, CWE: req.CWE, BusinessImpact: req.BusinessImpact,
+		CreatedBy: createdBy,
+	}
 }
 
 // HandleListTemplates returns the shared finding-template library.
@@ -60,11 +73,7 @@ func (h *ProHandler) HandleCreateTemplate(w http.ResponseWriter, r *http.Request
 		http.Error(w, "invalid severity", http.StatusBadRequest)
 		return
 	}
-	tpl := &proModels.FindingTemplate{
-		Name: req.Name, Title: req.Title, Severity: req.Severity,
-		Description: req.Description, Remediation: req.Remediation, Tags: req.Tags,
-		CreatedBy: h.currentUserEmail(r),
-	}
+	tpl := req.toModel(0, h.currentUserEmail(r))
 	if _, err := h.ProStore.CreateFindingTemplate(r.Context(), tpl); err != nil {
 		httpServerError(w, "CreateFindingTemplate", err)
 		return
@@ -94,10 +103,7 @@ func (h *ProHandler) HandleUpdateTemplate(w http.ResponseWriter, r *http.Request
 		http.Error(w, "invalid severity", http.StatusBadRequest)
 		return
 	}
-	tpl := &proModels.FindingTemplate{
-		ID: id, Name: req.Name, Title: req.Title, Severity: req.Severity,
-		Description: req.Description, Remediation: req.Remediation, Tags: req.Tags,
-	}
+	tpl := req.toModel(id, "")
 	if err := h.ProStore.UpdateFindingTemplate(r.Context(), tpl); err != nil {
 		httpServerError(w, "UpdateFindingTemplate", err)
 		return

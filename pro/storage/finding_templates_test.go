@@ -69,6 +69,19 @@ func TestFindingTemplateCRUDAndApply(t *testing.T) {
 		}
 	}
 
+	// structured fields carry through a template to the applied finding
+	st := &proModels.FindingTemplate{
+		Name: "SQLi", Title: "SQL injection", Severity: "High",
+		CVSSVector: "CVSS:3.1/AV:N/AC:L", CVSSScore: 8.6, CWE: "CWE-89", BusinessImpact: "DB compromise",
+	}
+	store.CreateFindingTemplate(ctx, st)
+	sfid, _ := store.CreateFindingFromTemplate(ctx, st.ID, eng.ID, "db-01", "bh@ranch.com")
+	sf, _ := store.GetTicketByID(ctx, sfid)
+	if sf.CWE != "CWE-89" || sf.CVSSScore != 8.6 || sf.BusinessImpact != "DB compromise" {
+		t.Errorf("structured fields not carried from template: %+v", sf)
+	}
+	store.DeleteFindingTemplate(ctx, st.ID)
+
 	// delete the template
 	if err := store.DeleteFindingTemplate(ctx, id); err != nil {
 		t.Fatalf("DeleteFindingTemplate: %v", err)

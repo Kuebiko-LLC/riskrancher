@@ -135,7 +135,8 @@ func (s *ProSQLiteStore) ListEngagementsByOwner(ctx context.Context, ownerEmail 
 // ListEngagementFindings returns the findings (tickets) linked to an engagement.
 func (s *ProSQLiteStore) ListEngagementFindings(ctx context.Context, engagementID int) ([]coredomain.Ticket, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, source, asset_identifier, title, description, recommended_remediation, severity, status
+		SELECT id, source, asset_identifier, title, description, recommended_remediation, severity, status,
+		       cvss_vector, cvss_score, cwe, business_impact
 		FROM tickets WHERE engagement_id = ? ORDER BY id`, engagementID)
 	if err != nil {
 		return nil, err
@@ -144,8 +145,8 @@ func (s *ProSQLiteStore) ListEngagementFindings(ctx context.Context, engagementI
 
 	var out []coredomain.Ticket
 	for rows.Next() {
-		var t coredomain.Ticket
-		if err := rows.Scan(&t.ID, &t.Source, &t.AssetIdentifier, &t.Title, &t.Description, &t.RecommendedRemediation, &t.Severity, &t.Status); err != nil {
+		t, err := scanReportTicket(rows)
+		if err != nil {
 			return nil, err
 		}
 		out = append(out, t)

@@ -173,6 +173,10 @@ CREATE TABLE IF NOT EXISTS finding_templates (
     description TEXT,
     remediation TEXT,
     tags        TEXT,
+    cvss_vector TEXT,
+    cvss_score  REAL,
+    cwe         TEXT,
+    business_impact TEXT,
     created_by  TEXT,
     created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP

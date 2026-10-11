@@ -154,9 +154,19 @@ func BuildMarkdown(in ReportInput, findings []domain.Ticket) string {
 			fmt.Fprintf(&b, "### %d. [%s] %s\n\n", n, g.Severity, f.Title)
 			fmt.Fprintf(&b, "- **Asset:** %s\n", orDash(f.AssetIdentifier))
 			fmt.Fprintf(&b, "- **Source:** %s\n", orDash(f.Source))
-			fmt.Fprintf(&b, "- **Status:** %s\n\n", orDash(f.Status))
+			fmt.Fprintf(&b, "- **Status:** %s\n", orDash(f.Status))
+			if cvss := cvssLabel(f.CVSSScore) + f.CVSSVector; cvss != "" {
+				fmt.Fprintf(&b, "- **CVSS:** %s\n", cvss)
+			}
+			if f.CWE != "" {
+				fmt.Fprintf(&b, "- **CWE:** %s\n", f.CWE)
+			}
+			b.WriteString("\n")
 			if f.Description != "" {
 				fmt.Fprintf(&b, "**Description**\n\n%s\n\n", f.Description)
+			}
+			if f.BusinessImpact != "" {
+				fmt.Fprintf(&b, "**Business impact**\n\n%s\n\n", f.BusinessImpact)
 			}
 			if f.RecommendedRemediation != "" {
 				fmt.Fprintf(&b, "**Recommended remediation**\n\n%s\n\n", f.RecommendedRemediation)
@@ -194,10 +204,19 @@ func orDash(s string) string {
 	return s
 }
 
+// cvssLabel formats a CVSS score (with a trailing space) or "" when unscored.
+func cvssLabel(score float64) string {
+	if score <= 0 {
+		return ""
+	}
+	return fmt.Sprintf("%.1f ", score)
+}
+
 type htmlFinding struct {
 	Num                                    int
 	Severity, Title, Asset, Source, Status string
 	Description, Remediation               string
+	CVSS, CWE, BusinessImpact              string
 	Images                                 []htmlEvidence
 }
 
@@ -271,8 +290,9 @@ var htmlTmpl = template.Must(template.New("report").Parse(`<!doctype html>
   {{range .Findings}}
   <div class="finding sev-{{.Severity}}">
     <h3>{{.Num}}. <span class="badge sev-{{.Severity}}">{{.Severity}}</span> {{.Title}}</h3>
-    <div class="kv"><strong>Asset:</strong> {{.Asset}} &nbsp;·&nbsp; <strong>Source:</strong> {{.Source}} &nbsp;·&nbsp; <strong>Status:</strong> {{.Status}}</div>
+    <div class="kv"><strong>Asset:</strong> {{.Asset}} &nbsp;·&nbsp; <strong>Source:</strong> {{.Source}} &nbsp;·&nbsp; <strong>Status:</strong> {{.Status}}{{if .CVSS}} &nbsp;·&nbsp; <strong>CVSS:</strong> {{.CVSS}}{{end}}{{if .CWE}} &nbsp;·&nbsp; <strong>CWE:</strong> {{.CWE}}{{end}}</div>
     {{if .Description}}<p><strong>Description</strong></p><pre>{{.Description}}</pre>{{end}}
+    {{if .BusinessImpact}}<p><strong>Business impact</strong></p><pre>{{.BusinessImpact}}</pre>{{end}}
     {{if .Remediation}}<p><strong>Recommended remediation</strong></p><pre>{{.Remediation}}</pre>{{end}}
     {{range .Images}}<figure style="margin:1rem 0;"><img src="{{.SrcURL}}" alt="{{.Caption}}" style="max-width:100%;border:1px solid #ddd;border-radius:6px;"><figcaption style="color:#555;font-size:.85rem;margin-top:.25rem;">{{.Caption}}</figcaption></figure>{{end}}
   </div>
@@ -302,15 +322,18 @@ func BuildHTML(in ReportInput, findings []domain.Ticket) string {
 		for _, f := range g.Findings {
 			n++
 			rows = append(rows, htmlFinding{
-				Num:         n,
-				Severity:    g.Severity,
-				Title:       f.Title,
-				Asset:       orDash(f.AssetIdentifier),
-				Source:      orDash(f.Source),
-				Status:      orDash(f.Status),
-				Description: f.Description,
-				Remediation: f.RecommendedRemediation,
-				Images:      toHTMLEvidence(in.Evidence[f.ID]),
+				Num:            n,
+				Severity:       g.Severity,
+				Title:          f.Title,
+				Asset:          orDash(f.AssetIdentifier),
+				Source:         orDash(f.Source),
+				Status:         orDash(f.Status),
+				Description:    f.Description,
+				Remediation:    f.RecommendedRemediation,
+				CVSS:           cvssLabel(f.CVSSScore) + f.CVSSVector,
+				CWE:            f.CWE,
+				BusinessImpact: f.BusinessImpact,
+				Images:         toHTMLEvidence(in.Evidence[f.ID]),
 			})
 		}
 	}

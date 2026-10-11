@@ -30,6 +30,10 @@ func InjectProSchema(db *sql.DB) {
 		"ALTER TABLE tickets ADD COLUMN engagement_id INTEGER;",
 		"ALTER TABLE pentest_reports ADD COLUMN body TEXT;",
 		"ALTER TABLE pentest_reports ADD COLUMN engagement_id INTEGER;",
+		"ALTER TABLE finding_templates ADD COLUMN cvss_vector TEXT;",
+		"ALTER TABLE finding_templates ADD COLUMN cvss_score REAL;",
+		"ALTER TABLE finding_templates ADD COLUMN cwe TEXT;",
+		"ALTER TABLE finding_templates ADD COLUMN business_impact TEXT;",
 	}
 
 	for _, query := range migrations {

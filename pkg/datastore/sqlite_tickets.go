@@ -3,6 +3,7 @@ package datastore
 import (
 	"context"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"time"
 
@@ -45,15 +46,15 @@ func (s *SQLiteStore) CreateTicket(ctx context.Context, t *domain.Ticket) error 
 
 	query := `
 		INSERT INTO tickets (
-			domain, source, asset_identifier, title, description, recommended_remediation, 
-			severity, status, dedupe_hash,
+			domain, source, asset_identifier, title, description, recommended_remediation,
+			severity, status, dedupe_hash, cvss_vector, cvss_score, cwe, business_impact,
 			triage_due_date, remediation_due_date, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, DATETIME('now', '+3 days'), DATETIME('now', '+14 days'), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATETIME('now', '+3 days'), DATETIME('now', '+14 days'), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 	`
 
 	res, err := s.DB.ExecContext(ctx, query,
 		t.Domain, t.Source, t.AssetIdentifier, t.Title, t.Description, t.RecommendedRemediation,
-		t.Severity, t.Status, t.DedupeHash,
+		t.Severity, t.Status, t.DedupeHash, t.CVSSVector, t.CVSSScore, t.CWE, t.BusinessImpact,
 	)
 
 	if err != nil {
@@ -107,14 +108,21 @@ func (s *SQLiteStore) GetTicketByID(ctx context.Context, id int) (domain.Ticket,
 	var triageDue, remDue, created, updated string
 	var patchedAt *string
 
-	query := `SELECT id, domain, source, asset_identifier, title, description, recommended_remediation, severity, status, dedupe_hash, triage_due_date, remediation_due_date, created_at, updated_at, patched_at, assignee, latest_comment FROM tickets WHERE id = ?`
+	var cvssVec, cwe, bizImpact sql.NullString
+	var cvssScore sql.NullFloat64
+
+	query := `SELECT id, domain, source, asset_identifier, title, description, recommended_remediation, severity, status, dedupe_hash, triage_due_date, remediation_due_date, created_at, updated_at, patched_at, assignee, latest_comment, cvss_vector, cvss_score, cwe, business_impact FROM tickets WHERE id = ?`
 
 	err := s.DB.QueryRowContext(ctx, query, id).Scan(
-		&t.ID, &t.Domain, &t.Source, &t.AssetIdentifier, &t.Title, &t.Description, &t.RecommendedRemediation, &t.Severity, &t.Status, &t.DedupeHash, &triageDue, &remDue, &created, &updated, &patchedAt, &t.Assignee, &t.LatestComment,
+		&t.ID, &t.Domain, &t.Source, &t.AssetIdentifier, &t.Title, &t.Description, &t.RecommendedRemediation, &t.Severity, &t.Status, &t.DedupeHash, &triageDue, &remDue, &created, &updated, &patchedAt, &t.Assignee, &t.LatestComment, &cvssVec, &cvssScore, &cwe, &bizImpact,
 	)
 	if err != nil {
 		return t, err
 	}
+	t.CVSSVector = cvssVec.String
+	t.CVSSScore = cvssScore.Float64
+	t.CWE = cwe.String
+	t.BusinessImpact = bizImpact.String
 
 	t.TriageDueDate, _ = time.Parse(time.RFC3339, triageDue)
 	t.RemediationDueDate, _ = time.Parse(time.RFC3339, remDue)

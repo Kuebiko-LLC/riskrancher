@@ -28,7 +28,8 @@ func (s *ProSQLiteStore) FindingsVisibleTo(ctx context.Context, ids []int, userE
 	args = append(args, sheriff, userEmail)
 
 	q := `
-		SELECT t.id, t.source, t.asset_identifier, t.title, t.description, t.recommended_remediation, t.severity, t.status
+		SELECT t.id, t.source, t.asset_identifier, t.title, t.description, t.recommended_remediation, t.severity, t.status,
+		       t.cvss_vector, t.cvss_score, t.cwe, t.business_impact
 		FROM tickets t
 		LEFT JOIN engagements e ON e.id = t.engagement_id
 		WHERE t.id IN (` + strings.Join(placeholders, ",") + `)
@@ -43,8 +44,8 @@ func (s *ProSQLiteStore) FindingsVisibleTo(ctx context.Context, ids []int, userE
 
 	var out []coredomain.Ticket
 	for rows.Next() {
-		var t coredomain.Ticket
-		if err := rows.Scan(&t.ID, &t.Source, &t.AssetIdentifier, &t.Title, &t.Description, &t.RecommendedRemediation, &t.Severity, &t.Status); err != nil {
+		t, err := scanReportTicket(rows)
+		if err != nil {
 			return nil, err
 		}
 		out = append(out, t)

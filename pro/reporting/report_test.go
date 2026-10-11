@@ -110,6 +110,28 @@ func TestEvidenceRendersInReport(t *testing.T) {
 	}
 }
 
+func TestStructuredFieldsRenderInReport(t *testing.T) {
+	in := fixedInput()
+	findings := []domain.Ticket{{
+		ID: 1, Title: "SQLi", Severity: "Critical", AssetIdentifier: "web",
+		CVSSVector: "CVSS:3.1/AV:N/AC:L", CVSSScore: 9.1, CWE: "CWE-89",
+		BusinessImpact: "Full database compromise",
+	}}
+
+	md := reporting.BuildMarkdown(in, findings)
+	for _, want := range []string{"**CVSS:** 9.1 CVSS:3.1/AV:N/AC:L", "**CWE:** CWE-89", "**Business impact**", "Full database compromise"} {
+		if !strings.Contains(md, want) {
+			t.Errorf("markdown missing %q", want)
+		}
+	}
+	html := reporting.BuildHTML(in, findings)
+	for _, want := range []string{"CWE-89", "9.1 CVSS:3.1/AV:N/AC:L", "Business impact", "Full database compromise"} {
+		if !strings.Contains(html, want) {
+			t.Errorf("html missing %q", want)
+		}
+	}
+}
+
 func TestBuildHTMLDefaultsTitle(t *testing.T) {
 	html := reporting.BuildHTML(reporting.ReportInput{}, sampleFindings())
 	if !strings.Contains(html, "Penetration Test Report") {

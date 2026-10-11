@@ -51,6 +51,12 @@ type Ticket struct {
 	SLAString     string `json:"sla_string"`
 	Assignee      string `json:"assignee"`
 	LatestComment string `json:"latest_comment"`
+
+	// Structured pentest fields (populated for report findings).
+	CVSSVector     string  `json:"cvss_vector"`
+	CVSSScore      float64 `json:"cvss_score"`
+	CWE            string  `json:"cwe"`
+	BusinessImpact string  `json:"business_impact"`
 }
 
 // TicketAssignment represents the many-to-many relationship

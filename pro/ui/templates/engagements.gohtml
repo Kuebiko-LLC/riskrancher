@@ -42,6 +42,12 @@
             </select>
             <textarea id="tDesc" placeholder="Description" style="width:100%;padding:6px;margin-bottom:6px;box-sizing:border-box;height:50px;"></textarea>
             <textarea id="tRem" placeholder="Recommended remediation" style="width:100%;padding:6px;margin-bottom:6px;box-sizing:border-box;height:50px;"></textarea>
+            <div style="display:flex;gap:6px;margin-bottom:6px;">
+              <input id="tCvssV" placeholder="CVSS vector (optional)" style="flex:1;padding:6px;box-sizing:border-box;">
+              <input id="tCvssS" type="number" step="0.1" min="0" max="10" placeholder="score" style="width:70px;padding:6px;box-sizing:border-box;">
+              <input id="tCwe" placeholder="CWE-79" style="width:90px;padding:6px;box-sizing:border-box;">
+            </div>
+            <textarea id="tImpact" placeholder="Business impact (optional)" style="width:100%;padding:6px;margin-bottom:6px;box-sizing:border-box;height:40px;"></textarea>
             <button onclick="createTemplate()" class="btn" style="background:#2563eb;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;width:100%;">Save template</button>
           </div>
         </details>
@@ -307,11 +313,15 @@
       name, title: document.getElementById('tTitle').value,
       severity: document.getElementById('tSev').value,
       description: document.getElementById('tDesc').value,
-      remediation: document.getElementById('tRem').value
+      remediation: document.getElementById('tRem').value,
+      cvss_vector: document.getElementById('tCvssV').value,
+      cvss_score: parseFloat(document.getElementById('tCvssS').value) || 0,
+      cwe: document.getElementById('tCwe').value,
+      business_impact: document.getElementById('tImpact').value
     };
     try {
       await api('POST','/api/finding-templates', body);
-      ['tName','tTitle','tDesc','tRem'].forEach(i=>document.getElementById(i).value='');
+      ['tName','tTitle','tDesc','tRem','tCvssV','tCvssS','tCwe','tImpact'].forEach(i=>document.getElementById(i).value='');
       loadTemplates();
     } catch(e){ alert('Save failed'); }
   };

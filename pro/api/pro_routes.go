@@ -271,6 +271,8 @@ func RegisterProRoutes(app *core.App, licenseManager *license.Manager) {
 	app.Router.Handle("DELETE /api/finding-templates/{id}", bountyHunter(proAdminH.HandleDeleteTemplate))
 	app.Router.Handle("POST /api/engagements/{id}/apply-template", bountyHunter(proAdminH.HandleApplyTemplate))
 
+	app.Router.Handle("PUT /api/findings/{id}", bountyHunter(proAdminH.HandleUpdateFinding))
+
 	// Evidence (screenshots on findings)
 	app.Router.Handle("POST /api/findings/{id}/evidence", bountyHunter(proAdminH.HandleUploadEvidence))
 	app.Router.Handle("GET /api/findings/{id}/evidence", bountyHunter(proAdminH.HandleListEvidence))

@@ -61,6 +61,11 @@ func InitDB(dbPath string) *sql.DB {
 		// v3: findings held in an unreleased engagement are hidden from the
 		// triage queue until released. Normal findings default to visible (1).
 		`ALTER TABLE tickets ADD COLUMN released INTEGER NOT NULL DEFAULT 1;`,
+		// v4: structured pentest fields on findings (for report findings).
+		`ALTER TABLE tickets ADD COLUMN cvss_vector TEXT;
+		 ALTER TABLE tickets ADD COLUMN cvss_score REAL;
+		 ALTER TABLE tickets ADD COLUMN cwe TEXT;
+		 ALTER TABLE tickets ADD COLUMN business_impact TEXT;`,
 	}
 
 	if err := RunMigrations(db, migrations); err != nil {

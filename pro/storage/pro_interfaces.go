@@ -56,6 +56,7 @@ type ProStoreInterface interface {
 	AdjudicateSeverityProposal(ctx context.Context, proposalID int, finalSeverity, actor, note string) error
 	ListPendingProposalsForOwner(ctx context.Context, ownerEmail string) ([]proModels.SeverityProposal, error)
 	ListContestedProposals(ctx context.Context) ([]proModels.SeverityProposal, error)
+	EngagementOwnerForProposal(ctx context.Context, proposalID int) (string, error)
 
 	// --- 💎 PRO PENTEST REPORTS (findings -> deliverable) ---
 	CreatePentestReport(ctx context.Context, report *proModels.PentestReport) (int, error)

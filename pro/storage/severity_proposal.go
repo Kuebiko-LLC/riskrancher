@@ -13,6 +13,45 @@ import (
 // Those findings are re-rated directly, not by proposal.
 var ErrNotBountyHunterFinding = errors.New("finding is not from a Bounty Hunter engagement; edit severity directly")
 
+// ErrProposalNotPending / ErrProposalNotContested guard the proposal state
+// machine: accept/contest act only on Pending, adjudicate only on Contested.
+var (
+	ErrProposalNotPending   = errors.New("proposal is not pending")
+	ErrProposalNotContested = errors.New("proposal is not contested")
+)
+
+// txResolve applies a final severity to the finding and resolves the proposal
+// in one transaction, so a partial failure cannot leave them out of sync.
+func (s *ProSQLiteStore) txResolve(ctx context.Context, ticketID int, newSeverity string, proposalID int, status, actor, note string) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.ExecContext(ctx, `UPDATE tickets SET severity = ? WHERE id = ?`, newSeverity, ticketID); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx,
+		`UPDATE severity_proposals SET status = ?, resolved_by = ?, resolution_note = ?, resolved_at = CURRENT_TIMESTAMP WHERE id = ?`,
+		status, actor, note, proposalID); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// EngagementOwnerForProposal returns the owner_email of the engagement the
+// proposal's finding belongs to, for owner-only authorization checks.
+func (s *ProSQLiteStore) EngagementOwnerForProposal(ctx context.Context, proposalID int) (string, error) {
+	var owner string
+	err := s.db.QueryRowContext(ctx, `
+		SELECT e.owner_email
+		FROM severity_proposals sp
+		JOIN tickets t ON t.id = sp.ticket_id
+		JOIN engagements e ON e.id = t.engagement_id
+		WHERE sp.id = ?`, proposalID).Scan(&owner)
+	return owner, err
+}
+
 const sevProposalCols = `id, ticket_id, from_severity, to_severity, justification, proposed_by, status, resolved_by, resolution_note, created_at, resolved_at`
 
 func scanSevProposal(row interface{ Scan(...any) error }) (*proModels.SeverityProposal, error) {
@@ -86,10 +125,10 @@ func (s *ProSQLiteStore) AcceptSeverityProposal(ctx context.Context, proposalID 
 	if err != nil {
 		return err
 	}
-	if _, err := s.db.ExecContext(ctx, `UPDATE tickets SET severity = ? WHERE id = ?`, p.ToSeverity, p.TicketID); err != nil {
-		return err
+	if p.Status != "Pending" {
+		return ErrProposalNotPending
 	}
-	if _, err := s.db.ExecContext(ctx, `UPDATE severity_proposals SET status = 'Accepted', resolved_by = ?, resolved_at = CURRENT_TIMESTAMP WHERE id = ?`, actor, proposalID); err != nil {
+	if err := s.txResolve(ctx, p.TicketID, p.ToSeverity, proposalID, "Accepted", actor, ""); err != nil {
 		return err
 	}
 	s.logActivity(ctx, p.TicketID, actor, "severity_accepted", p.FromSeverity, p.ToSeverity)
@@ -102,6 +141,9 @@ func (s *ProSQLiteStore) ContestSeverityProposal(ctx context.Context, proposalID
 	p, err := s.GetSeverityProposal(ctx, proposalID)
 	if err != nil {
 		return err
+	}
+	if p.Status != "Pending" {
+		return ErrProposalNotPending
 	}
 	if _, err := s.db.ExecContext(ctx, `UPDATE severity_proposals SET status = 'Contested' WHERE id = ?`, proposalID); err != nil {
 		return err
@@ -117,10 +159,10 @@ func (s *ProSQLiteStore) AdjudicateSeverityProposal(ctx context.Context, proposa
 	if err != nil {
 		return err
 	}
-	if _, err := s.db.ExecContext(ctx, `UPDATE tickets SET severity = ? WHERE id = ?`, finalSeverity, p.TicketID); err != nil {
-		return err
+	if p.Status != "Contested" {
+		return ErrProposalNotContested
 	}
-	if _, err := s.db.ExecContext(ctx, `UPDATE severity_proposals SET status = 'Resolved', resolved_by = ?, resolution_note = ?, resolved_at = CURRENT_TIMESTAMP WHERE id = ?`, actor, note, proposalID); err != nil {
+	if err := s.txResolve(ctx, p.TicketID, finalSeverity, proposalID, "Resolved", actor, note); err != nil {
 		return err
 	}
 	s.logActivity(ctx, p.TicketID, actor, "severity_adjudicated", p.FromSeverity, finalSeverity)

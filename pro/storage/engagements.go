@@ -70,11 +70,18 @@ func (s *ProSQLiteStore) ListEngagements(ctx context.Context) ([]proModels.Engag
 // ReleaseEngagement marks an engagement Released and hands its findings off to
 // the RangeHand queue (released = 1 makes them visible).
 func (s *ProSQLiteStore) ReleaseEngagement(ctx context.Context, id int) error {
-	if _, err := s.db.ExecContext(ctx, `UPDATE engagements SET status = 'Released' WHERE id = ?`, id); err != nil {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
 		return err
 	}
-	_, err := s.db.ExecContext(ctx, `UPDATE tickets SET released = 1 WHERE engagement_id = ?`, id)
-	return err
+	defer tx.Rollback()
+	if _, err := tx.ExecContext(ctx, `UPDATE engagements SET status = 'Released' WHERE id = ?`, id); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE tickets SET released = 1 WHERE engagement_id = ?`, id); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // AddFindingsToEngagement links the given tickets to an engagement and holds

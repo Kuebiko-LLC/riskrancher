@@ -45,7 +45,33 @@ func (h *ProHandler) HandleProposeSeverity(w http.ResponseWriter, r *http.Reques
 	json.NewEncoder(w).Encode(p)
 }
 
-// HandleAcceptSeverityProposal (Bounty Hunter) applies a proposed severity.
+// ownsProposalOrSheriff reports whether the caller owns the engagement behind a
+// proposal (or is a Sheriff), for owner-only accept/contest.
+func (h *ProHandler) ownsProposalOrSheriff(r *http.Request, proposalID int) bool {
+	u := h.currentUser(r)
+	if u == nil {
+		return false
+	}
+	if u.GlobalRole == "Sheriff" {
+		return true
+	}
+	owner, err := h.ProStore.EngagementOwnerForProposal(r.Context(), proposalID)
+	if err != nil {
+		return false
+	}
+	return owner == u.Email
+}
+
+// proposalStateError maps a state-machine rejection to 409, else 500.
+func proposalStateError(w http.ResponseWriter, err error) {
+	if errors.Is(err, storage.ErrProposalNotPending) || errors.Is(err, storage.ErrProposalNotContested) {
+		http.Error(w, err.Error(), http.StatusConflict)
+		return
+	}
+	http.Error(w, "Could not update proposal", http.StatusInternalServerError)
+}
+
+// HandleAcceptSeverityProposal (owning Bounty Hunter) applies a proposed severity.
 // POST /api/severity-proposals/{id}/accept
 func (h *ProHandler) HandleAcceptSeverityProposal(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
@@ -53,8 +79,12 @@ func (h *ProHandler) HandleAcceptSeverityProposal(w http.ResponseWriter, r *http
 		http.Error(w, "Invalid proposal id", http.StatusBadRequest)
 		return
 	}
+	if !h.ownsProposalOrSheriff(r, id) {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
 	if err := h.ProStore.AcceptSeverityProposal(r.Context(), id, h.currentUserEmail(r)); err != nil {
-		http.Error(w, "DB Error: "+err.Error(), http.StatusInternalServerError)
+		proposalStateError(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -69,12 +99,16 @@ func (h *ProHandler) HandleContestSeverityProposal(w http.ResponseWriter, r *htt
 		http.Error(w, "Invalid proposal id", http.StatusBadRequest)
 		return
 	}
+	if !h.ownsProposalOrSheriff(r, id) {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
 	var req struct {
 		Note string `json:"note"`
 	}
 	json.NewDecoder(r.Body).Decode(&req)
 	if err := h.ProStore.ContestSeverityProposal(r.Context(), id, h.currentUserEmail(r), req.Note); err != nil {
-		http.Error(w, "DB Error: "+err.Error(), http.StatusInternalServerError)
+		proposalStateError(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -102,7 +136,7 @@ func (h *ProHandler) HandleAdjudicateSeverityProposal(w http.ResponseWriter, r *
 		return
 	}
 	if err := h.ProStore.AdjudicateSeverityProposal(r.Context(), id, req.FinalSeverity, h.currentUserEmail(r), req.Note); err != nil {
-		http.Error(w, "DB Error: "+err.Error(), http.StatusInternalServerError)
+		proposalStateError(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

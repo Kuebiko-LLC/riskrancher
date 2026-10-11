@@ -31,7 +31,7 @@ func (h *ProHandler) HandleCreateRoutingRule(w http.ResponseWriter, r *http.Requ
 	if err := proStore.CreateRoutingRule(r.Context(), &rule); err != nil {
 		// 🚀 FIX: Log the actual SQLite error so we aren't flying blind!
 		fmt.Println("🚨 SQLITE ERROR:", err)
-		http.Error(w, "DB Error: "+err.Error(), http.StatusInternalServerError)
+		httpServerError(w, "db", err)
 		return
 	}
 

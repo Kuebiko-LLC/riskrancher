@@ -26,8 +26,12 @@ func (h *ProHandler) HandleProposeSeverity(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
-	if req.ToSeverity == "" || req.Justification == "" {
-		http.Error(w, "to_severity and justification are required", http.StatusBadRequest)
+	if req.Justification == "" {
+		http.Error(w, "justification is required", http.StatusBadRequest)
+		return
+	}
+	if !validSeverity(req.ToSeverity) {
+		http.Error(w, "to_severity must be one of Critical, High, Medium, Low, Informational", http.StatusBadRequest)
 		return
 	}
 
@@ -37,7 +41,7 @@ func (h *ProHandler) HandleProposeSeverity(w http.ResponseWriter, r *http.Reques
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		http.Error(w, "DB Error: "+err.Error(), http.StatusInternalServerError)
+		httpServerError(w, "ProposeSeverityChange", err)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -131,8 +135,8 @@ func (h *ProHandler) HandleAdjudicateSeverityProposal(w http.ResponseWriter, r *
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
-	if req.FinalSeverity == "" {
-		http.Error(w, "final_severity is required", http.StatusBadRequest)
+	if !validSeverity(req.FinalSeverity) {
+		http.Error(w, "final_severity must be one of Critical, High, Medium, Low, Informational", http.StatusBadRequest)
 		return
 	}
 	if err := h.ProStore.AdjudicateSeverityProposal(r.Context(), id, req.FinalSeverity, h.currentUserEmail(r), req.Note); err != nil {
@@ -149,7 +153,7 @@ func (h *ProHandler) HandleAdjudicateSeverityProposal(w http.ResponseWriter, r *
 func (h *ProHandler) HandleMyPendingProposals(w http.ResponseWriter, r *http.Request) {
 	list, err := h.ProStore.ListPendingProposalsForOwner(r.Context(), h.currentUserEmail(r))
 	if err != nil {
-		http.Error(w, "DB Error: "+err.Error(), http.StatusInternalServerError)
+		httpServerError(w, "db", err)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -161,7 +165,7 @@ func (h *ProHandler) HandleMyPendingProposals(w http.ResponseWriter, r *http.Req
 func (h *ProHandler) HandleContestedProposals(w http.ResponseWriter, r *http.Request) {
 	list, err := h.ProStore.ListContestedProposals(r.Context())
 	if err != nil {
-		http.Error(w, "DB Error: "+err.Error(), http.StatusInternalServerError)
+		httpServerError(w, "db", err)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

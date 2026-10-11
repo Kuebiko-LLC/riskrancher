@@ -26,7 +26,7 @@ func (h *ProHandler) HandleCreateEngagement(w http.ResponseWriter, r *http.Reque
 
 	e := &proModels.Engagement{Name: req.Name, Client: req.Client, OwnerEmail: h.currentUserEmail(r)}
 	if _, err := h.ProStore.CreateEngagement(r.Context(), e); err != nil {
-		http.Error(w, "DB Error: "+err.Error(), http.StatusInternalServerError)
+		httpServerError(w, "db", err)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -52,7 +52,7 @@ func (h *ProHandler) HandleListEngagements(w http.ResponseWriter, r *http.Reques
 		list, err = h.ProStore.ListEngagementsByOwner(r.Context(), u.Email)
 	}
 	if err != nil {
-		http.Error(w, "DB Error: "+err.Error(), http.StatusInternalServerError)
+		httpServerError(w, "db", err)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -79,7 +79,7 @@ func (h *ProHandler) HandleGetEngagement(w http.ResponseWriter, r *http.Request)
 	}
 	findings, err := h.ProStore.ListEngagementFindings(r.Context(), id)
 	if err != nil {
-		http.Error(w, "DB Error: "+err.Error(), http.StatusInternalServerError)
+		httpServerError(w, "db", err)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -110,8 +110,12 @@ func (h *ProHandler) HandleAddEngagementFindings(w http.ResponseWriter, r *http.
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
+	if len(req.TicketIDs) > maxFindingsPerRequest {
+		http.Error(w, "too many ticket_ids", http.StatusBadRequest)
+		return
+	}
 	if err := h.ProStore.AddFindingsToEngagement(r.Context(), id, req.TicketIDs); err != nil {
-		http.Error(w, "DB Error: "+err.Error(), http.StatusInternalServerError)
+		httpServerError(w, "db", err)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -136,7 +140,7 @@ func (h *ProHandler) HandleReleaseEngagement(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	if err := h.ProStore.ReleaseEngagement(r.Context(), id); err != nil {
-		http.Error(w, "DB Error: "+err.Error(), http.StatusInternalServerError)
+		httpServerError(w, "db", err)
 		return
 	}
 	eng, _ = h.ProStore.GetEngagement(r.Context(), id)

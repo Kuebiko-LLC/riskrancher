@@ -74,6 +74,10 @@ func (h *ProHandler) HandleGenerateBrandedReport(w http.ResponseWriter, r *http.
 		http.Error(w, "ticket_ids is required (select at least one finding)", http.StatusBadRequest)
 		return
 	}
+	if len(req.TicketIDs) > maxFindingsPerRequest {
+		http.Error(w, "too many ticket_ids", http.StatusBadRequest)
+		return
+	}
 
 	findings, md, html := h.renderReport(r, req)
 	if len(findings) == 0 {
@@ -96,7 +100,7 @@ func (h *ProHandler) HandleGenerateBrandedReport(w http.ResponseWriter, r *http.
 	}
 
 	if _, err := h.ProStore.CreatePentestReport(r.Context(), report); err != nil {
-		http.Error(w, "DB Error: "+err.Error(), http.StatusInternalServerError)
+		httpServerError(w, "db", err)
 		return
 	}
 
@@ -130,6 +134,10 @@ func (h *ProHandler) HandleUpdateReport(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
+	if len(req.TicketIDs) > maxFindingsPerRequest {
+		http.Error(w, "too many ticket_ids", http.StatusBadRequest)
+		return
+	}
 
 	findings, md, html := h.renderReport(r, req)
 
@@ -149,7 +157,7 @@ func (h *ProHandler) HandleUpdateReport(w http.ResponseWriter, r *http.Request) 
 		CreatedAt:        existing.CreatedAt,
 	}
 	if err := h.ProStore.UpdateReport(r.Context(), updated); err != nil {
-		http.Error(w, "DB Error: "+err.Error(), http.StatusInternalServerError)
+		httpServerError(w, "db", err)
 		return
 	}
 
@@ -209,7 +217,7 @@ func (h *ProHandler) HandleListPentestReports(w http.ResponseWriter, r *http.Req
 		reports, err = h.ProStore.ListPentestReportsByAuthor(r.Context(), u.Email)
 	}
 	if err != nil {
-		http.Error(w, "DB Error: "+err.Error(), http.StatusInternalServerError)
+		httpServerError(w, "db", err)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

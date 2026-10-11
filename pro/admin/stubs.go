@@ -9,8 +9,10 @@ func (h *ProHandler) HandleCreateAPIKey(w http.ResponseWriter, r *http.Request) 
 func (h *ProHandler) HandleRevokeAPIKey(w http.ResponseWriter, r *http.Request) {}
 
 // --- Integrations & Dashboards ---
-func (h *ProHandler) HandleExecDashboardData(w http.ResponseWriter, r *http.Request)     {}
-func (h *ProHandler) HandleGenerateBrandedReport(w http.ResponseWriter, r *http.Request) {}
+func (h *ProHandler) HandleExecDashboardData(w http.ResponseWriter, r *http.Request) {}
+
+// HandleGenerateBrandedReport, HandleGetPentestReport, and
+// HandleListPentestReports are implemented in reports.go.
 
 // --- SUPPRESSION RULES STUBS ---
 

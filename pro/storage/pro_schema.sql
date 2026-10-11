@@ -163,6 +163,23 @@ CREATE TABLE IF NOT EXISTS asset_edges (
     );
 
 -- ==========================================
+-- 5b. PENTEST REPORTS (findings -> deliverable)
+-- ==========================================
+CREATE TABLE IF NOT EXISTS pentest_reports (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    title             TEXT NOT NULL,
+    client_name       TEXT,
+    author            TEXT,
+    scope             TEXT,
+    executive_summary TEXT,
+    ticket_ids        TEXT NOT NULL DEFAULT '[]', -- JSON array of the finding IDs snapshotted
+    markdown          TEXT NOT NULL DEFAULT '',   -- rendered deliverable (frozen at generation)
+    html              TEXT NOT NULL DEFAULT '',   -- rendered deliverable (frozen at generation)
+    created_by        TEXT,
+    created_at        DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ==========================================
 -- 6. ENTERPRISE PERFORMANCE INDEXES
 -- ==========================================
 CREATE INDEX IF NOT EXISTS idx_activity_ticket_id ON ticket_activity(ticket_id);

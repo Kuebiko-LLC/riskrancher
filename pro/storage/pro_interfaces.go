@@ -38,5 +38,10 @@ type ProStoreInterface interface {
 	SaveLicenseKey(ctx context.Context, token string) error
 	GetLicenseKey(ctx context.Context) (string, error)
 
+	// --- 💎 PRO PENTEST REPORTS (findings -> deliverable) ---
+	CreatePentestReport(ctx context.Context, report *proModels.PentestReport) (int, error)
+	GetPentestReport(ctx context.Context, id int) (*proModels.PentestReport, error)
+	ListPentestReports(ctx context.Context) ([]proModels.PentestReport, error)
+
 	GetProDashboardTickets(ctx context.Context, tabStatus, filter, assetFilter, userEmail, userRole string, limit, offset int) ([]ProDashboardTicket, int, map[string]int, error)
 }

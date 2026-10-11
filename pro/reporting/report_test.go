@@ -89,6 +89,27 @@ func TestBuildHTMLEscapesContent(t *testing.T) {
 	}
 }
 
+func TestEvidenceRendersInReport(t *testing.T) {
+	in := fixedInput()
+	in.Evidence = map[int][]reporting.EvidenceImage{
+		7: {{DataURI: "data:image/png;base64,AAAABBBB", Caption: "login popup"}},
+	}
+	findings := []domain.Ticket{{ID: 7, Title: "XSS", Severity: "High", AssetIdentifier: "web"}}
+
+	md := reporting.BuildMarkdown(in, findings)
+	if !strings.Contains(md, "![login popup](data:image/png;base64,AAAABBBB)") {
+		t.Errorf("markdown should embed the screenshot:\n%s", md)
+	}
+
+	html := reporting.BuildHTML(in, findings)
+	if !strings.Contains(html, "src=\"data:image/png;base64,AAAABBBB\"") {
+		t.Errorf("html should embed the screenshot as a trusted data URI:\n%s", html)
+	}
+	if !strings.Contains(html, "login popup") {
+		t.Errorf("html should include the caption")
+	}
+}
+
 func TestBuildHTMLDefaultsTitle(t *testing.T) {
 	html := reporting.BuildHTML(reporting.ReportInput{}, sampleFindings())
 	if !strings.Contains(html, "Penetration Test Report") {

@@ -23,6 +23,15 @@ type ReportInput struct {
 	ExecutiveSummary string
 	Body             string // author prose/narrative (Markdown), rendered as-is
 	GeneratedAt      time.Time
+	// Evidence maps a finding's ticket id to its screenshots (as data URIs), so
+	// the rendered report is self-contained.
+	Evidence map[int][]EvidenceImage
+}
+
+// EvidenceImage is one screenshot embedded in a report, carried as a data URI.
+type EvidenceImage struct {
+	DataURI string
+	Caption string
 }
 
 // severityOrder ranks severities most-serious first; anything unrecognised
@@ -152,9 +161,30 @@ func BuildMarkdown(in ReportInput, findings []domain.Ticket) string {
 			if f.RecommendedRemediation != "" {
 				fmt.Fprintf(&b, "**Recommended remediation**\n\n%s\n\n", f.RecommendedRemediation)
 			}
+			for _, img := range in.Evidence[f.ID] {
+				cap := img.Caption
+				if cap == "" {
+					cap = "Evidence"
+				}
+				fmt.Fprintf(&b, "![%s](%s)\n\n_%s_\n\n", cap, img.DataURI, cap)
+			}
 		}
 	}
 	return b.String()
+}
+
+// toHTMLEvidence converts evidence data URIs into template.URL so html/template
+// trusts the data: image src instead of filtering it.
+func toHTMLEvidence(imgs []EvidenceImage) []htmlEvidence {
+	out := make([]htmlEvidence, 0, len(imgs))
+	for _, img := range imgs {
+		cap := img.Caption
+		if cap == "" {
+			cap = "Evidence"
+		}
+		out = append(out, htmlEvidence{SrcURL: template.URL(img.DataURI), Caption: cap})
+	}
+	return out
 }
 
 func orDash(s string) string {
@@ -168,6 +198,12 @@ type htmlFinding struct {
 	Num                                    int
 	Severity, Title, Asset, Source, Status string
 	Description, Remediation               string
+	Images                                 []htmlEvidence
+}
+
+type htmlEvidence struct {
+	SrcURL  template.URL
+	Caption string
 }
 
 type htmlData struct {
@@ -238,6 +274,7 @@ var htmlTmpl = template.Must(template.New("report").Parse(`<!doctype html>
     <div class="kv"><strong>Asset:</strong> {{.Asset}} &nbsp;·&nbsp; <strong>Source:</strong> {{.Source}} &nbsp;·&nbsp; <strong>Status:</strong> {{.Status}}</div>
     {{if .Description}}<p><strong>Description</strong></p><pre>{{.Description}}</pre>{{end}}
     {{if .Remediation}}<p><strong>Recommended remediation</strong></p><pre>{{.Remediation}}</pre>{{end}}
+    {{range .Images}}<figure style="margin:1rem 0;"><img src="{{.SrcURL}}" alt="{{.Caption}}" style="max-width:100%;border:1px solid #ddd;border-radius:6px;"><figcaption style="color:#555;font-size:.85rem;margin-top:.25rem;">{{.Caption}}</figcaption></figure>{{end}}
   </div>
   {{end}}
   {{end}}
@@ -273,6 +310,7 @@ func BuildHTML(in ReportInput, findings []domain.Ticket) string {
 				Status:      orDash(f.Status),
 				Description: f.Description,
 				Remediation: f.RecommendedRemediation,
+				Images:      toHTMLEvidence(in.Evidence[f.ID]),
 			})
 		}
 	}

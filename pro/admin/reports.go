@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -39,8 +40,30 @@ func (h *ProHandler) renderReport(r *http.Request, req generateReportRequest) ([
 		Scope:            req.Scope,
 		ExecutiveSummary: req.ExecutiveSummary,
 		Body:             req.Body,
+		Evidence:         h.evidenceForFindings(r, tickets),
 	}
 	return tickets, reporting.BuildMarkdown(in, tickets), reporting.BuildHTML(in, tickets)
+}
+
+// evidenceForFindings loads each finding's screenshots as base64 data URIs so
+// the rendered report is self-contained.
+func (h *ProHandler) evidenceForFindings(r *http.Request, tickets []coredomain.Ticket) map[int][]reporting.EvidenceImage {
+	ev := map[int][]reporting.EvidenceImage{}
+	for _, f := range tickets {
+		list, err := h.ProStore.ListEvidenceForTicket(r.Context(), f.ID)
+		if err != nil {
+			continue
+		}
+		for _, m := range list {
+			data, ct, err := h.ProStore.GetEvidenceBlob(r.Context(), m.ID, false)
+			if err != nil {
+				continue
+			}
+			uri := "data:" + ct + ";base64," + base64.StdEncoding.EncodeToString(data)
+			ev[f.ID] = append(ev[f.ID], reporting.EvidenceImage{DataURI: uri, Caption: m.Caption})
+		}
+	}
+	return ev
 }
 
 func ticketIDsOf(tickets []coredomain.Ticket) []int {

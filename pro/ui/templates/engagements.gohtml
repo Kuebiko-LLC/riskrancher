@@ -24,9 +24,27 @@
         <input id="engClient" placeholder="Client (optional)" style="width:100%;padding:8px;margin-bottom:8px;box-sizing:border-box;">
         <button onclick="createEngagement()" class="btn" style="background:#2563eb;color:#fff;width:100%;padding:8px;border:none;border-radius:6px;cursor:pointer;">+ Create</button>
       </div>
-      <div style="border:1px solid #e2e8f0;border-radius:8px;padding:16px;background:#fff;">
+      <div style="border:1px solid #e2e8f0;border-radius:8px;padding:16px;background:#fff;margin-bottom:16px;">
         <h3 style="margin:0 0 10px;">My engagements</h3>
         <div id="engList"><p style="color:#94a3b8;">Loading…</p></div>
+      </div>
+      <div style="border:1px solid #e2e8f0;border-radius:8px;padding:16px;background:#fff;">
+        <h3 style="margin:0 0 6px;">📚 Finding templates</h3>
+        <p style="margin:0 0 10px;color:#64748b;font-size:.8rem;">Write a finding once, reuse it on any engagement.</p>
+        <div id="tplList" style="margin-bottom:10px;"><p style="color:#94a3b8;">Loading…</p></div>
+        <details>
+          <summary style="cursor:pointer;font-size:.85rem;color:#2563eb;">+ New template</summary>
+          <div style="margin-top:8px;">
+            <input id="tName" placeholder="Library name" style="width:100%;padding:6px;margin-bottom:6px;box-sizing:border-box;">
+            <input id="tTitle" placeholder="Finding title" style="width:100%;padding:6px;margin-bottom:6px;box-sizing:border-box;">
+            <select id="tSev" style="width:100%;padding:6px;margin-bottom:6px;">
+              <option>Critical</option><option>High</option><option selected>Medium</option><option>Low</option><option>Informational</option>
+            </select>
+            <textarea id="tDesc" placeholder="Description" style="width:100%;padding:6px;margin-bottom:6px;box-sizing:border-box;height:50px;"></textarea>
+            <textarea id="tRem" placeholder="Recommended remediation" style="width:100%;padding:6px;margin-bottom:6px;box-sizing:border-box;height:50px;"></textarea>
+            <button onclick="createTemplate()" class="btn" style="background:#2563eb;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;width:100%;">Save template</button>
+          </div>
+        </details>
       </div>
     </div>
 
@@ -124,6 +142,11 @@
         <button onclick="addFindings()" class="btn" style="padding:7px 12px;" ${released?'disabled':''}>Add findings</button>
         ${released ? '' : `<button onclick="releaseEngagement()" class="btn" style="padding:7px 12px;background:#2f6f4f;color:#fff;border:none;border-radius:6px;cursor:pointer;">🏷️ Release to range</button>`}
       </div>
+      ${released ? '' : `<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+        <select id="applyTpl" style="padding:7px;flex:1;"></select>
+        <input id="applyAsset" placeholder="asset (e.g. web-app-01)" style="padding:7px;width:190px;">
+        <button onclick="applyTemplate()" class="btn" style="padding:7px 12px;">📚 Apply template</button>
+      </div>`}
 
       <table style="width:100%;border-collapse:collapse;border:1px solid #eef2f7;">
         <thead style="background:#f8fafc;"><tr>
@@ -151,6 +174,7 @@
     `;
     // if a report already exists for this engagement, load it into the editor
     hydrateReport();
+    populateApplySelect();
     (current.findings || []).forEach(f => loadFindingEvidence(f.id));
   }
 
@@ -252,7 +276,61 @@
   window.acceptProp = async function(id){ try { await api('POST','/api/severity-proposals/'+id+'/accept'); loadAlerts(); if(current) openEngagement(current.engagement.id); } catch(e){ alert('Accept failed'); } };
   window.contestProp = async function(id){ const note = prompt('Why are you contesting? (goes to the Sheriff)'); if(note===null) return; try { await api('POST','/api/severity-proposals/'+id+'/contest',{note}); loadAlerts(); } catch(e){ alert('Contest failed'); } };
 
+  // ---- finding templates ----
+  let templates = [];
+  async function loadTemplates(){
+    try {
+      const d = await api('GET','/api/finding-templates');
+      templates = d.templates || [];
+    } catch(e){ templates = []; }
+    const list = document.getElementById('tplList');
+    if (list){
+      list.innerHTML = templates.length ? templates.map(t=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;border:1px solid #eef2f7;border-radius:6px;padding:6px 8px;margin-bottom:4px;">
+          <span style="font-size:.85rem;">${badge(t.severity||'—', sevColor(t.severity))} ${esc(t.name)}</span>
+          <button onclick="deleteTemplate(${t.id})" title="delete" style="background:none;border:none;color:#b4232c;cursor:pointer;">×</button>
+        </div>`).join('') : '<p style="color:#94a3b8;font-size:.85rem;">None yet.</p>';
+    }
+    populateApplySelect();
+  }
+  function populateApplySelect(){
+    const sel = document.getElementById('applyTpl');
+    if (!sel) return;
+    sel.innerHTML = templates.length
+      ? templates.map(t=>`<option value="${t.id}">${esc(t.name)} [${esc(t.severity||'—')}]</option>`).join('')
+      : '<option value="">(no templates — create one on the left)</option>';
+  }
+  window.createTemplate = async function(){
+    const name = document.getElementById('tName').value.trim();
+    if (!name){ alert('Library name is required'); return; }
+    const body = {
+      name, title: document.getElementById('tTitle').value,
+      severity: document.getElementById('tSev').value,
+      description: document.getElementById('tDesc').value,
+      remediation: document.getElementById('tRem').value
+    };
+    try {
+      await api('POST','/api/finding-templates', body);
+      ['tName','tTitle','tDesc','tRem'].forEach(i=>document.getElementById(i).value='');
+      loadTemplates();
+    } catch(e){ alert('Save failed'); }
+  };
+  window.deleteTemplate = async function(id){ if(!confirm('Delete this template?')) return; try { await api('DELETE','/api/finding-templates/'+id); loadTemplates(); } catch(e){ alert('Delete failed'); } };
+  window.applyTemplate = async function(){
+    if (!current) return;
+    const tid = parseInt(document.getElementById('applyTpl').value,10);
+    const asset = document.getElementById('applyAsset').value.trim();
+    if (!tid){ alert('Pick a template'); return; }
+    if (!asset){ alert('Enter the target asset'); return; }
+    try {
+      await api('POST','/api/engagements/'+current.engagement.id+'/apply-template',{template_id:tid, asset});
+      document.getElementById('applyAsset').value='';
+      openEngagement(current.engagement.id);
+    } catch(err){ alert('Apply failed ('+(err.status||'')+')'); }
+  };
+
   loadEngagements();
+  loadTemplates();
   loadAlerts();
   setInterval(loadAlerts, 20000);
 })();

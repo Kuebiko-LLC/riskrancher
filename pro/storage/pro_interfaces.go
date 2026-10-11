@@ -58,6 +58,14 @@ type ProStoreInterface interface {
 	ListContestedProposals(ctx context.Context) ([]proModels.SeverityProposal, error)
 	EngagementOwnerForProposal(ctx context.Context, proposalID int) (string, error)
 
+	// --- 💎 FINDING TEMPLATES (reusable finding library) ---
+	CreateFindingTemplate(ctx context.Context, t *proModels.FindingTemplate) (int, error)
+	GetFindingTemplate(ctx context.Context, id int) (*proModels.FindingTemplate, error)
+	ListFindingTemplates(ctx context.Context) ([]proModels.FindingTemplate, error)
+	UpdateFindingTemplate(ctx context.Context, t *proModels.FindingTemplate) error
+	DeleteFindingTemplate(ctx context.Context, id int) error
+	CreateFindingFromTemplate(ctx context.Context, templateID, engagementID int, asset, actor string) (int, error)
+
 	// --- 💎 EVIDENCE (screenshots attached to findings) ---
 	AddEvidence(ctx context.Context, ev *proModels.Evidence, web, thumb []byte) (int, error)
 	ListEvidenceForTicket(ctx context.Context, ticketID int) ([]proModels.Evidence, error)

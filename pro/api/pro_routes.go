@@ -263,6 +263,14 @@ func RegisterProRoutes(app *core.App, licenseManager *license.Manager) {
 	app.Router.Handle("POST /api/engagements/{id}/findings", bountyHunter(proAdminH.HandleAddEngagementFindings))
 	app.Router.Handle("POST /api/engagements/{id}/release", bountyHunter(proAdminH.HandleReleaseEngagement))
 
+	// Finding templates (reusable library)
+	app.Router.Handle("GET /api/finding-templates", bountyHunter(proAdminH.HandleListTemplates))
+	app.Router.Handle("POST /api/finding-templates", bountyHunter(proAdminH.HandleCreateTemplate))
+	app.Router.Handle("GET /api/finding-templates/{id}", bountyHunter(proAdminH.HandleGetTemplate))
+	app.Router.Handle("PUT /api/finding-templates/{id}", bountyHunter(proAdminH.HandleUpdateTemplate))
+	app.Router.Handle("DELETE /api/finding-templates/{id}", bountyHunter(proAdminH.HandleDeleteTemplate))
+	app.Router.Handle("POST /api/engagements/{id}/apply-template", bountyHunter(proAdminH.HandleApplyTemplate))
+
 	// Evidence (screenshots on findings)
 	app.Router.Handle("POST /api/findings/{id}/evidence", bountyHunter(proAdminH.HandleUploadEvidence))
 	app.Router.Handle("GET /api/findings/{id}/evidence", bountyHunter(proAdminH.HandleListEvidence))

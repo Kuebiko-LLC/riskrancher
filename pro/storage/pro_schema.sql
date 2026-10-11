@@ -163,6 +163,22 @@ CREATE TABLE IF NOT EXISTS asset_edges (
     );
 
 -- ==========================================
+-- 5a0. FINDING TEMPLATES (reusable finding blueprints)
+-- ==========================================
+CREATE TABLE IF NOT EXISTS finding_templates (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    name        TEXT NOT NULL,
+    title       TEXT,
+    severity    TEXT,
+    description TEXT,
+    remediation TEXT,
+    tags        TEXT,
+    created_by  TEXT,
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ==========================================
 -- 5a. ENGAGEMENTS (a pentest, owned by a Bounty Hunter)
 -- ==========================================
 CREATE TABLE IF NOT EXISTS engagements (

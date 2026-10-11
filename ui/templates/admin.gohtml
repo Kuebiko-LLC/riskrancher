@@ -1,0 +1,31 @@
+{{define "content"}}
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+            <h1 style="margin: 0; color: #0f172a;">The Sheriff's Office</h1>
+            <p style="color: #64748b; margin-top: 5px;">Strategic Command, Personnel, & Operations</p>
+        </div>
+    </div>
+
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('tab-metrics', this)">📊 Metrics</button>
+        <button class="tab-btn" onclick="switchTab('tab-performance', this)">📡 Performance</button>
+        {{ block "pro_risk_tab_btn" .}}
+        <button class="tab-btn" style="color: #94a3b8; cursor: not-allowed;" title="Available in RiskRancher Pro">
+            🔒 Risk Reviews (Pro)
+        </button>
+        {{ end }}
+        <button class="tab-btn" onclick="switchTab('tab-config', this)">⚙️ Configuration</button>
+        <button class="tab-btn" onclick="switchTab('tab-feed', this)">📻 System Logs</button>
+    </div>
+
+    {{template "admin_metrics" .}}
+    {{template "admin_performance" .}}
+    {{block "pro_risk_tab_content" .}}{{end}}
+    {{template "admin_config" .}}
+    {{template "admin_feed" .}}
+    {{template "admin_modals" .}}
+
+    <script src="/static/admin.js"></script>
+
+{{end}}

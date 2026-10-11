@@ -1,0 +1,56 @@
+{{define "content"}}
+
+    <div class="navbar-strategic" style="margin: -20px -20px 20px -20px; border-radius: 8px 8px 0 0;">
+        <div style="font-size: 1.2rem; font-weight: bold; letter-spacing: 1px;">RISK RANCHER</div>
+        <div>
+            <a href="/dashboard">The Corral (Tactical)</a>
+            <a href="/assets" style="color: white; border-bottom: 2px solid #3b82f6; padding-bottom: 5px;">Sheriff's Office (Strategic)</a>
+        </div>
+    </div>
+
+    <div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
+            <div>
+                <h1 style="margin: 0; color: #0f172a;">Asset Risk Rollup</h1>
+                <p style="margin: 5px 0 0 0; color: #64748b;">Tracking {{.TotalCount}} vulnerable assets across the ranch.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <table>
+                <thead>
+                <tr>
+                    <th>Asset Identifier</th>
+                    <th style="text-align: center;">Total Active</th>
+                    <th style="text-align: center;">Critical</th>
+                    <th style="text-align: center;">High</th>
+                    <th style="text-align: center;">Medium</th>
+                    <th style="text-align: center;">Low</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{range .Assets}}
+                    <tr>
+                        <td>
+                            <a href="/dashboard?asset={{.AssetIdentifier}}" style="font-family: monospace; font-size: 1.05rem; color: #2563eb; text-decoration: none; font-weight: bold;">
+                                {{.AssetIdentifier}}
+                            </a>
+                        </td>
+                        <td style="text-align: center; font-weight: bold; color: #475569;">{{.TotalActive}}</td>
+                        <td style="text-align: center;"><span class="count-badge {{if gt .Critical 0}}bg-critical{{else}}bg-zero{{end}}">{{.Critical}}</span></td>
+                        <td style="text-align: center;"><span class="count-badge {{if gt .High 0}}bg-high{{else}}bg-zero{{end}}">{{.High}}</span></td>
+                        <td style="text-align: center;"><span class="count-badge {{if gt .Medium 0}}bg-medium{{else}}bg-zero{{end}}">{{.Medium}}</span></td>
+                        <td style="text-align: center;"><span class="count-badge {{if gt .Low 0}}bg-low{{else}}bg-zero{{end}}">{{.Low}}</span></td>
+                    </tr>
+                {{else}}
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: #64748b;">
+                            No vulnerable assets found. The ranch is secure!
+                        </td>
+                    </tr>
+                {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{{end}}

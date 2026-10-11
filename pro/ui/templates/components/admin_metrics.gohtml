@@ -1,0 +1,80 @@
+{{define "admin_metrics"}}
+<div id="tab-metrics" class="tab-pane active">
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+        <a href="/dashboard?filter=critical" class="kpi-card" style="text-align: center; border-top: 4px solid #dc2626;">
+            <h4 style="margin: 0; color: #64748b; font-size: 0.85rem; text-transform: uppercase;">Active CISA KEVs</h4>
+            <p style="font-size: 2rem; margin: 10px 0 0 0; font-weight: bold; color: {{if gt .Analytics.ActiveKEVs 0}}#dc2626{{else}}#10b981{{end}};">{{.Analytics.ActiveKEVs}}</p>
+        </a>
+        <a href="/dashboard?filter=critical" class="kpi-card" style="text-align: center; border-top: 4px solid #ea580c;">
+            <h4 style="margin: 0; color: #64748b; font-size: 0.85rem; text-transform: uppercase;">Open Criticals</h4>
+            <p style="font-size: 2rem; margin: 10px 0 0 0; font-weight: bold; color: #ea580c;">{{.Analytics.OpenCriticals}}</p>
+        </a>
+        <a href="/dashboard?filter=overdue" class="kpi-card" style="text-align: center; border-top: 4px solid #eab308;">
+            <h4 style="margin: 0; color: #64748b; font-size: 0.85rem; text-transform: uppercase;">SLA Breaches</h4>
+            <p style="font-size: 2rem; margin: 10px 0 0 0; font-weight: bold; color: #eab308;">{{.Analytics.TotalOverdue}}</p>
+        </a>
+        <div class="kpi-card" style="text-align: center; border-top: 4px solid #3b82f6; cursor: default;">
+            <h4 style="margin: 0; color: #64748b; font-size: 0.85rem; text-transform: uppercase;">Global MTTR (Days)</h4>
+            <p style="font-size: 2rem; margin: 10px 0 0 0; font-weight: bold; color: #3b82f6;">{{.Analytics.GlobalMTTRDays}}</p>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 20px;">
+        <div class="card" style="display: flex; flex-direction: column; justify-content: center; background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <h3 style="margin: 0 0 15px 0;">🔴 Open Risk Profile ({{.Analytics.Severity.Total}})</h3>
+            <div style="display: flex; height: 24px; border-radius: 12px; overflow: hidden; margin-bottom: 20px; background: #f1f5f9;">
+                {{if gt .Analytics.Severity.Total 0}}
+                <div style="width: {{.Analytics.Severity.CritPct}}%; background: #dc2626;" title="Critical: {{.Analytics.Severity.Critical}}"></div>
+                <div style="width: {{.Analytics.Severity.HighPct}}%; background: #ea580c;" title="High: {{.Analytics.Severity.High}}"></div>
+                <div style="width: {{.Analytics.Severity.MedPct}}%; background: #eab308;" title="Medium: {{.Analytics.Severity.Medium}}"></div>
+                <div style="width: {{.Analytics.Severity.LowPct}}%; background: #3b82f6;" title="Low: {{.Analytics.Severity.Low}}"></div>
+                <div style="width: {{.Analytics.Severity.InfoPct}}%; background: #94a3b8;" title="Info: {{.Analytics.Severity.Info}}"></div>
+                {{else}}
+                <div style="width: 100%; text-align: center; color: #94a3b8; font-size: 0.8rem; line-height: 24px;">No Open Findings</div>
+                {{end}}
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; text-align: center;">
+                <div style="color: #dc2626; flex: 1;">Crit<br><span style="font-size: 1.1rem;">{{.Analytics.Severity.Critical}}</span></div>
+                <div style="color: #ea580c; flex: 1;">High<br><span style="font-size: 1.1rem;">{{.Analytics.Severity.High}}</span></div>
+                <div style="color: #eab308; flex: 1;">Med<br><span style="font-size: 1.1rem;">{{.Analytics.Severity.Medium}}</span></div>
+                <div style="color: #3b82f6; flex: 1;">Low<br><span style="font-size: 1.1rem;">{{.Analytics.Severity.Low}}</span></div>
+            </div>
+        </div>
+
+        <div class="card" style="display: flex; flex-direction: column; justify-content: center; background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <h3 style="margin: 0 0 15px 0;">🟢 Resolution Profile (Closed) ({{.Analytics.Resolution.Total}})</h3>
+            <div style="display: flex; height: 24px; border-radius: 12px; overflow: hidden; margin-bottom: 20px; background: #f1f5f9;">
+                {{if gt .Analytics.Resolution.Total 0}}
+                <div style="width: {{.Analytics.Resolution.PatchedPct}}%; background: #10b981;" title="Patched: {{.Analytics.Resolution.Patched}}"></div>
+                <div style="width: {{.Analytics.Resolution.RiskAccPct}}%; background: #8b5cf6;" title="Risk Accepted: {{.Analytics.Resolution.RiskAccepted}}"></div>
+                <div style="width: {{.Analytics.Resolution.FalsePosPct}}%; background: #64748b;" title="False Positive: {{.Analytics.Resolution.FalsePositive}}"></div>
+                {{else}}
+                <div style="width: 100%; text-align: center; color: #94a3b8; font-size: 0.8rem; line-height: 24px;">No Closed Findings</div>
+                {{end}}
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; text-align: center;">
+                <div style="color: #10b981; flex: 1;">Patched<br><span style="font-size: 1.1rem;">{{.Analytics.Resolution.Patched}}</span></div>
+                <div style="color: #8b5cf6; flex: 1;">Accepted<br><span style="font-size: 1.1rem;">{{.Analytics.Resolution.RiskAccepted}}</span></div>
+                <div style="color: #64748b; flex: 1;">False Pos<br><span style="font-size: 1.1rem;">{{.Analytics.Resolution.FalsePositive}}</span></div>
+            </div>
+        </div>
+
+        <div class="card" style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <h3 style="margin: 0 0 15px 0;">🎯 Top Vulnerable Assets</h3>
+            {{range .Analytics.TopAssets}}
+            <a href="/dashboard?asset={{.Asset}}" style="display: block; text-decoration: none; color: inherit; margin-bottom: 12px; padding: 4px; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px;">
+                    <span style="font-family: monospace; font-weight: bold; color: #3b82f6;">{{.Asset}}</span>
+                    <span style="color: #64748b; font-weight: bold;">{{.Count}} Findings</span>
+                </div>
+                <div style="background: #e2e8f0; height: 8px; border-radius: 4px; overflow: hidden;">
+                    <div style="width: {{.Percentage}}%; background: #0f172a; height: 100%; border-radius: 4px;"></div>
+                </div>
+            </a>
+            {{else}}
+            <p style="color: #94a3b8; text-align: center; font-size: 0.9rem; padding: 20px;">No vulnerable assets found.</p>
+            {{end}}
+        </div>
+    </div>
+</div>
+{{end}}

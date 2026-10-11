@@ -1,0 +1,22 @@
+# Build output
+/rr
+/rrpro
+*.exe
+
+# Local database + runtime state
+/data/
+*.db
+*.db-wal
+*.db-shm
+
+# Uploaded reports / backups
+/uploads/
+/backups/
+
+# OS / editor
+.DS_Store
+.idea/
+*.swp
+
+# Synced-Desktop conflict copies
+* [0-9].go

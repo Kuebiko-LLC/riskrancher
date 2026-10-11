@@ -1,0 +1,25 @@
+{{define "admin_modals"}}
+    <div id="userModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="width: 400px;">
+            <h3>Add New Personnel</h3>
+            <label>Full Name:</label>
+            <input type="text" id="newUserName" style="width: 100%; padding: 8px; margin-bottom: 15px;" placeholder="e.g. Alice Cloud">
+            <label>Email Address:</label>
+            <input type="email" id="newUserEmail" style="width: 100%; padding: 8px; margin-bottom: 15px;" placeholder="alice@ranch.com">
+            <label>Temporary Password:</label>
+            <input type="password" id="newUserPassword" style="width: 100%; padding: 8px; margin-bottom: 15px;" placeholder="••••••••">
+            <label>Global Role:</label>
+            <select id="newUserRole" style="width: 100%; padding: 8px; margin-bottom: 20px;">
+                <option value="RangeHand">RangeHand (Analyst)</option>
+                <option value="Wrangler">Wrangler (IT / Submitter)</option>
+                <option value="Magistrate">Magistrate (Risk Approver)</option>
+                <option value="Sheriff">Sheriff (Global Admin)</option>
+            </select>
+            <div class="modal-actions">
+                <button id="cancelUser" class="btn btn-secondary">Cancel</button>
+                <button id="submitUser" class="btn">Create User</button>
+            </div>
+        </div>
+    </div>
+
+{{end}}

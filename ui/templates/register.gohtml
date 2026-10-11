@@ -1,0 +1,42 @@
+{{define "register"}}
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>RiskRancher - System Initialization</title>
+        <link rel="stylesheet" href="/static/style.css">
+        <style>body { display: flex; align-items: center; justify-content: center; height: 100vh; background-color: #0f172a; color: white; margin: 0; }</style>
+    </head>
+    <body>
+    <div class="auth-card dark">
+        <h2 style="margin-top: 0; color: #10b981;">🛡️ Initialize System</h2>
+        <p style="color: #94a3b8; margin-bottom: 25px; font-size: 0.9rem;">
+            Welcome to RiskRancher. The first user to register will automatically be granted the <strong>Sheriff (Global Admin)</strong> role.
+        </p>
+
+        <div id="errorMsg" class="error dark"></div>
+
+        <form id="registerForm">
+            <div style="text-align: left;">
+                <label style="font-weight: 600; font-size: 0.9rem; color: #cbd5e1;">Full Name</label>
+                <input type="text" id="fullname" required placeholder="Wyatt Earp">
+
+                <label style="font-weight: 600; font-size: 0.9rem; color: #cbd5e1;">Email Address</label>
+                <input type="email" id="email" required placeholder="admin@ranch.com">
+
+                <label style="font-weight: 600; font-size: 0.9rem; color: #cbd5e1;">Secure Password</label>
+                <input type="password" id="password" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn" id="submitBtn" style="background-color: #10b981;">Claim Sheriff Access</button>
+        </form>
+
+        <div style="margin-top: 20px; font-size: 0.85rem; color: #64748b;">
+            System already initialized? <a href="/login" style="color: #3b82f6;">Login here</a>
+        </div>
+    </div>
+
+    <script src="/static/auth.js"></script>
+
+    </body>
+    </html>
+{{end}}

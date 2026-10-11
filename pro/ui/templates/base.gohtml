@@ -1,0 +1,38 @@
+{{define "base"}}
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>RiskRancher | {{getCompanyName}}</title>
+        <link rel="stylesheet" href="/static/style.css">
+    </head>
+    <body>
+    <header style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: white; border-bottom: 1px solid #e2e8f0;">
+        <div class="logo">
+            <h2 style="margin: 0; color: #0f172a;">
+                🐴 RiskRancher <span style="color: #cbd5e1; font-weight: normal; margin: 0 5px;">|</span> <span style="color: #2563eb;">{{getCompanyName}}</span>
+            </h2>
+            <span style="color: #64748b; font-size: 0.85rem; font-weight: bold;">Tactical Operations</span>
+        </div>
+        <nav style="display: flex; align-items: center; gap: 15px;">
+        <span style="background: #1e293b; color: #fbbf24; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; font-family: monospace; letter-spacing: 0.5px; border: 1px solid #334155; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            PRO EDITION
+        </span>
+            <button onclick="logout()" style="background: #f1f5f9; color: #dc2626; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.85rem; transition: all 0.2s;">Log Out</button>
+        </nav>
+    </header>
+    <script>
+        async function logout() {
+            try {
+                await fetch('/api/auth/logout', { method: 'POST' });
+                window.location.href = '/login';
+            } catch (e) { alert("Failed to log out."); }
+        }
+    </script>
+
+    <main class="container">
+        {{template "content" .}}
+    </main>
+    </body>
+    </html>
+{{end}}

@@ -1,0 +1,33 @@
+{{define "admin_feed"}}
+    <div id="tab-feed" class="tab-pane">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+                <h3 style="margin: 0;">📻 System Logs</h3>
+                <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Real-time tamper-evident system audit log.</p>
+            </div>
+            <div>
+                <select id="logFilter" style="padding: 8px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 0.9rem;">
+                    <option value="All">All Activity</option>
+                    <option value="status_change">Status Changes</option>
+                    <option value="risk_request">Risk Requests</option>
+                    <option value="magistrate_review">Magistrate Reviews</option>
+                    <option value="assigned_to">Assignments</option>
+                    <option value="comment">Comments</option>
+                    <option value="read_receipt">Read Receipts</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="logContainer" style="min-height: 400px; padding-right: 5px; font-size: 0.95rem;">
+            <div style="text-align: center; color: #94a3b8; padding: 40px;">Loading logs...</div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+            <span id="logPageInfo" style="font-size: 0.85rem; color: #64748b;">Showing 0 of 0</span>
+            <div>
+                <button id="logPrevBtn" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;" disabled>Previous</button>
+                <button id="logNextBtn" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;" disabled>Next</button>
+            </div>
+        </div>
+    </div>
+{{end}}

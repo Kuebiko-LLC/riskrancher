@@ -1,0 +1,21 @@
+{{define "dash_tabs"}}
+    <div class="tab-nav">
+        <a href="/dashboard?tab=holding_pen" class="tab-btn {{if eq .CurrentTab "holding_pen"}}active{{end}}">
+            📩 Holding Pen
+            {{if gt .ReturnedCount 0}}
+                <span class="notification-bubble">{{.ReturnedCount}}</span>
+            {{end}}
+        </a>
+        <a href="/dashboard?tab=chute" class="tab-btn {{if eq .CurrentTab "chute"}}active{{end}}">🤠 The Chute (Assigned)</a>
+
+        {{block "pro_verification_tab" .}}
+            <a href="javascript:void(0)" onclick="showUpsell('E2E Exception & Verification Pipeline')" class="tab-btn" style="color: #94a3b8;">
+                🔒 Pending Verification (Pro)
+            </a>
+        {{end}}
+
+        <a href="/dashboard?tab=archives" class="tab-btn {{if eq .CurrentTab "archives"}}active{{end}}">
+            🗄️ The Archives
+        </a>
+    </div>
+{{end}}

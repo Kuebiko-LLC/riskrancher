@@ -1,0 +1,74 @@
+{{define "wrangler.gohtml"}}
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>RiskRancher - Security Team Inbox</title>
+        <link rel="stylesheet" href="/static/style.css">
+        <style>
+            body { padding: 40px 20px; background: #f8fafc; margin: 0; font-family: sans-serif; }
+            .asset-header-row:hover { background: #f1f5f9; }
+            .badge.critical { background: #fee2e2; color: #991b1b; }
+            .badge.high { background: #ffedd5; color: #9a3412; }
+        </style>
+    </head>
+    <body>
+
+    <div class="container" style="max-width: 1100px; margin: 0 auto;">
+        <div style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <h1 style="margin: 0; color: #0f172a;">🤠 Wrangler Inbox: <span id="assigneeName" style="color: #2563eb;">Loading...</span></h1>
+                <p style="color: #64748b; margin-top: 5px;">Unfold assets to review findings. Submit fixes or return findings to the Security Team.</p>
+            </div>
+            <button id="rejectBtn" class="btn btn-secondary" style="color: #dc2626; border-color: #fca5a5; background: #fff1f2; font-weight: bold;">
+                🔄 Not My Asset / Return to Security
+            </button>
+        </div>
+
+        <div class="tab-pane active" style="padding: 0; overflow: hidden; border-radius: 8px; border: 1px solid #cbd5e1; background: white;">
+            <table style="margin: 0; width: 100%; border-collapse: collapse;">
+                <tbody id="ticketList">
+                </tbody>
+            </table>
+
+            <div style="padding: 25px; background: #f8fafc; border-top: 1px solid #e2e8f0;">
+                <label style="display: block; font-weight: bold; margin-bottom: 10px; color: #1e293b;">Submission Evidence (Required for Fixes)</label>
+                <textarea id="evidenceText" rows="3" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;" placeholder="Paste Pull Request links, commit hashes, or deployment notes..."></textarea>
+
+                <div style="display: flex; gap: 12px; margin-top: 15px;">
+                    <button id="submitBtn" class="btn" style="background: #2563eb; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">Submit Fix for Selected</button>
+                    <button id="openRiskModalBtn" class="btn btn-secondary" style="color: #ea580c; border-color: #fdba74; background: #fffbeb;">⚖️ Request Exception</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="rejectModal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+        <div class="modal-content" style="background: white; padding: 30px; border-radius: 8px; width: 450px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+            <h3 style="color: #dc2626; margin-top: 0;">🔄 Return to Security Team</h3>
+            <p style="color: #64748b; font-size: 0.85rem; margin-bottom: 20px;">Move selected findings back to the Holding Pen.</p>
+
+            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Reason for Return:</label>
+            <select id="rejectReason" style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                <option value="WRONG_OWNER">Not My Asset / Wrong Owner</option>
+                <option value="ASSET_RETIRED">Asset Retired / Decommissioned</option>
+                <option value="DUPLICATE">Duplicate Finding</option>
+                <option value="OTHER">Other (Specify below)</option>
+            </select>
+
+            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Additional Context (Mandatory):</label>
+            <textarea id="rejectComment" rows="4" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" placeholder="Please explain why..."></textarea>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="document.getElementById('rejectModal').style.display='none'">Cancel</button>
+                <button id="confirmRejectBtn" class="btn" style="background: #dc2626; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Confirm & Return</button>
+            </div>
+        </div>
+    </div>
+
+    {{template "dash_modals" .}}
+
+    <script src="/static/pro/static/magic.js"></script>
+    </body>
+    </html>
+{{end}}

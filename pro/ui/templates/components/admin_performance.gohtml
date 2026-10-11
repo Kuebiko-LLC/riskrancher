@@ -1,0 +1,114 @@
+{{define "admin_performance"}}
+<div id="tab-performance" class="tab-pane">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+            <h3 style="margin: 0;">📡 Integration Performance</h3>
+            <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Diagnostic breakdown of global KPIs, bottlenecks, and SLA tracking by scanner source.</p>
+        </div>
+    </div>
+
+    <table style="font-size: 0.9rem; width: 100%; text-align: left; border-collapse: collapse;">
+        <thead>
+        <tr style="border-bottom: 2px solid #e2e8f0;">
+            <th style="padding-bottom: 12px; width: 15%;">Integration</th>
+            <th style="padding-bottom: 12px; text-align: center; width: 20%;">🔥 High Risk Drivers<br><span style="font-size: 0.75rem; color: #94a3b8; font-weight: normal;">(Ties to KPI Metrics)</span></th>
+            <th style="padding-bottom: 12px; text-align: center; width: 15%;">🕒 Analyst Backlog<br><span style="font-size: 0.75rem; color: #94a3b8; font-weight: normal;">(Triage Phase)</span></th>
+            <th style="padding-bottom: 12px; text-align: center; width: 15%;">⏳ IT Bottlenecks<br><span style="font-size: 0.75rem; color: #94a3b8; font-weight: normal;">(Patch Phase)</span></th>
+            <th style="padding-bottom: 12px; text-align: center; width: 15%;">🛡️ Resolution Hygiene<br><span style="font-size: 0.75rem; color: #94a3b8; font-weight: normal;">(Closed Profile)</span></th>
+            <th style="padding-bottom: 12px; width: 20%;">Strategic Insight</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{range .Analytics.SourceHealth}}
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 16px 0;">
+                <strong style="font-size: 1rem; color: #0f172a;">{{.Source}}</strong><br>
+                <span style="font-size: 0.8rem; color: #64748b;">{{.TotalOpen}} Total Open</span>
+            </td>
+
+            <td style="text-align: center;">
+                <div style="display: flex; gap: 8px; justify-content: center;">
+                    {{if gt .Criticals 0}}<span title="Open Criticals" style="background: #fff7ed; color: #ea580c; border: 1px solid #fdba74; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem;">{{.Criticals}} CRIT</span>{{end}}
+                    {{if gt .CisaKEVs 0}}<span title="Active CISA KEVs" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem;">{{.CisaKEVs}} KEV</span>{{end}}
+                    {{if and (eq .Criticals 0) (eq .CisaKEVs 0)}}<span style="color: #94a3b8; font-size: 0.85rem;">-</span>{{end}}
+                </div>
+            </td>
+
+            <td style="text-align: center;">
+                {{if gt .Untriaged 0}}
+                <span style="background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 0.8rem;">{{.Untriaged}} Pending</span>
+                {{else}}
+                <span style="color: #10b981; font-size: 0.85rem; font-weight: bold;">✓ Clear</span>
+                {{end}}
+            </td>
+
+            <td style="text-align: center;">
+                {{if gt .PatchOverdue 0}}
+                <span style="background: #fee2e2; color: #dc2626; padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 0.8rem; box-shadow: 0 0 5px rgba(220, 38, 38, 0.3);">{{.PatchOverdue}} Overdue</span>
+                {{else if gt .PendingRisk 0}}
+                <span style="background: #f3e8ff; color: #7e22ce; padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 0.8rem;" title="Waiting on Risk Reviews Tab">{{.PendingRisk}} Excepted</span>
+                {{else}}
+                <span style="color: #10b981; font-size: 0.85rem; font-weight: bold;">✓ Met</span>
+                {{end}}
+            </td>
+
+            <td style="text-align: center;">
+                <div style="font-size: 0.8rem; font-weight: bold; color: #0f172a; margin-bottom: 4px;">{{.TotalClosed}} Closed</div>
+                <div style="display: flex; gap: 6px; justify-content: center; font-size: 0.75rem;">
+                    {{if gt .Patched 0}}<span style="color: #10b981;" title="Patched">✓ {{.Patched}}</span>{{end}}
+                    {{if gt .RiskAccepted 0}}<span style="color: #8b5cf6;" title="Risk Accepted">⚖️ {{.RiskAccepted}}</span>{{end}}
+                    {{if gt .FalsePositive 0}}<span style="color: #64748b;" title="False Positive">🚫 {{.FalsePositive}}</span>{{end}}
+                    {{if eq .TotalClosed 0}}<span style="color: #94a3b8;">-</span>{{end}}
+                </div>
+            </td>
+
+            <td>
+                <div style="font-weight: bold; color: {{if or (eq .StrategicNote "✅ Routine Processing") (eq .StrategicNote "✅ Healthy Resolution Velocity")}}#10b981{{else}}#0f172a{{end}}; font-size: 0.85rem;">{{.StrategicNote}}</div>
+<div style="font-family: monospace; font-size: 0.75rem; color: #64748b; margin-top: 4px;">Lead: {{.TopAssignee}}</div>
+</td>
+</tr>
+{{else}}
+<tr><td colspan="6" style="text-align: center; padding: 40px; color: #94a3b8;">No active sources found.</td></tr>
+{{end}}
+</tbody>
+</table>
+
+<div style="margin-top: 40px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+    <div>
+        <h3 style="margin: 0;">🔌 Recent Sync History</h3>
+        <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Operational ledger of all API pushes, webhooks, and CSV uploads.</p>
+    </div>
+</div>
+
+<table style="font-size: 0.85rem; width: 100%; text-align: left; border-collapse: collapse; background: white; border: 1px solid #e2e8f0; border-radius: 8px;">
+    <thead>
+    <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+        <th style="padding: 10px 15px;">Timestamp</th>
+        <th style="padding: 10px 15px;">Source</th>
+        <th style="padding: 10px 15px; text-align: center;">Status</th>
+        <th style="padding: 10px 15px; text-align: center;">Records Processed</th>
+        <th style="padding: 10px 15px;">Diagnostics</th>
+    </tr>
+    </thead>
+    <tbody>
+    {{range .SyncLogs}}
+    <tr style="border-bottom: 1px solid #f1f5f9;">
+        <td style="padding: 10px 15px; color: #64748b; font-family: monospace;">{{.CreatedAt}}</td>
+        <td style="padding: 10px 15px; font-weight: bold; color: #0f172a;">{{.Source}}</td>
+        <td style="padding: 10px 15px; text-align: center;">
+            {{if eq .Status "Success"}}
+            <span style="background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 12px; font-weight: bold;">✓ Success</span>
+            {{else}}
+            <span style="background: #fee2e2; color: #dc2626; padding: 2px 8px; border-radius: 12px; font-weight: bold;">✗ Failed</span>
+            {{end}}
+        </td>
+        <td style="padding: 10px 15px; text-align: center; font-weight: bold; color: #475569;">{{.RecordsProcessed}}</td>
+        <td style="padding: 10px 15px; color: #dc2626; font-family: monospace; font-size: 0.8rem;">{{.ErrorMessage}}</td>
+    </tr>
+    {{else}}
+    <tr><td colspan="5" style="text-align: center; padding: 20px; color: #94a3b8;">No syncs recorded yet.</td></tr>
+    {{end}}
+    </tbody>
+</table>
+</div>
+{{end}}

@@ -1,0 +1,63 @@
+{{define "content"}}
+    <div style="max-width: 600px; margin: 80px auto; text-align: center; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #e2e8f0;">
+        <h1 style="color: #0f172a; margin-bottom: 10px; font-size: 28px;">💎 Activate RiskRancher Pro</h1>
+        <p style="color: #64748b; margin-bottom: 30px;">Enter your offline enterprise license key to unlock this instance.</p>
+
+        <form id="activationForm" onsubmit="activateLicense(event)">
+            <textarea id="licenseKey" rows="6" style="width: 100%; padding: 15px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: monospace; font-size: 14px; margin-bottom: 20px;" placeholder="Paste your ey... token here"></textarea>
+
+            <button type="submit" id="submitBtn" style="width: 100%; background: #2563eb; color: white; border: none; padding: 14px; border-radius: 6px; font-weight: bold; font-size: 16px; cursor: pointer; transition: background 0.2s;">
+                Verify & Activate
+            </button>
+        </form>
+
+        <div id="errorMsg" style="color: #dc2626; background: #fee2e2; border: 1px solid #f87171; padding: 12px; border-radius: 6px; margin-top: 20px; display: none; font-weight: bold;"></div>
+    </div>
+
+    <script>
+        async function activateLicense(e) {
+            e.preventDefault();
+            const key = document.getElementById('licenseKey').value;
+            const errDiv = document.getElementById('errorMsg');
+            const btn = document.getElementById('submitBtn');
+
+            // UI Loading State
+            btn.innerText = "Verifying Cryptography...";
+            btn.style.background = "#94a3b8";
+            btn.disabled = true;
+            errDiv.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/pro/activate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ license_key: key })
+                });
+
+                if (res.ok) {
+                    // Success! Green button and redirect
+                    btn.innerText = "Activated! Redirecting...";
+                    btn.style.background = "#16a34a";
+                    setTimeout(() => { window.location.href = '/login'; }, 1000);
+                } else {
+                    // Cryptography failed or key expired
+                    const data = await res.json();
+                    errDiv.innerText = "Error: " + (data.error || "Invalid License Key");
+                    errDiv.style.display = 'block';
+
+                    // Reset button
+                    btn.innerText = "Verify & Activate";
+                    btn.style.background = "#2563eb";
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                // Network error (e.g., server offline)
+                errDiv.innerText = "Network Error. Please try again.";
+                errDiv.style.display = 'block';
+                btn.innerText = "Verify & Activate";
+                btn.style.background = "#2563eb";
+                btn.disabled = false;
+            }
+        }
+    </script>
+{{end}}

@@ -1,0 +1,17 @@
+{{define "content"}}
+
+    <script>
+        window.CurrentTab = "{{.CurrentTab}}";
+    </script>
+
+    {{template "dash_tabs" .}}
+
+    <div class="tab-pane active">
+        {{template "dash_table" .}}
+    </div>
+
+    {{template "dash_modals" .}}
+
+    <script src="/static/pro/static/dashboard.js"></script>
+
+{{end}}

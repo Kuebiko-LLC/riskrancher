@@ -1,0 +1,32 @@
+{{define "content"}}
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+            <h1 style="margin: 0; color: #0f172a;">The Sheriff's Office</h1>
+            <p style="color: #64748b; margin-top: 5px;">Strategic Command, Personnel, & Operations</p>
+        </div>
+    </div>
+
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('tab-metrics', this)">📊 Metrics</button>
+        <button class="tab-btn" onclick="switchTab('tab-performance', this)">📡 Performance</button>
+        <button id="tabBtnReviews" class="tab-btn" onclick="switchTab('tab-reviews', this)">
+            ⚖️ Risk Reviews
+            {{if gt .PendingRiskCount 0}}
+                <span style="background: #ef4444; color: white; border-radius: 12px; padding: 2px 7px; font-size: 0.7rem; font-weight: bold; margin-left: 5px; box-shadow: 0 0 8px rgba(239, 68, 68, 0.6); animation: pulse 2s infinite;">{{.PendingRiskCount}}</span>
+            {{end}}
+        </button>
+        <button class="tab-btn" onclick="switchTab('tab-config', this)">⚙️ Configuration</button>
+        <button class="tab-btn" onclick="switchTab('tab-feed', this)">📻 System Logs</button>
+    </div>
+
+    {{template "admin_metrics" .}}
+    {{template "admin_performance" .}}
+    {{template "admin_reviews" .}}
+    {{template "admin_config" .}}
+    {{template "admin_feed" .}}
+    {{template "admin_modals" .}}
+
+    <script src="/static/pro/static/admin.js"></script>
+
+{{end}}

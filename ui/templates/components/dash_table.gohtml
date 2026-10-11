@@ -1,0 +1,108 @@
+{{define "dash_table"}}
+    <div class="unified-card">
+        <div class="toolbar">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <h3 style="margin: 0; color: #0f172a;">Asset Triage Queue</h3>
+            </div>
+
+            {{if eq .CurrentTab "archives"}}
+                <select id="statusFilter" class="filter-dropdown" onchange="window.location.href='/dashboard?tab=archives&filter=' + this.value">
+                    <option value="all" {{if eq .CurrentFilter "all"}}selected{{end}}>All Archived</option>
+                    <option value="Patched" {{if eq .CurrentFilter "Patched"}}selected{{end}}>✅ Patched</option>
+                    <option value="False Positive" {{if eq .CurrentFilter "False Positive"}}selected{{end}}>👻 False Positives</option>
+                </select>
+            {{end}}
+
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" style="background: #10b981; color: white; border: none; padding: 6px 14px; font-size: 0.85rem; font-weight: bold; cursor: pointer;" onclick="openNewTicketModal()">+ New Finding</button>
+                <a href="/ingest" class="btn" style="background: #2563eb; color: white; text-decoration: none; padding: 6px 14px; font-size: 0.85rem; display: flex; align-items: center;">📥 Import Data</a>
+                <button class="btn" style="font-size: 0.85rem; padding: 6px 14px; background: #f8fafc; color: #64748b; border: 1px solid #cbd5e1;" onclick="showUpsell('Analyst God-Mode (Bulk Actions)')">🔒 Bulk Actions</button>
+            </div>
+        </div>
+
+        {{if .CurrentAsset}}
+            <div style="background: #eff6ff; border-bottom: 1px solid #bfdbfe; color: #1e3a8a; padding: 10px 20px; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center;">
+                <div><strong>Asset Filter Active:</strong> Showing tickets for <code style="background: white; padding: 2px 6px; border-radius: 4px;">{{.CurrentAsset}}</code></div>
+                <a href="/dashboard?tab={{.CurrentTab}}" style="background: #2563eb; color: white; padding: 4px 10px; border-radius: 4px; text-decoration: none; font-size: 0.8rem;">Clear Filter</a>
+            </div>
+        {{end}}
+
+        <table style="width: 100%; border-collapse: collapse; text-align: left; margin: 0;">
+            <thead id="mainTableHeader" style="display: none;">
+            <tr style="border-bottom: 2px solid #e2e8f0;">
+                <th style="width: 40px; padding: 12px 20px;"><input type="checkbox" id="selectAll"></th>
+                <th style="padding: 12px;">Severity</th>
+                <th style="padding: 12px;">Source</th>
+                <th style="padding: 12px;">Finding</th>
+                <th style="padding: 12px;">IT Assignee</th>
+                <th style="padding: 12px;">{{if eq .CurrentTab "holding_pen"}}⏳ Time to Triage{{else}}SLA Status{{end}}</th>
+                {{if ne .CurrentTab "holding_pen"}}<th style="padding: 12px; text-align: right; padding-right: 20px;">Action</th>{{end}}
+            </tr>
+            </thead>
+            <tbody id="ticketTableBody">
+            {{range .Tickets}}
+                <tr class="ticket-row {{if eq $.CurrentTab "archives"}}archived-row{{end}}" data-asset="{{.AssetIdentifier}}">
+                    <td style="width: 40px;"><input type="checkbox" class="ticket-cb" name="ticket_ids" value="{{.ID}}"></td>
+                    <td style="width: 120px;"><span class="badge {{.Severity | lower}}">{{.Severity}}</span></td>
+                    <td style="width: 100px; font-size: 0.85rem; color: #475569;">{{.Source}}</td>
+                    <td>
+                        <textarea id="desc-{{.ID}}" style="display:none;">{{.Description}}</textarea>
+                        <textarea id="rem-{{.ID}}" style="display:none;">{{.RecommendedRemediation}}</textarea>
+                        <textarea id="ev-{{.ID}}" style="display:none;">{{.PatchEvidence}}</textarea>
+
+                        <input type="hidden" id="status-{{.ID}}" value="{{.Status}}">
+                        <textarea id="comment-{{.ID}}" style="display:none;">{{.LatestComment}}</textarea>
+
+                        <input type="hidden" id="assignee-{{.ID}}" value="{{.Assignee}}">
+
+                        <a href="javascript:void(0)" style="font-weight: bold; color: #2563eb; text-decoration: none;" onclick="openDrawer('{{.ID}}', '{{.Title}}', '{{.AssetIdentifier}}', '{{.Severity}}')">{{.Title}}</a>
+
+                        {{if eq .Status "Returned to Security"}}
+                            <div style="margin-top: 8px; background: #fef2f2; border-left: 3px solid #991b1b; padding: 6px 10px; font-size: 0.8rem; color: #7f1d1d; border-radius: 0 4px 4px 0;">
+                                <strong>🔄 Returned by IT:</strong> {{.LatestComment}}
+                            </div>
+                        {{end}}
+                    </td>
+                    <td style="width: 150px;">
+                        {{if eq .Assignee "Unassigned"}}
+                            <span style="color: #94a3b8; font-style: italic; font-size: 0.85rem;">Unassigned</span>
+                        {{else}}
+                            <span style="background: #e0e7ff; color: #3730a3; padding: 2px 8px; border-radius: 12px; font-size: 0.85rem; font-weight: bold;">{{.Assignee}}</span>
+                        {{end}}
+                    </td>
+                    <td style="width: 150px;">
+                        {{if eq $.CurrentTab "holding_pen"}}
+                            <span class="triage-timer" data-due="{{.TriageDueDate.Format "2006-01-02T15:04:05Z07:00"}}"></span>
+                        {{else}}
+                            {{if .IsOverdue}}<span style="color: #dc2626; font-weight: bold;">{{.SLAString}}</span>{{else}}<span style="color: #10b981; font-weight: bold;">{{.SLAString}}</span>{{end}}
+                        {{end}}
+                    </td>
+                    {{if eq $.CurrentTab "holding_pen"}}
+                    {{else if eq $.CurrentTab "chute"}}
+                        <td style="text-align: right;"><button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem; color: #94a3b8; border-color: #e2e8f0;" onclick="showUpsell('Passwordless Magic Links')">🔒 Share Asset Link</button></td>
+                    {{else if eq $.CurrentTab "archives"}}
+                        <td style="text-align: right; vertical-align: middle;">
+                            {{if eq .Status "Patched"}}
+                                <span class="archive-badge" style="background: #dcfce7; color: #166534; border: 1px solid #bbf7d0;">✅ RESOLVED</span>
+                            {{else if eq .Status "False Positive"}}
+                                <span class="archive-badge" style="background: #fff7ed; color: #9a3412; border: 1px solid #ffedd5;">👻 IGNORED</span>
+                            {{end}}
+                            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">
+                                Archived {{.UpdatedAt.Format "Jan 02"}} (Took {{.SLAString}})
+                            </div>
+                        </td>
+                    {{end}}
+                </tr>
+            {{end}}
+            </tbody>
+        </table>
+
+        <div class="pagination" style="padding: 20px;">
+            <span style="color: var(--text-muted); font-size: 0.9rem;">Page <strong>{{.CurrentPage}}</strong> of <strong>{{.TotalPages}}</strong></span>
+            <div style="display: flex; gap: 10px;">
+                <a href="/dashboard?tab={{.CurrentTab}}&page={{if .HasPrev}}{{.PrevPage}}{{else}}1{{end}}" class="btn {{if not .HasPrev}}disabled{{end}}">&larr; Previous</a>
+                <a href="/dashboard?tab={{.CurrentTab}}&page={{if .HasNext}}{{.NextPage}}{{else}}{{.TotalPages}}{{end}}" class="btn {{if not .HasNext}}disabled{{end}}">Next &rarr;</a>
+            </div>
+        </div>
+    </div>
+{{end}}

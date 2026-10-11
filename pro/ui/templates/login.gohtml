@@ -1,0 +1,37 @@
+{{define "login"}}
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>RiskRancher - Login</title>
+        <link rel="stylesheet" href="/static/style.css">
+        <style>body { display: flex; align-items: center; justify-content: center; height: 100vh; background-color: #f8fafc; margin: 0; }</style>
+    </head>
+    <body>
+    <div class="auth-card">
+        <h2 style="margin-top: 0;">🐴 RiskRancher</h2>
+        <p style="color: #64748b; margin-bottom: 20px;">Sign in to your SOC Dashboard</p>
+
+        <div id="errorMsg" class="error"></div>
+
+        <form id="loginForm">
+            <div style="text-align: left;">
+                <label style="font-weight: 600; font-size: 0.9rem;">Email Address</label>
+                <input type="email" id="email" required placeholder="tim@ranch.com">
+
+                <label style="font-weight: 600; font-size: 0.9rem;">Password</label>
+                <input type="password" id="password" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn" id="submitBtn">Sign In</button>
+        </form>
+
+        <div style="margin-top: 20px; font-size: 0.85rem;">
+            First time setup? <a href="/register" style="color: #2563eb;">Initialize System</a>
+        </div>
+    </div>
+
+    <script src="/static/auth.js"></script>
+
+    </body>
+    </html>
+{{end}}

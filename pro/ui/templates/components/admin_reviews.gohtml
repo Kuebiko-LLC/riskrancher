@@ -1,0 +1,53 @@
+{{define "admin_reviews"}}
+    <div id="tab-reviews" class="tab-pane">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div>
+                <h3 style="margin: 0;">🛡️ Risk Request Adjudication</h3>
+                <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Review exception and acceptance requests from IT. Grouped by affected asset for holistic risk evaluation.</p>
+            </div>
+        </div>
+        <table style="font-size: 0.9rem; width: 100%; text-align: left; border-collapse: collapse;">
+            <thead id="riskTableHeader" style="display: none;">
+            <tr style="border-bottom: 2px solid #e2e8f0;">
+                <th style="padding-bottom: 12px; width: 20%;">Finding Details</th>
+                <th style="padding-bottom: 12px; width: 15%; text-align: center;">Request Type</th>
+                <th style="padding-bottom: 12px; width: 35%;">IT Justification</th>
+                <th style="padding-bottom: 12px; width: 15%;">Target Deadline</th>
+                <th style="padding-bottom: 12px; width: 15%; text-align: right;">Sheriff Actions</th>
+            </tr>
+            </thead>
+            <tbody id="riskTableBody">
+            {{range .RiskRequests}}
+                <tr class="risk-row" data-asset="{{.AssetIdentifier}}" data-token="{{.MagicToken}}" data-id="{{.ID}}" style="background: #ffffff;">
+                    <td style="padding: 15px 10px 15px 0; vertical-align: top; border-bottom: 1px solid #f1f5f9;">
+                        <strong>{{.Title}}</strong><br>
+                        <span class="badge {{.Severity | lower}}" style="margin-top: 4px; display: inline-block;">{{.Severity}}</span><br>
+                        <span style="font-size: 0.8rem; color: #64748b; font-family: monospace; margin-top: 4px; display: inline-block;">{{.AssetIdentifier}}</span>
+                    </td>
+                    <td class="risk-type-cell" style="padding: 15px 10px; vertical-align: top; text-align: center; border-bottom: 1px solid #f1f5f9;"></td>
+                    <td style="padding: 15px 10px; vertical-align: top; border-bottom: 1px solid #f1f5f9;">
+                        <div class="risk-rationale-cell" style="background: #f8fafc; padding: 10px; border-left: 3px solid #cbd5e1; border-radius: 4px; font-size: 0.85rem; color: #334155; line-height: 1.4;">
+                            {{.Description}}
+                        </div>
+                    </td>
+                    <td style="color: #0f172a; font-weight: bold; padding: 15px 10px; vertical-align: top; border-bottom: 1px solid #f1f5f9;">
+                        {{.RemediationDueDate.Format "Jan 02, 2006"}}
+                        <div style="font-size: 0.75rem; color: #dc2626; margin-top: 4px; font-weight: normal;">SLA Paused</div>
+                        <div style="margin-top: 10px;">
+                            {{if .OwnerViewedAt}}
+                                <span style="background: #dcfce7; color: #166534; padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; border: 1px solid #bbf7d0;">👀 Viewed</span>
+                            {{else}}
+                                <span style="background: #f1f5f9; color: #94a3b8; padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; border: 1px solid #e2e8f0;">✉️ Unread</span>
+                            {{end}}
+                        </div>
+                    </td>
+                    <td style="text-align: right; vertical-align: top; padding: 15px 0; border-bottom: 1px solid #f1f5f9;">
+                        <button class="btn" style="padding: 6px 10px; font-size: 0.75rem; background: #3b82f6; margin-bottom: 5px; width: 100%; color: white;" onclick="prepMagistrateLink('{{.MagicToken}}', '{{ .ID }}', event)">🔗 Copy Link</button><br>
+                        <button class="btn btn-secondary" style="padding: 6px 10px; font-size: 0.75rem; color: #dc2626; border-color: #fca5a5; width: 100%;" onclick="denyRisk('{{.MagicToken}}')">Deny Request</button>
+                    </td>
+                </tr>
+            {{end}}
+            </tbody>
+        </table>
+    </div>
+{{end}}

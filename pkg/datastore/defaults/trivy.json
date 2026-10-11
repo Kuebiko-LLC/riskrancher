@@ -1,0 +1,10 @@
+{
+  "name": "Trivy Container Scan",
+  "source_name": "Trivy",
+  "findings_path": "Results.0.Vulnerabilities",
+  "mapping_title": "VulnerabilityID",
+  "mapping_asset": "PkgName",
+  "mapping_severity": "Severity",
+  "mapping_description": "Title",
+  "mapping_remediation": "FixedVersion"
+}

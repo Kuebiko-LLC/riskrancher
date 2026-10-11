@@ -1,0 +1,58 @@
+{{define "content"}}
+    <div class="container mt-5" style="display: flex; justify-content: center; padding-top: 50px;">
+        <div class="card" style="width: 100%; max-width: 600px; padding: 40px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <h2 style="color: #0f172a; margin-top: 0;">📄 Upload Pentest Report</h2>
+            <p style="color: #64748b;">Upload a .docx manual assessment to enter the clipping parser.</p>
+
+            <div id="drop-zone" style="border: 3px dashed #3b82f6; padding: 50px 20px; border-radius: 8px; cursor: pointer; margin-top: 30px; background: #f8fafc; transition: background 0.2s;">
+                <h4 style="margin: 0; color: #1d4ed8;">Drag & Drop DOCX Here</h4>
+                <p style="margin-top: 10px; color: #94a3b8; font-size: 0.9rem;">or click to browse your computer</p>
+                <input type="file" id="file-input" hidden accept=".docx">
+            </div>
+
+            <div id="status-area" style="display: none; margin-top: 25px;">
+                <span style="font-weight: bold; color: #2563eb; padding: 10px 20px; background: #eff6ff; border-radius: 6px;">⏳ Processing Document...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const statusArea = document.getElementById('status-area');
+
+        dropZone.onclick = () => fileInput.click();
+        fileInput.onchange = (e) => processFile(e.target.files[0]);
+        dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.background = "#e0e7ff"; };
+        dropZone.ondragleave = () => dropZone.style.background = "#f8fafc";
+        dropZone.ondrop = (e) => {
+            e.preventDefault();
+            dropZone.style.background = "#f8fafc";
+            processFile(e.dataTransfer.files[0]);
+        };
+
+        async function processFile(file) {
+            if (!file.name.toLowerCase().endsWith('.docx')) {
+                alert("Whoops! Please upload a .docx file.");
+                return;
+            }
+
+            statusArea.style.display = 'block';
+            let formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                // Send the file to your existing backend handler!
+                const res = await fetch('/api/reports/upload', { method: 'POST', body: formData });
+                if (!res.ok) throw new Error(await res.text());
+
+                const data = await res.json();
+                // Redirect straight to the new parser UI using the returned file ID
+                window.location.href = '/reports/parser/' + data.file_id;
+            } catch (err) {
+                alert("Upload failed: " + err.message);
+                statusArea.style.display = 'none';
+            }
+        }
+    </script>
+{{end}}

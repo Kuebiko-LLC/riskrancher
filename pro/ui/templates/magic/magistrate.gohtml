@@ -1,0 +1,53 @@
+{{define "magistrate.gohtml"}}
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>RiskRancher - Magistrate Adjudication</title>
+        <link rel="stylesheet" href="/static/style.css">
+        <style>body { padding: 40px 20px; background: #f8fafc; }</style>
+    </head>
+    <body>
+
+    <div class="container" style="max-width: 800px;">
+        <div style="border-top: 5px solid #8b5cf6; background: white; padding: 30px; border-radius: 0 0 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <h2 style="margin-top: 0; color: #0f172a;">⚖️ Risk Request Adjudication</h2>
+            <p style="color: #64748b;">The IT Department is requesting a security exception for asset: <strong id="magAsset" style="color: #3b82f6; font-family: monospace;"></strong></p>
+
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin: 25px 0;">
+                <h4 style="margin: 0 0 10px 0; color: #334155;">Findings in this Request (<span id="magFindingCount">0</span>)</h4>
+                <div id="magFindingsList" style="max-height: 200px; overflow-y: auto; background: white; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px;">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <div style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; margin-bottom: 15px; border-radius: 4px;">
+                    <p style="margin: 0; font-size: 0.8rem; color: #d97706; font-weight: bold; text-transform: uppercase;">1. IT Department Justification</p>
+                    <p id="magITReason" style="margin: 8px 0 0 0; color: #451a03; font-style: italic;"></p>
+                </div>
+                <div style="background: #f0fdf4; border-left: 4px solid #22c55e; padding: 15px; border-radius: 4px;">
+                    <p style="margin: 0; font-size: 0.8rem; color: #166534; font-weight: bold; text-transform: uppercase;">2. Security Team Context</p>
+                    <p id="magSheriffReason" style="margin: 8px 0 0 0; color: #14532d; font-style: italic;"></p>
+                </div>
+            </div>
+
+            <h4 style="color: #334155; margin-bottom: 10px;">Executive Decision</h4>
+            <textarea id="magistrateComment" rows="3" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 20px;" placeholder="Provide your rationale for audit purposes..."></textarea>
+
+            <div style="display: flex; gap: 15px; align-items: center; background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <div style="flex: 1;">
+                    <label style="font-size: 0.85rem; font-weight: bold; display: block; margin-bottom: 4px;">Approved Extension (Days):</label>
+                    <input type="number" id="extensionDays" value="14" style="width: 80px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" style="color: #dc2626; border-color: #fca5a5;" onclick="submitAdjudication('Deny')">Deny Request</button>
+                    <button id="magApproveBtn" class="btn" style="background: #8b5cf6; color: white;" onclick="submitAdjudication('Approve')">Sign & Approve</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/pro/static/magic.js"></script>
+    </body>
+    </html>
+{{end}}

@@ -1,0 +1,41 @@
+{{define "content"}}
+    <div style="max-width: 900px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #0f172a; margin-bottom: 5px;">📥 Data Ingestion & Parsers</h2>
+        <p style="color: #64748b; margin-bottom: 30px;">Bring your findings into the ranch.</p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+            <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <div style="font-size: 2rem; margin-bottom: 10px;">📝</div>
+                <h3 style="margin-top: 0;">Pentest Report Parser</h3>
+                <p style="color: #475569; font-size: 0.9rem; margin-bottom: 20px; min-height: 40px;">Upload a Word (DOCX) or PDF penetration test report. We'll extract the findings and map them to tickets.</p>
+                <a href="/reports/upload" class="btn" style="background: #2563eb; color: white; text-decoration: none; display: inline-block;">Upload Report</a>
+            </div>
+
+            <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <div style="font-size: 2rem; margin-bottom: 10px;">🛠️</div>
+                <h3 style="margin-top: 0;">Custom Adapter Builder</h3>
+                <p style="color: #475569; font-size: 0.9rem; margin-bottom: 20px; min-height: 40px;">Using a proprietary scanner? Build a visual JSON mapping to seamlessly ingest its outputs.</p>
+                <a href="/admin/adapters/new" class="btn btn-secondary" style="text-decoration: none; display: inline-block;">Build New Adapter</a>
+            </div>
+        </div>
+
+        <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <h3 style="margin-top: 0;">📡 Standard Scanner Ingestion</h3>
+            <form id="ingestForm">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #334155;">1. Select Configured Adapter:</label>
+                <select id="adapterSelect" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 15px;">
+                    {{range .Adapters}}
+                        <option value="{{.Name}}">{{.Name}} (Source: {{.SourceName}})</option>
+                    {{end}}
+                </select>
+
+                <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #334155;">2. Upload Scan Results (JSON/CSV):</label>
+                <input type="file" id="scanFile" style="width: 100%; padding: 10px; border: 1px dashed #cbd5e1; border-radius: 6px; margin-bottom: 20px; background: #f8fafc;">
+
+                <button type="button" class="btn" style="background: #10b981; color: white; width: 100%; font-size: 1.05rem;" onclick="uploadScan()">Run Ingestion Process</button>
+            </form>
+            <div id="ingestResult" style="margin-top: 15px; padding: 10px; display: none; border-radius: 6px;"></div>
+        </div>
+    </div>
+    <script src="/static/ingest.js"></script>
+{{end}}

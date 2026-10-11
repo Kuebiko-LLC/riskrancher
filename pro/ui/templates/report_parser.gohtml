@@ -1,0 +1,37 @@
+{{define "content"}}
+    <div class="container-fluid" style="padding: 20px; max-width: 1500px; margin: 0 auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+                <h2 style="margin: 0; color: #0f172a;">📝 Manual Pentest Parser</h2>
+                <p style="color: #64748b; margin-top: 5px;">Highlight text in the DOCX viewer to extract vulnerabilities.</p>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 20px; align-items: stretch; height: 75vh;">
+            <div class="card" style="flex: 1.5; padding: 0; display: flex; flex-direction: column; overflow: hidden;">
+                <div class="toolbar" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 15px 20px;">
+                    <h3 style="margin: 0; font-size: 1.1rem; color: #0f172a;">📄 Document Viewer</h3>
+                </div>
+                <div id="document-viewer" style="padding: 40px; overflow-y: auto; flex: 1; background: #ffffff; line-height: 1.8; font-size: 1.05rem; color: #334155; border-radius: 0 0 8px 8px;">
+                    {{.RenderedHTML}}
+                </div>
+            </div>
+
+            <div class="card" style="flex: 1; padding: 0; display: flex; flex-direction: column; background: #f8fafc;">
+                <div class="toolbar" style="background: #0f172a; color: white; border-bottom: 1px solid #e2e8f0; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-radius: 8px 8px 0 0;">
+                    <h3 style="margin: 0; font-size: 1.1rem; color: white;">📋 Draft Findings</h3>
+                    <button class="btn" style="background: #10b981; color: white; border: none; font-size: 0.85rem; padding: 6px 12px; font-weight: bold;" onclick="promoteAllDrafts()">Promote All to Tickets</button>
+                </div>
+                <div id="draft-list" class="scroll-container" style="padding: 20px; overflow-y: auto; flex: 1;">
+                    <div style="text-align: center; color: #94a3b8; margin-top: 40px; font-weight: bold;">
+                        No drafts yet.<br><br>Highlight text on the left to begin clipping.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="clip-btn" class="btn" style="position: absolute; display: none; z-index: 1000; background: #2563eb; color: white; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.2); border-radius: 6px; padding: 6px 12px; font-weight: bold; font-size: 0.85rem;">✂️ Clip as Finding</button>
+
+    <script src="/static/parser.js"></script>
+{{end}}

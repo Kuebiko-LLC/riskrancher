@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	datastore "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	core "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
@@ -19,14 +20,19 @@ import (
 )
 
 // setupReportsTest builds a ProHandler over a real SQLite DB with the full core
-// and Pro schema, then seeds a Critical and a Low finding. Returns their IDs.
-func setupReportsTest(t *testing.T) (*ProHandler, *sql.DB, []int) {
+// and Pro schema, seeds a Critical and a Low finding, and returns their IDs plus
+// a request decorator that authenticates as the report author.
+func setupReportsTest(t *testing.T) (*ProHandler, *sql.DB, []int, func(*http.Request) *http.Request) {
 	t.Helper()
 	db := datastore.InitDB(filepath.Join(t.TempDir(), "reports.db"))
 	storage.InjectProSchema(db)
 	store := storage.NewProSQLiteStore(db)
 
 	ctx := context.Background()
+	author, _ := store.CreateUser(ctx, "author@ranch.com", "Author BH", "h", "Bounty Hunter")
+	as := func(r *http.Request) *http.Request {
+		return r.WithContext(context.WithValue(r.Context(), auth.UserIDKey, author.ID))
+	}
 	crit := &core.Ticket{Source: "Burp", AssetIdentifier: "web-app", Title: "SQL injection in /login", Severity: "Critical", Status: "Waiting to be Triaged"}
 	low := &core.Ticket{Source: "testssl", AssetIdentifier: "edge-lb", Title: "Weak TLS ciphers", Severity: "Low", Status: "Waiting to be Triaged"}
 	if err := store.CreateTicket(ctx, crit); err != nil {
@@ -35,11 +41,11 @@ func setupReportsTest(t *testing.T) (*ProHandler, *sql.DB, []int) {
 	if err := store.CreateTicket(ctx, low); err != nil {
 		t.Fatalf("seed low: %v", err)
 	}
-	return NewProHandler(store), db, []int{crit.ID, low.ID}
+	return NewProHandler(store), db, []int{crit.ID, low.ID}, as
 }
 
 func TestGenerateBrandedReportBDD(t *testing.T) {
-	h, db, ids := setupReportsTest(t)
+	h, db, ids, as := setupReportsTest(t)
 	defer db.Close()
 
 	var reportID int
@@ -51,7 +57,7 @@ func TestGenerateBrandedReportBDD(t *testing.T) {
 			"executive_summary": "One critical issue.",
 			"ticket_ids":        ids,
 		})
-		req := httptest.NewRequest(http.MethodPost, "/api/reports/branded", bytes.NewReader(body))
+		req := as(httptest.NewRequest(http.MethodPost, "/api/reports/branded", bytes.NewReader(body)))
 		rr := httptest.NewRecorder()
 
 		h.HandleGenerateBrandedReport(rr, req)
@@ -79,7 +85,7 @@ func TestGenerateBrandedReportBDD(t *testing.T) {
 
 	t.Run("When ticket_ids is empty, Then it is a 400", func(t *testing.T) {
 		body, _ := json.Marshal(map[string]any{"title": "x", "ticket_ids": []int{}})
-		req := httptest.NewRequest(http.MethodPost, "/api/reports/branded", bytes.NewReader(body))
+		req := as(httptest.NewRequest(http.MethodPost, "/api/reports/branded", bytes.NewReader(body)))
 		rr := httptest.NewRecorder()
 		h.HandleGenerateBrandedReport(rr, req)
 		if rr.Code != http.StatusBadRequest {
@@ -88,7 +94,7 @@ func TestGenerateBrandedReportBDD(t *testing.T) {
 	})
 
 	t.Run("Then the stored report downloads as Markdown", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/api/reports/branded/"+strconv.Itoa(reportID)+"?format=md", nil)
+		req := as(httptest.NewRequest(http.MethodGet, "/api/reports/branded/"+strconv.Itoa(reportID)+"?format=md", nil))
 		req.SetPathValue("id", strconv.Itoa(reportID))
 		rr := httptest.NewRecorder()
 
@@ -106,7 +112,7 @@ func TestGenerateBrandedReportBDD(t *testing.T) {
 	})
 
 	t.Run("And it appears in the generated-reports list", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/api/reports/generated", nil)
+		req := as(httptest.NewRequest(http.MethodGet, "/api/reports/generated", nil))
 		rr := httptest.NewRecorder()
 		h.HandleListPentestReports(rr, req)
 		if rr.Code != http.StatusOK {

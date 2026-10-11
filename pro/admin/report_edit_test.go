@@ -16,7 +16,7 @@ import (
 // edit its prose and finding selection, and those edits are saved and shown in
 // the re-rendered output.
 func TestReportIsEditableAndReRenders(t *testing.T) {
-	h, db, ids := setupReportsTest(t) // ids = [critical, low]
+	h, db, ids, as := setupReportsTest(t) // ids = [critical, low]
 	defer db.Close()
 
 	// 1. Generate the initial report over both findings.
@@ -25,7 +25,7 @@ func TestReportIsEditableAndReRenders(t *testing.T) {
 		"executive_summary": "first pass",
 		"ticket_ids":        ids,
 	})
-	genReq := httptest.NewRequest(http.MethodPost, "/api/reports/branded", bytes.NewReader(genBody))
+	genReq := as(httptest.NewRequest(http.MethodPost, "/api/reports/branded", bytes.NewReader(genBody)))
 	genRR := httptest.NewRecorder()
 	h.HandleGenerateBrandedReport(genRR, genReq)
 	if genRR.Code != http.StatusCreated {
@@ -41,7 +41,7 @@ func TestReportIsEditableAndReRenders(t *testing.T) {
 		"body":              "## Methodology\n\nWe tested over three days from an unauthenticated position.",
 		"ticket_ids":        []int{ids[0]}, // keep only the first finding
 	})
-	editReq := httptest.NewRequest(http.MethodPut, "/api/reports/branded/"+strconv.Itoa(report.ID), bytes.NewReader(editBody))
+	editReq := as(httptest.NewRequest(http.MethodPut, "/api/reports/branded/"+strconv.Itoa(report.ID), bytes.NewReader(editBody)))
 	editReq.SetPathValue("id", strconv.Itoa(report.ID))
 	editRR := httptest.NewRecorder()
 	h.HandleUpdateReport(editRR, editReq)
@@ -50,7 +50,7 @@ func TestReportIsEditableAndReRenders(t *testing.T) {
 	}
 
 	// 3. The edits must be saved AND shown: fetch the markdown and check.
-	getReq := httptest.NewRequest(http.MethodGet, "/api/reports/branded/"+strconv.Itoa(report.ID)+"?format=md", nil)
+	getReq := as(httptest.NewRequest(http.MethodGet, "/api/reports/branded/"+strconv.Itoa(report.ID)+"?format=md", nil))
 	getReq.SetPathValue("id", strconv.Itoa(report.ID))
 	getRR := httptest.NewRecorder()
 	h.HandleGetPentestReport(getRR, getReq)

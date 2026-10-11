@@ -74,9 +74,18 @@ func (s *ProSQLiteStore) GetPentestReport(ctx context.Context, id int) (*proMode
 // ListPentestReports returns report metadata newest-first. The heavy rendered
 // bodies are omitted from the list view.
 func (s *ProSQLiteStore) ListPentestReports(ctx context.Context) ([]proModels.PentestReport, error) {
+	return s.listReports(ctx, "", nil)
+}
+
+// ListPentestReportsByAuthor returns only the reports created by author.
+func (s *ProSQLiteStore) ListPentestReportsByAuthor(ctx context.Context, author string) ([]proModels.PentestReport, error) {
+	return s.listReports(ctx, "WHERE created_by = ?", []any{author})
+}
+
+func (s *ProSQLiteStore) listReports(ctx context.Context, where string, args []any) ([]proModels.PentestReport, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT id, title, client_name, author, scope, executive_summary, ticket_ids, created_by, created_at
-		FROM pentest_reports ORDER BY created_at DESC, id DESC`)
+		FROM pentest_reports `+where+` ORDER BY created_at DESC, id DESC`, args...)
 	if err != nil {
 		return nil, err
 	}

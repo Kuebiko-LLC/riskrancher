@@ -22,17 +22,16 @@ type generateReportRequest struct {
 	TicketIDs        []int  `json:"ticket_ids"`
 }
 
-// renderReport fetches the selected findings and renders the report to Markdown
-// and HTML. Missing ticket ids are skipped so a stale selection still renders.
-func (h *ProHandler) renderReport(r *http.Request, req generateReportRequest) (findings int, md, html string) {
-	var tickets []coredomain.Ticket
-	for _, id := range req.TicketIDs {
-		t, err := h.Store.GetTicketByID(r.Context(), id)
-		if err != nil {
-			continue
-		}
-		tickets = append(tickets, t)
+// renderReport fetches the findings the caller is allowed to see (released, own
+// engagement, or any for a Sheriff) and renders the report to Markdown and HTML.
+// Findings the caller may not see are dropped, so a report cannot exfiltrate
+// another Bounty Hunter's held findings.
+func (h *ProHandler) renderReport(r *http.Request, req generateReportRequest) ([]coredomain.Ticket, string, string) {
+	email, sheriff := "", false
+	if u := h.currentUser(r); u != nil {
+		email, sheriff = u.Email, u.GlobalRole == "Sheriff"
 	}
+	tickets, _ := h.ProStore.FindingsVisibleTo(r.Context(), req.TicketIDs, email, sheriff)
 	in := reporting.ReportInput{
 		Title:            req.Title,
 		ClientName:       req.ClientName,
@@ -41,7 +40,25 @@ func (h *ProHandler) renderReport(r *http.Request, req generateReportRequest) (f
 		ExecutiveSummary: req.ExecutiveSummary,
 		Body:             req.Body,
 	}
-	return len(tickets), reporting.BuildMarkdown(in, tickets), reporting.BuildHTML(in, tickets)
+	return tickets, reporting.BuildMarkdown(in, tickets), reporting.BuildHTML(in, tickets)
+}
+
+func ticketIDsOf(tickets []coredomain.Ticket) []int {
+	ids := make([]int, len(tickets))
+	for i, t := range tickets {
+		ids[i] = t.ID
+	}
+	return ids
+}
+
+// canAccessReport reports whether the caller may read/edit a report (its author
+// or a Sheriff).
+func (h *ProHandler) canAccessReport(r *http.Request, rep *proModels.PentestReport) bool {
+	u := h.currentUser(r)
+	if u == nil || rep == nil {
+		return false
+	}
+	return u.GlobalRole == "Sheriff" || rep.CreatedBy == u.Email
 }
 
 // HandleGenerateBrandedReport turns a set of findings (tickets) into a pentest
@@ -58,9 +75,9 @@ func (h *ProHandler) HandleGenerateBrandedReport(w http.ResponseWriter, r *http.
 		return
 	}
 
-	matched, md, html := h.renderReport(r, req)
-	if matched == 0 {
-		http.Error(w, "none of the requested ticket_ids matched a finding", http.StatusNotFound)
+	findings, md, html := h.renderReport(r, req)
+	if len(findings) == 0 {
+		http.Error(w, "none of the requested findings are visible to you", http.StatusNotFound)
 		return
 	}
 
@@ -72,7 +89,7 @@ func (h *ProHandler) HandleGenerateBrandedReport(w http.ResponseWriter, r *http.
 		ExecutiveSummary: req.ExecutiveSummary,
 		Body:             req.Body,
 		EngagementID:     req.EngagementID,
-		TicketIDs:        req.TicketIDs,
+		TicketIDs:        ticketIDsOf(findings),
 		Markdown:         md,
 		HTML:             html,
 		CreatedBy:        h.currentUserEmail(r),
@@ -103,6 +120,10 @@ func (h *ProHandler) HandleUpdateReport(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Report not found", http.StatusNotFound)
 		return
 	}
+	if !h.canAccessReport(r, existing) {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
 
 	var req generateReportRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -110,7 +131,7 @@ func (h *ProHandler) HandleUpdateReport(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	_, md, html := h.renderReport(r, req)
+	findings, md, html := h.renderReport(r, req)
 
 	updated := &proModels.PentestReport{
 		ID:               id,
@@ -121,7 +142,7 @@ func (h *ProHandler) HandleUpdateReport(w http.ResponseWriter, r *http.Request) 
 		ExecutiveSummary: req.ExecutiveSummary,
 		Body:             req.Body,
 		EngagementID:     req.EngagementID,
-		TicketIDs:        req.TicketIDs,
+		TicketIDs:        ticketIDsOf(findings),
 		Markdown:         md,
 		HTML:             html,
 		CreatedBy:        existing.CreatedBy,
@@ -151,6 +172,10 @@ func (h *ProHandler) HandleGetPentestReport(w http.ResponseWriter, r *http.Reque
 		http.Error(w, "Report not found", http.StatusNotFound)
 		return
 	}
+	if !h.canAccessReport(r, report) {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
 
 	switch r.URL.Query().Get("format") {
 	case "md", "markdown":
@@ -169,7 +194,20 @@ func (h *ProHandler) HandleGetPentestReport(w http.ResponseWriter, r *http.Reque
 // HandleListPentestReports returns report metadata (no rendered bodies).
 // GET /api/reports/generated
 func (h *ProHandler) HandleListPentestReports(w http.ResponseWriter, r *http.Request) {
-	reports, err := h.ProStore.ListPentestReports(r.Context())
+	u := h.currentUser(r)
+	if u == nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	var (
+		reports []proModels.PentestReport
+		err     error
+	)
+	if u.GlobalRole == "Sheriff" {
+		reports, err = h.ProStore.ListPentestReports(r.Context())
+	} else {
+		reports, err = h.ProStore.ListPentestReportsByAuthor(r.Context(), u.Email)
+	}
 	if err != nil {
 		http.Error(w, "DB Error: "+err.Error(), http.StatusInternalServerError)
 		return

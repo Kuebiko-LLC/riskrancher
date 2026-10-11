@@ -234,6 +234,19 @@ func RegisterProRoutes(app *core.App, licenseManager *license.Manager) {
 	bountyHunter := func(h http.HandlerFunc) http.Handler {
 		return licenseBouncer(authH.RequireAuth(auditH(authH.RequireAnyRole("Bounty Hunter", "Sheriff")(http.HandlerFunc(h)))))
 	}
+	rangeHand := func(h http.HandlerFunc) http.Handler {
+		return licenseBouncer(authH.RequireAuth(auditH(authH.RequireAnyRole("RangeHand", "Sheriff")(http.HandlerFunc(h)))))
+	}
+
+	// ==========================================
+	// ⚖️ SEVERITY PROPOSALS (RangeHand <-> Bounty Hunter <-> Sheriff)
+	// ==========================================
+	app.Router.Handle("POST /api/findings/{id}/severity-proposal", rangeHand(proAdminH.HandleProposeSeverity))
+	app.Router.Handle("POST /api/severity-proposals/{id}/accept", bountyHunter(proAdminH.HandleAcceptSeverityProposal))
+	app.Router.Handle("POST /api/severity-proposals/{id}/contest", bountyHunter(proAdminH.HandleContestSeverityProposal))
+	app.Router.Handle("POST /api/severity-proposals/{id}/adjudicate", sheriffOnly(proAdminH.HandleAdjudicateSeverityProposal))
+	app.Router.Handle("GET /api/severity-proposals/mine", bountyHunter(proAdminH.HandleMyPendingProposals))
+	app.Router.Handle("GET /api/severity-proposals/contested", sheriffOnly(proAdminH.HandleContestedProposals))
 
 	// ==========================================
 	// 🤠 ENGAGEMENTS (Bounty Hunter pentests)

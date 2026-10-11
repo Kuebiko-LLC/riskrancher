@@ -263,6 +263,12 @@ func RegisterProRoutes(app *core.App, licenseManager *license.Manager) {
 	app.Router.Handle("POST /api/engagements/{id}/findings", bountyHunter(proAdminH.HandleAddEngagementFindings))
 	app.Router.Handle("POST /api/engagements/{id}/release", bountyHunter(proAdminH.HandleReleaseEngagement))
 
+	// Evidence (screenshots on findings)
+	app.Router.Handle("POST /api/findings/{id}/evidence", bountyHunter(proAdminH.HandleUploadEvidence))
+	app.Router.Handle("GET /api/findings/{id}/evidence", bountyHunter(proAdminH.HandleListEvidence))
+	app.Router.Handle("GET /api/evidence/{id}", bountyHunter(proAdminH.HandleGetEvidenceImage))
+	app.Router.Handle("DELETE /api/evidence/{id}", bountyHunter(proAdminH.HandleDeleteEvidence))
+
 	// ==========================================
 	// 💎 CORE OVERRIDES
 	// ==========================================

@@ -25,6 +25,7 @@ The license manager still ships, but it boots already unlocked (`license.NewMana
 ### Pentesting workflow
 - **Engagement report intake.** Pentesters upload a report (`/reports/upload`), parse it, and promote findings into real tickets through a draft queue, instead of leaving them in a Word document.
 - **Findings as tickets.** Every finding lands in the same tracker the rest of the program runs on.
+- **Findings back to a report.** The reverse direction: select findings and generate a branded engagement report as Markdown or a self-contained, print-ready HTML document (`POST /api/reports/branded`, download via `GET /api/reports/branded/{id}?format=md|html`). Print the HTML to PDF for a client-ready deliverable.
 
 ### Enterprise features (now open, on by default)
 - **Four-persona RBAC.** A bouncer middleware enforces Sheriff, RangeHand, Wrangler, and Magistrate roles across the app.
@@ -68,7 +69,7 @@ It prints the Analyst dashboard, Wrangler (`/share/...`), and Magistrate (`/revi
 
 These are scaffolded but not finished. They are off the critical path and do not affect boot:
 
-- **Auditor branded-PDF export.** `pro/reporting` is a stub today; report intake and viewing work, branded PDF generation does not.
+- **Direct PDF export.** The report generator emits Markdown and self-contained HTML today (print the HTML to PDF for now). Rendering a PDF in-process is not wired, to keep the single binary CGO-free.
 - **AI SOC Brain (experimental).** `pro/storage/pro_embeddings.go` and `pro/storage/pro_matchmaker.go` sketch local-embedding triage and ASPM asset matchmaking, but their backing tables (`pro_ticket_embeddings`, `matchmaker_proposals`) are not created by the schema yet and no local-LLM sidecar is wired. Treat this as a design sketch, not a shipped feature.
 
 ## License

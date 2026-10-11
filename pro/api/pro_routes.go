@@ -231,6 +231,18 @@ func RegisterProRoutes(app *core.App, licenseManager *license.Manager) {
 	execOnly := func(h http.HandlerFunc) http.Handler {
 		return licenseBouncer(authH.RequireAuth(auditH(authH.RequireRole("Magistrate")(http.HandlerFunc(h)))))
 	}
+	bountyHunter := func(h http.HandlerFunc) http.Handler {
+		return licenseBouncer(authH.RequireAuth(auditH(authH.RequireAnyRole("Bounty Hunter", "Sheriff")(http.HandlerFunc(h)))))
+	}
+
+	// ==========================================
+	// 🤠 ENGAGEMENTS (Bounty Hunter pentests)
+	// ==========================================
+	app.Router.Handle("POST /api/engagements", bountyHunter(proAdminH.HandleCreateEngagement))
+	app.Router.Handle("GET /api/engagements", protected(proAdminH.HandleListEngagements))
+	app.Router.Handle("GET /api/engagements/{id}", protected(proAdminH.HandleGetEngagement))
+	app.Router.Handle("POST /api/engagements/{id}/findings", bountyHunter(proAdminH.HandleAddEngagementFindings))
+	app.Router.Handle("POST /api/engagements/{id}/release", bountyHunter(proAdminH.HandleReleaseEngagement))
 
 	// ==========================================
 	// 💎 CORE OVERRIDES

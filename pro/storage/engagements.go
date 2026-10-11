@@ -67,6 +67,13 @@ func (s *ProSQLiteStore) ListEngagements(ctx context.Context) ([]proModels.Engag
 	return out, rows.Err()
 }
 
+// ReleaseEngagement marks an engagement Released: its findings are now handed
+// off to the RangeHand queue.
+func (s *ProSQLiteStore) ReleaseEngagement(ctx context.Context, id int) error {
+	_, err := s.db.ExecContext(ctx, `UPDATE engagements SET status = 'Released' WHERE id = ?`, id)
+	return err
+}
+
 // AddFindingsToEngagement links the given tickets to an engagement.
 func (s *ProSQLiteStore) AddFindingsToEngagement(ctx context.Context, engagementID int, ticketIDs []int) error {
 	for _, tid := range ticketIDs {

@@ -105,7 +105,12 @@
         <td style="padding:6px;">${badge(f.severity, sevColor(f.severity))}</td>
         <td style="padding:6px;"><strong>${esc(f.title)}</strong><br><span style="font-size:.78rem;color:#64748b;font-family:monospace;">${esc(f.asset_identifier)}</span></td>
         <td style="padding:6px;font-size:.8rem;color:#475569;">${esc(f.status)}</td>
-      </tr>`).join('') : '<tr><td colspan="4" style="padding:10px;color:#94a3b8;text-align:center;">No findings yet.</td></tr>';
+        <td style="padding:6px;">
+          <div id="evthumbs-${f.id}" style="display:inline-block;"></div>
+          <button onclick="pickEvidence(${f.id})" title="Attach a screenshot" style="padding:2px 8px;font-size:.78rem;cursor:pointer;">📷 Add</button>
+          <input type="file" id="file-${f.id}" accept="image/png,image/jpeg,image/gif" style="display:none;" onchange="onEvidenceFile(${f.id})">
+        </td>
+      </tr>`).join('') : '<tr><td colspan="5" style="padding:10px;color:#94a3b8;text-align:center;">No findings yet.</td></tr>';
 
     document.getElementById('detail').innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -124,6 +129,7 @@
         <thead style="background:#f8fafc;"><tr>
           <th style="padding:6px;width:30px;"></th><th style="padding:6px;text-align:left;">Sev</th>
           <th style="padding:6px;text-align:left;">Finding</th><th style="padding:6px;text-align:left;">Status</th>
+          <th style="padding:6px;text-align:left;">Evidence</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
@@ -145,7 +151,33 @@
     `;
     // if a report already exists for this engagement, load it into the editor
     hydrateReport();
+    (current.findings || []).forEach(f => loadFindingEvidence(f.id));
   }
+
+  // ---- evidence (screenshots) ----
+  window.pickEvidence = fid => document.getElementById('file-'+fid).click();
+  window.onEvidenceFile = async function(fid){
+    const input = document.getElementById('file-'+fid);
+    const file = input.files[0]; if(!file) return;
+    const caption = prompt('Caption for this screenshot?','') || '';
+    const fd = new FormData(); fd.append('image', file); fd.append('caption', caption);
+    try {
+      const res = await fetch('/api/findings/'+fid+'/evidence', {method:'POST', body: fd});
+      input.value='';
+      if(!res.ok){ alert('Upload failed ('+res.status+')'); return; }
+      loadFindingEvidence(fid);
+    } catch(e){ alert('Upload failed'); }
+  };
+  async function loadFindingEvidence(fid){
+    const cell = document.getElementById('evthumbs-'+fid); if(!cell) return;
+    try {
+      const d = await api('GET','/api/findings/'+fid+'/evidence');
+      cell.innerHTML = (d.evidence||[]).map(e=>`<span style="display:inline-block;position:relative;margin:0 3px 0 0;">
+        <img src="/api/evidence/${e.id}?thumb=1" title="${esc(e.caption)}" style="height:34px;border:1px solid #ddd;border-radius:3px;vertical-align:middle;">
+        <button onclick="delEvidence(${e.id},${fid})" title="remove" style="position:absolute;top:-6px;right:0;background:#b4232c;color:#fff;border:none;border-radius:50%;width:16px;height:16px;font-size:11px;line-height:1;cursor:pointer;">×</button></span>`).join('');
+    } catch(e){}
+  }
+  window.delEvidence = async function(id, fid){ if(!confirm('Remove this screenshot?')) return; try { await api('DELETE','/api/evidence/'+id); loadFindingEvidence(fid); } catch(e){ alert('Delete failed'); } };
 
   let currentReportId = null;
   async function hydrateReport(){

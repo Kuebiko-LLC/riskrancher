@@ -1,0 +1,85 @@
+{{define "content"}}
+<div id="sr-app" data-email="{{.Email}}" data-role="{{.Role}}" style="max-width:1000px;margin:0 auto;padding:20px;">
+  <h1 style="margin:0;color:#0f172a;">⚖️ Severity Reviews</h1>
+  <p style="margin:2px 0 16px;color:#64748b;font-size:.9rem;">Propose severity changes on Bounty-Hunter findings; the owning hunter accepts or contests, and contested cases come here for the Sheriff to settle.</p>
+
+  <!-- Propose (RangeHand or Sheriff) -->
+  <div style="border:1px solid #e2e8f0;border-radius:8px;padding:16px;background:#fff;margin-bottom:18px;">
+    <h3 style="margin:0 0 10px;">Propose a severity change</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <input id="pFinding" placeholder="finding id" style="padding:8px;width:110px;">
+      <select id="pSev" style="padding:8px;">
+        <option>Critical</option><option>High</option><option selected>Medium</option><option>Low</option><option>Informational</option>
+      </select>
+      <input id="pWhy" placeholder="justification" style="padding:8px;flex:1;min-width:200px;">
+      <button onclick="submitProposal()" class="btn" style="background:#2563eb;color:#fff;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;">Propose</button>
+    </div>
+    <div id="pMsg" style="margin-top:8px;font-size:.85rem;"></div>
+  </div>
+
+  <!-- Sheriff adjudication queue -->
+  <div id="sheriffBox" style="display:none;border:1px solid #e2e8f0;border-radius:8px;padding:16px;background:#fff;">
+    <h3 style="margin:0 0 10px;">🛡️ Contested — awaiting your ruling</h3>
+    <div id="queue"><p style="color:#94a3b8;">Loading…</p></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const app = document.getElementById('sr-app');
+  const role = app.dataset.role;
+  const esc = s => (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const sevColor = s => ({Critical:'#b4232c',High:'#c75000',Medium:'#b8860b',Low:'#2f6f4f'}[s]||'#555');
+  const badge=(t,bg)=>`<span style="display:inline-block;background:${bg};color:#fff;border-radius:4px;padding:1px 7px;font-size:.72rem;font-weight:600;">${esc(t)}</span>`;
+  async function api(method,url,body){const o={method,headers:{}};if(body!==undefined){o.headers['Content-Type']='application/json';o.body=JSON.stringify(body);}const r=await fetch(url,o);const t=await r.text();let d=null;try{d=t?JSON.parse(t):null;}catch(e){d=t;}if(!r.ok)throw{status:r.status,data:d};return d;}
+
+  window.submitProposal = async function(){
+    const id = parseInt(document.getElementById('pFinding').value,10);
+    const to_severity = document.getElementById('pSev').value;
+    const justification = document.getElementById('pWhy').value.trim();
+    const msg = document.getElementById('pMsg');
+    if(!id||!justification){ msg.style.color='#b4232c'; msg.textContent='Finding id and justification are required.'; return; }
+    try {
+      await api('POST','/api/findings/'+id+'/severity-proposal',{to_severity,justification});
+      msg.style.color='#2f6f4f'; msg.textContent='Proposal sent to the Bounty Hunter ✓';
+      document.getElementById('pFinding').value=''; document.getElementById('pWhy').value='';
+    } catch(err){
+      msg.style.color='#b4232c';
+      msg.textContent = err.status===400 ? 'Not a Bounty-Hunter finding (edit it directly) or invalid severity.'
+        : err.status===409 ? 'There is already an open proposal on this finding.'
+        : err.status===403 ? 'Not allowed.' : 'Failed ('+(err.status||'')+').';
+    }
+  };
+
+  async function loadQueue(){
+    const el = document.getElementById('queue');
+    try {
+      const d = await api('GET','/api/severity-proposals/contested');
+      const list = d.proposals||[];
+      if(!list.length){ el.innerHTML='<p style="color:#94a3b8;">Nothing contested right now.</p>'; return; }
+      el.innerHTML = list.map(p=>`
+        <div style="border:1px solid #eef2f7;border-radius:6px;padding:10px;margin-bottom:8px;">
+          <div style="font-size:.9rem;margin-bottom:6px;">Finding #${p.ticket_id}: ${badge(p.from_severity,sevColor(p.from_severity))} → proposed ${badge(p.to_severity,sevColor(p.to_severity))}
+            <span style="color:#64748b;">— ${esc(p.justification)} (by ${esc(p.proposed_by)})</span></div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span style="font-size:.85rem;color:#475569;">Final call:</span>
+            <select id="fs-${p.id}" style="padding:6px;">
+              <option>Critical</option><option>High</option><option selected>Medium</option><option>Low</option><option>Informational</option>
+            </select>
+            <input id="fn-${p.id}" placeholder="rationale (audit)" style="padding:6px;flex:1;">
+            <button onclick="adjudicate(${p.id})" style="background:#1e293b;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;">Rule</button>
+          </div>
+        </div>`).join('');
+    } catch(err){ el.innerHTML='<p style="color:#b4232c;">Could not load queue.</p>'; }
+  }
+  window.adjudicate = async function(id){
+    const final_severity = document.getElementById('fs-'+id).value;
+    const note = document.getElementById('fn-'+id).value;
+    try { await api('POST','/api/severity-proposals/'+id+'/adjudicate',{final_severity,note}); loadQueue(); }
+    catch(err){ alert('Adjudicate failed ('+(err.status||'')+')'); }
+  };
+
+  if(role==='Sheriff'){ document.getElementById('sheriffBox').style.display='block'; loadQueue(); setInterval(loadQueue,20000); }
+})();
+</script>
+{{end}}

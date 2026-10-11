@@ -245,6 +245,7 @@ func RegisterProRoutes(app *core.App, licenseManager *license.Manager) {
 	// ==========================================
 	// ⚖️ SEVERITY PROPOSALS (RangeHand <-> Bounty Hunter <-> Sheriff)
 	// ==========================================
+	app.Router.Handle("GET /severity-reviews", rangeHand(proUI.HandleSeverityReviewsUI(app.Store)))
 	app.Router.Handle("POST /api/findings/{id}/severity-proposal", rangeHand(proAdminH.HandleProposeSeverity))
 	app.Router.Handle("POST /api/severity-proposals/{id}/accept", bountyHunter(proAdminH.HandleAcceptSeverityProposal))
 	app.Router.Handle("POST /api/severity-proposals/{id}/contest", bountyHunter(proAdminH.HandleContestSeverityProposal))

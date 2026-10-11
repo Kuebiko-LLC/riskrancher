@@ -71,6 +71,7 @@ func InjectProTemplates(licenseManager *license.Manager, proStore storage.ProSto
 	coreUI.Pages["report_upload"] = template.Must(template.New("base").Funcs(funcMap).ParseFS(ProUIFS, "templates/base.gohtml", "templates/report_upload.gohtml", "templates/components/*.gohtml"))
 	coreUI.Pages["report_parser"] = template.Must(template.New("base").Funcs(funcMap).ParseFS(ProUIFS, "templates/base.gohtml", "templates/report_parser.gohtml", "templates/components/*.gohtml"))
 	coreUI.Pages["engagements"] = template.Must(template.New("base").Funcs(funcMap).ParseFS(ProUIFS, "templates/base.gohtml", "templates/engagements.gohtml", "templates/components/*.gohtml"))
+	coreUI.Pages["severity_reviews"] = template.Must(template.New("base").Funcs(funcMap).ParseFS(ProUIFS, "templates/base.gohtml", "templates/severity_reviews.gohtml", "templates/components/*.gohtml"))
 
 	coreUI.Pages["login"] = template.Must(template.New("login").Funcs(funcMap).ParseFS(ProUIFS, "templates/login.gohtml"))
 	coreUI.Pages["register"] = template.Must(template.New("register").Funcs(funcMap).ParseFS(ProUIFS, "templates/register.gohtml"))
@@ -90,10 +91,9 @@ func HandleLicenseSetupUI() http.HandlerFunc {
 	}
 }
 
-// HandleEngagementsUI serves the Bounty Hunter workspace (engagements + report
-// builder). The page is JS-driven against the engagement/report/proposal APIs;
-// the handler only supplies the signed-in user's identity.
-func HandleEngagementsUI(store coredomain.Store) http.HandlerFunc {
+// userPage serves a JS-driven page that only needs the signed-in user's
+// identity (email + role) as server data; the page talks to the JSON APIs.
+func userPage(store coredomain.Store, page string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		id, ok := r.Context().Value(auth.UserIDKey).(int)
@@ -107,10 +107,21 @@ func HandleEngagementsUI(store coredomain.Store) http.HandlerFunc {
 			return
 		}
 		data := map[string]any{"Email": u.Email, "Role": u.GlobalRole}
-		if err := coreUI.Pages["engagements"].ExecuteTemplate(w, "base", data); err != nil {
+		if err := coreUI.Pages[page].ExecuteTemplate(w, "base", data); err != nil {
 			http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 		}
 	}
+}
+
+// HandleEngagementsUI serves the Bounty Hunter workspace (engagements + report builder).
+func HandleEngagementsUI(store coredomain.Store) http.HandlerFunc {
+	return userPage(store, "engagements")
+}
+
+// HandleSeverityReviewsUI serves the severity-proposal review page (propose for
+// RangeHand/Sheriff; contested adjudication queue for the Sheriff).
+func HandleSeverityReviewsUI(store coredomain.Store) http.HandlerFunc {
+	return userPage(store, "severity_reviews")
 }
 
 // HandleMagicLinkUI serves the external exception pipeline view

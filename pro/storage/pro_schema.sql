@@ -163,6 +163,19 @@ CREATE TABLE IF NOT EXISTS asset_edges (
     );
 
 -- ==========================================
+-- 5a. ENGAGEMENTS (a pentest, owned by a Bounty Hunter)
+-- ==========================================
+CREATE TABLE IF NOT EXISTS engagements (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    number      TEXT UNIQUE,                       -- auto-assigned ENG-0001
+    name        TEXT NOT NULL,
+    client      TEXT,
+    owner_email TEXT,                              -- the Bounty Hunter
+    status      TEXT NOT NULL DEFAULT 'Active',    -- Active | Released | Closed
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ==========================================
 -- 5b. PENTEST REPORTS (findings -> deliverable)
 -- ==========================================
 CREATE TABLE IF NOT EXISTS pentest_reports (

@@ -71,7 +71,7 @@ func (h *Handler) HandleUpdateUserRole(w http.ResponseWriter, r *http.Request) {
 	}
 
 	validRoles := map[string]bool{
-		"Sheriff": true, "Wrangler": true, "RangeHand": true, "CircuitRider": true, "Magistrate": true,
+		"Sheriff": true, "Wrangler": true, "RangeHand": true, "CircuitRider": true, "Magistrate": true, "Bounty Hunter": true,
 	}
 	if !validRoles[req.GlobalRole] {
 		http.Error(w, "Invalid role provided", http.StatusBadRequest)
@@ -133,7 +133,7 @@ func (h *Handler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	validRoles := map[string]bool{
-		"Sheriff": true, "Wrangler": true, "RangeHand": true, "CircuitRider": true, "Magistrate": true,
+		"Sheriff": true, "Wrangler": true, "RangeHand": true, "CircuitRider": true, "Magistrate": true, "Bounty Hunter": true,
 	}
 	if !validRoles[req.GlobalRole] {
 		http.Error(w, "Invalid role provided", http.StatusBadRequest)

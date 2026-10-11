@@ -38,6 +38,13 @@ type ProStoreInterface interface {
 	SaveLicenseKey(ctx context.Context, token string) error
 	GetLicenseKey(ctx context.Context) (string, error)
 
+	// --- 💎 ENGAGEMENTS (a pentest owned by a Bounty Hunter) ---
+	CreateEngagement(ctx context.Context, e *proModels.Engagement) (int, error)
+	GetEngagement(ctx context.Context, id int) (*proModels.Engagement, error)
+	ListEngagements(ctx context.Context) ([]proModels.Engagement, error)
+	AddFindingsToEngagement(ctx context.Context, engagementID int, ticketIDs []int) error
+	ListEngagementFindings(ctx context.Context, engagementID int) ([]core.Ticket, error)
+
 	// --- 💎 PRO PENTEST REPORTS (findings -> deliverable) ---
 	CreatePentestReport(ctx context.Context, report *proModels.PentestReport) (int, error)
 	GetPentestReport(ctx context.Context, id int) (*proModels.PentestReport, error)

@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS users (
                                      email TEXT UNIQUE NOT NULL,
                                      password_hash TEXT NOT NULL,
                                      full_name TEXT NOT NULL,
-                                     global_role TEXT NOT NULL CHECK(global_role IN ('Sheriff', 'RangeHand', 'Wrangler', 'CircuitRider', 'Magistrate')),
+                                     global_role TEXT NOT NULL, -- validated in the app layer (supports Bounty Hunter + future custom roles)
     department TEXT NOT NULL DEFAULT 'Security',
     is_active BOOLEAN DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

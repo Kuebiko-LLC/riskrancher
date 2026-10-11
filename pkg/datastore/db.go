@@ -40,6 +40,24 @@ func InitDB(dbPath string) *sql.DB {
 
 	migrations := []string{
 		schemaSQL,
+		// v2: drop the hardcoded role CHECK on users (roles are validated in the
+		// app layer now, which supports Bounty Hunter and future custom roles).
+		// SQLite can't alter a CHECK in place, so rebuild the table.
+		`CREATE TABLE users_rebuild (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			email TEXT UNIQUE NOT NULL,
+			password_hash TEXT NOT NULL,
+			full_name TEXT NOT NULL,
+			global_role TEXT NOT NULL,
+			department TEXT NOT NULL DEFAULT 'Security',
+			is_active BOOLEAN DEFAULT 1,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY(department) REFERENCES departments(name) ON DELETE SET DEFAULT
+		);
+		INSERT INTO users_rebuild (id,email,password_hash,full_name,global_role,department,is_active,created_at)
+			SELECT id,email,password_hash,full_name,global_role,department,is_active,created_at FROM users;
+		DROP TABLE users;
+		ALTER TABLE users_rebuild RENAME TO users;`,
 	}
 
 	if err := RunMigrations(db, migrations); err != nil {

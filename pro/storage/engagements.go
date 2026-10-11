@@ -79,13 +79,40 @@ func (s *ProSQLiteStore) ReleaseEngagement(ctx context.Context, id int) error {
 
 // AddFindingsToEngagement links the given tickets to an engagement and holds
 // them out of the triage queue (released = 0) until the engagement is released.
+// Only unclaimed, untriaged findings qualify (engagement_id IS NULL AND status
+// is still 'Waiting to be Triaged'), so a Bounty Hunter cannot hijack a finding
+// that is already in another engagement or already being worked.
 func (s *ProSQLiteStore) AddFindingsToEngagement(ctx context.Context, engagementID int, ticketIDs []int) error {
 	for _, tid := range ticketIDs {
-		if _, err := s.db.ExecContext(ctx, `UPDATE tickets SET engagement_id = ?, released = 0 WHERE id = ?`, engagementID, tid); err != nil {
+		if _, err := s.db.ExecContext(ctx,
+			`UPDATE tickets SET engagement_id = ?, released = 0
+			 WHERE id = ? AND engagement_id IS NULL AND status = 'Waiting to be Triaged'`,
+			engagementID, tid); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// ListEngagementsByOwner returns the engagements owned by ownerEmail, newest first.
+func (s *ProSQLiteStore) ListEngagementsByOwner(ctx context.Context, ownerEmail string) ([]proModels.Engagement, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT id, number, name, client, owner_email, status, created_at
+		FROM engagements WHERE owner_email = ? ORDER BY id DESC`, ownerEmail)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []proModels.Engagement
+	for rows.Next() {
+		var e proModels.Engagement
+		if err := rows.Scan(&e.ID, &e.Number, &e.Name, &e.Client, &e.OwnerEmail, &e.Status, &e.CreatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, e)
+	}
+	return out, rows.Err()
 }
 
 // ListEngagementFindings returns the findings (tickets) linked to an engagement.

@@ -20,3 +20,6 @@
 
 # Synced-Desktop conflict copies
 * [0-9].go
+
+# Local security working doc (do not publish)
+docs/SECURITY-REVIEW.md

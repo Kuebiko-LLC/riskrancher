@@ -42,6 +42,7 @@ type ProStoreInterface interface {
 	CreateEngagement(ctx context.Context, e *proModels.Engagement) (int, error)
 	GetEngagement(ctx context.Context, id int) (*proModels.Engagement, error)
 	ListEngagements(ctx context.Context) ([]proModels.Engagement, error)
+	ListEngagementsByOwner(ctx context.Context, ownerEmail string) ([]proModels.Engagement, error)
 	ReleaseEngagement(ctx context.Context, id int) error
 	AddFindingsToEngagement(ctx context.Context, engagementID int, ticketIDs []int) error
 	ListEngagementFindings(ctx context.Context, engagementID int) ([]core.Ticket, error)

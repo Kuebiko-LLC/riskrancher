@@ -178,16 +178,33 @@ func (h *ProHandler) HandleListPentestReports(w http.ResponseWriter, r *http.Req
 	json.NewEncoder(w).Encode(map[string]any{"reports": reports, "total": len(reports)})
 }
 
-// currentUserEmail best-effort resolves the signed-in user's email for the
-// report's created_by field. Returns "" when no authenticated user is present.
-func (h *ProHandler) currentUserEmail(r *http.Request) string {
+// currentUser resolves the signed-in user, or nil if none is present.
+func (h *ProHandler) currentUser(r *http.Request) *coredomain.User {
 	id, ok := r.Context().Value(auth.UserIDKey).(int)
 	if !ok {
-		return ""
+		return nil
 	}
 	u, err := h.Store.GetUserByID(r.Context(), id)
-	if err != nil || u == nil {
-		return ""
+	if err != nil {
+		return nil
 	}
-	return u.Email
+	return u
+}
+
+// currentUserEmail best-effort resolves the signed-in user's email. Returns ""
+// when no authenticated user is present.
+func (h *ProHandler) currentUserEmail(r *http.Request) string {
+	if u := h.currentUser(r); u != nil {
+		return u.Email
+	}
+	return ""
+}
+
+// isOwnerOrSheriff reports whether the caller owns the engagement or is a Sheriff.
+func (h *ProHandler) isOwnerOrSheriff(r *http.Request, eng *proModels.Engagement) bool {
+	u := h.currentUser(r)
+	if u == nil || eng == nil {
+		return false
+	}
+	return u.GlobalRole == "Sheriff" || eng.OwnerEmail == u.Email
 }

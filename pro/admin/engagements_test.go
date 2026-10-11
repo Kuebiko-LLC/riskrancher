@@ -61,7 +61,7 @@ func TestEngagementHandlersLifecycle(t *testing.T) {
 	})
 
 	t.Run("it appears in the list", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/api/engagements", nil)
+		req := asBH(httptest.NewRequest(http.MethodGet, "/api/engagements", nil))
 		rr := httptest.NewRecorder()
 		h.HandleListEngagements(rr, req)
 		if rr.Code != http.StatusOK {
@@ -85,7 +85,7 @@ func TestEngagementHandlersLifecycle(t *testing.T) {
 		store.CreateTicket(context.Background(), t2)
 
 		body, _ := json.Marshal(map[string][]int{"ticket_ids": {t1.ID, t2.ID}})
-		req := httptest.NewRequest(http.MethodPost, "/api/engagements/"+strconv.Itoa(engID)+"/findings", bytes.NewReader(body))
+		req := asBH(httptest.NewRequest(http.MethodPost, "/api/engagements/"+strconv.Itoa(engID)+"/findings", bytes.NewReader(body)))
 		req.SetPathValue("id", strconv.Itoa(engID))
 		rr := httptest.NewRecorder()
 		h.HandleAddEngagementFindings(rr, req)
@@ -93,7 +93,7 @@ func TestEngagementHandlersLifecycle(t *testing.T) {
 			t.Fatalf("expected 200, got %d: %s", rr.Code, rr.Body.String())
 		}
 
-		getReq := httptest.NewRequest(http.MethodGet, "/api/engagements/"+strconv.Itoa(engID), nil)
+		getReq := asBH(httptest.NewRequest(http.MethodGet, "/api/engagements/"+strconv.Itoa(engID), nil))
 		getReq.SetPathValue("id", strconv.Itoa(engID))
 		getRR := httptest.NewRecorder()
 		h.HandleGetEngagement(getRR, getReq)
@@ -111,7 +111,7 @@ func TestEngagementHandlersLifecycle(t *testing.T) {
 	})
 
 	t.Run("releasing it flips the status to Released", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodPost, "/api/engagements/"+strconv.Itoa(engID)+"/release", nil)
+		req := asBH(httptest.NewRequest(http.MethodPost, "/api/engagements/"+strconv.Itoa(engID)+"/release", nil))
 		req.SetPathValue("id", strconv.Itoa(engID))
 		rr := httptest.NewRecorder()
 		h.HandleReleaseEngagement(rr, req)

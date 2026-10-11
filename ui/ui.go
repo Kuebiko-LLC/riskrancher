@@ -155,6 +155,10 @@ func HandleDashboard(store domain.Store) http.HandlerFunc {
 			http.Redirect(w, r, "/admin", http.StatusSeeOther)
 			return
 		}
+		if user.GlobalRole == "Bounty Hunter" {
+			http.Redirect(w, r, "/engagements", http.StatusSeeOther)
+			return
+		}
 
 		currentUserEmail := user.Email
 		currentUserRole := user.GlobalRole

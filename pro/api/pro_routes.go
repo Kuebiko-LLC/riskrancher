@@ -19,8 +19,8 @@ import (
 	proAdmin "github.com/Kuebiko-LLC/riskrancher/pro/admin"
 	"github.com/Kuebiko-LLC/riskrancher/pro/license"
 	"github.com/Kuebiko-LLC/riskrancher/pro/middleware"
-	proTickets "github.com/Kuebiko-LLC/riskrancher/pro/tickets"
 	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
+	proTickets "github.com/Kuebiko-LLC/riskrancher/pro/tickets"
 	proUI "github.com/Kuebiko-LLC/riskrancher/pro/ui"
 )
 
@@ -101,6 +101,10 @@ func ProUIInterceptor(app *core.App, licenseManager *license.Manager, next http.
 		user, err := app.Store.GetUserByID(r.Context(), userID)
 		if err != nil || user.GlobalRole == "Sheriff" {
 			http.Redirect(w, r, "/admin", http.StatusSeeOther)
+			return
+		}
+		if user.GlobalRole == "Bounty Hunter" {
+			http.Redirect(w, r, "/engagements", http.StatusSeeOther)
 			return
 		}
 
@@ -251,6 +255,7 @@ func RegisterProRoutes(app *core.App, licenseManager *license.Manager) {
 	// ==========================================
 	// 🤠 ENGAGEMENTS (Bounty Hunter pentests)
 	// ==========================================
+	app.Router.Handle("GET /engagements", bountyHunter(proUI.HandleEngagementsUI(app.Store)))
 	app.Router.Handle("POST /api/engagements", bountyHunter(proAdminH.HandleCreateEngagement))
 	app.Router.Handle("GET /api/engagements", protected(proAdminH.HandleListEngagements))
 	app.Router.Handle("GET /api/engagements/{id}", protected(proAdminH.HandleGetEngagement))

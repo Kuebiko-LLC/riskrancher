@@ -1,0 +1,228 @@
+{{define "content"}}
+<div id="bh-app" data-email="{{.Email}}" data-role="{{.Role}}" style="max-width:1200px;margin:0 auto;padding:20px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+    <div>
+      <h1 style="margin:0;color:#0f172a;">🕵️ Bounty Hunter Workspace</h1>
+      <p style="margin:2px 0 0;color:#64748b;font-size:.9rem;">Run engagements, build reports, and release findings to the range. <a href="/ingest">Ingest findings →</a></p>
+    </div>
+    <span id="whoami" style="color:#475569;font-size:.85rem;"></span>
+  </div>
+
+  <!-- Alert feed: severity proposals awaiting this BH -->
+  <div id="alerts" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:12px 16px;margin:12px 0;">
+    <strong style="color:#9a3412;">⚠️ Severity change proposals on your findings</strong>
+    <div id="alertList" style="margin-top:8px;"></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:340px minmax(0,1fr);gap:20px;align-items:start;">
+
+    <!-- Left: new + list -->
+    <div>
+      <div style="border:1px solid #e2e8f0;border-radius:8px;padding:16px;background:#fff;margin-bottom:16px;">
+        <h3 style="margin:0 0 10px;">New engagement</h3>
+        <input id="engName" placeholder="Name (e.g. Acme External 2026)" style="width:100%;padding:8px;margin-bottom:8px;box-sizing:border-box;">
+        <input id="engClient" placeholder="Client (optional)" style="width:100%;padding:8px;margin-bottom:8px;box-sizing:border-box;">
+        <button onclick="createEngagement()" class="btn" style="background:#2563eb;color:#fff;width:100%;padding:8px;border:none;border-radius:6px;cursor:pointer;">+ Create</button>
+      </div>
+      <div style="border:1px solid #e2e8f0;border-radius:8px;padding:16px;background:#fff;">
+        <h3 style="margin:0 0 10px;">My engagements</h3>
+        <div id="engList"><p style="color:#94a3b8;">Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- Right: detail -->
+    <div id="detail" style="border:1px solid #e2e8f0;border-radius:8px;padding:16px;background:#fff;min-height:200px;">
+      <p style="color:#94a3b8;">Select an engagement, or create one, to begin.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const app = document.getElementById('bh-app');
+  const me = { email: app.dataset.email, role: app.dataset.role };
+  document.getElementById('whoami').textContent = me.email + "  ·  " + me.role;
+  let current = null; // selected engagement detail {engagement, findings}
+
+  const esc = s => (s==null?'':String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  async function api(method, url, body){
+    const opt = { method, headers: {} };
+    if (body !== undefined){ opt.headers['Content-Type']='application/json'; opt.body=JSON.stringify(body); }
+    const res = await fetch(url, opt);
+    const text = await res.text();
+    let data = null; try { data = text ? JSON.parse(text) : null; } catch(e) { data = text; }
+    if (!res.ok) throw { status: res.status, data };
+    return data;
+  }
+  const sevColor = s => ({Critical:'#b4232c',High:'#c75000',Medium:'#b8860b',Low:'#2f6f4f'}[s]||'#555');
+  const badge = (t,bg) => `<span style="display:inline-block;background:${bg};color:#fff;border-radius:4px;padding:1px 7px;font-size:.72rem;font-weight:600;">${esc(t)}</span>`;
+
+  // ---- engagements ----
+  async function loadEngagements(){
+    const el = document.getElementById('engList');
+    try {
+      const d = await api('GET','/api/engagements');
+      const list = d.engagements || [];
+      if (!list.length){ el.innerHTML = '<p style="color:#94a3b8;">None yet.</p>'; return; }
+      el.innerHTML = list.map(e => `
+        <div onclick="openEngagement(${e.id})" style="padding:8px;border:1px solid #eef2f7;border-radius:6px;margin-bottom:6px;cursor:pointer;${current&&current.engagement.id===e.id?'background:#eff6ff;border-color:#bfdbfe;':''}">
+          <div style="display:flex;justify-content:space-between;">
+            <strong>${esc(e.number)}</strong>
+            ${badge(e.status, e.status==='Released'?'#2f6f4f':'#475569')}
+          </div>
+          <div style="font-size:.85rem;color:#334155;">${esc(e.name)}</div>
+        </div>`).join('');
+    } catch(err){ el.innerHTML = '<p style="color:#b4232c;">Failed to load.</p>'; }
+  }
+
+  window.createEngagement = async function(){
+    const name = document.getElementById('engName').value.trim();
+    if (!name){ alert('Name is required'); return; }
+    const client = document.getElementById('engClient').value.trim();
+    try {
+      const e = await api('POST','/api/engagements',{name, client});
+      document.getElementById('engName').value=''; document.getElementById('engClient').value='';
+      await loadEngagements(); openEngagement(e.id);
+    } catch(err){ alert('Create failed'); }
+  };
+
+  window.openEngagement = async function(id){
+    const el = document.getElementById('detail');
+    el.innerHTML = '<p style="color:#94a3b8;">Loading…</p>';
+    try {
+      current = await api('GET','/api/engagements/'+id);
+      renderDetail();
+      loadEngagements();
+    } catch(err){ el.innerHTML = '<p style="color:#b4232c;">Could not open (403?).</p>'; }
+  };
+
+  function renderDetail(){
+    const e = current.engagement, findings = current.findings || [];
+    const released = e.status === 'Released';
+    const rows = findings.length ? findings.map(f => `
+      <tr>
+        <td style="padding:6px;"><input type="checkbox" class="repPick" value="${f.id}" checked></td>
+        <td style="padding:6px;">${badge(f.severity, sevColor(f.severity))}</td>
+        <td style="padding:6px;"><strong>${esc(f.title)}</strong><br><span style="font-size:.78rem;color:#64748b;font-family:monospace;">${esc(f.asset_identifier)}</span></td>
+        <td style="padding:6px;font-size:.8rem;color:#475569;">${esc(f.status)}</td>
+      </tr>`).join('') : '<tr><td colspan="4" style="padding:10px;color:#94a3b8;text-align:center;">No findings yet.</td></tr>';
+
+    document.getElementById('detail').innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h2 style="margin:0;">${esc(e.number)} · ${esc(e.name)}</h2>
+        ${badge(e.status, released?'#2f6f4f':'#475569')}
+      </div>
+      <p style="color:#64748b;margin:4px 0 14px;">${esc(e.client||'')}</p>
+
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+        <input id="addIds" placeholder="finding ids e.g. 12,13" style="padding:7px;flex:1;" ${released?'disabled':''}>
+        <button onclick="addFindings()" class="btn" style="padding:7px 12px;" ${released?'disabled':''}>Add findings</button>
+        ${released ? '' : `<button onclick="releaseEngagement()" class="btn" style="padding:7px 12px;background:#2f6f4f;color:#fff;border:none;border-radius:6px;cursor:pointer;">🏷️ Release to range</button>`}
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;border:1px solid #eef2f7;">
+        <thead style="background:#f8fafc;"><tr>
+          <th style="padding:6px;width:30px;"></th><th style="padding:6px;text-align:left;">Sev</th>
+          <th style="padding:6px;text-align:left;">Finding</th><th style="padding:6px;text-align:left;">Status</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+
+      <hr style="margin:18px 0;border:none;border-top:1px solid #eef2f7;">
+      <h3 style="margin:0 0 8px;">📝 Report</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <input id="rTitle" placeholder="Report title" style="padding:7px;" value="${esc(e.name)} - Pentest Report">
+        <input id="rClient" placeholder="Client" style="padding:7px;" value="${esc(e.client||'')}">
+      </div>
+      <input id="rScope" placeholder="Scope" style="padding:7px;width:100%;box-sizing:border-box;margin-top:8px;">
+      <textarea id="rSummary" placeholder="Executive summary" style="padding:7px;width:100%;box-sizing:border-box;margin-top:8px;height:60px;"></textarea>
+      <textarea id="rBody" placeholder="Narrative / methodology (Markdown)" style="padding:7px;width:100%;box-sizing:border-box;margin-top:8px;height:90px;"></textarea>
+      <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+        <button onclick="buildReport()" class="btn" style="padding:7px 12px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;">Generate / Save report</button>
+        <span id="repMsg" style="font-size:.85rem;color:#2f6f4f;"></span>
+      </div>
+      <div id="repLinks" style="margin-top:8px;"></div>
+    `;
+    // if a report already exists for this engagement, load it into the editor
+    hydrateReport();
+  }
+
+  let currentReportId = null;
+  async function hydrateReport(){
+    currentReportId = null;
+    document.getElementById('repLinks').innerHTML='';
+    try {
+      const d = await api('GET','/api/reports/generated');
+      const rep = (d.reports||[]).find(r => r.engagement_id === current.engagement.id);
+      if (rep){ currentReportId = rep.id; showReportLinks(rep.id); }
+    } catch(e){}
+  }
+  function showReportLinks(id){
+    document.getElementById('repLinks').innerHTML =
+      `Report #${id}: <a href="/api/reports/branded/${id}?format=html" target="_blank">HTML</a> · <a href="/api/reports/branded/${id}?format=md" target="_blank">Markdown</a>`;
+  }
+
+  window.addFindings = async function(){
+    const raw = document.getElementById('addIds').value.trim();
+    const ids = raw.split(',').map(s=>parseInt(s.trim(),10)).filter(n=>!isNaN(n));
+    if (!ids.length){ alert('Enter finding ids'); return; }
+    try { await api('POST','/api/engagements/'+current.engagement.id+'/findings',{ticket_ids:ids}); openEngagement(current.engagement.id); }
+    catch(err){ alert('Add failed ('+(err.status||'')+')'); }
+  };
+
+  window.releaseEngagement = async function(){
+    if (!confirm('Release this engagement? Its findings enter the RangeHand queue.')) return;
+    try { await api('POST','/api/engagements/'+current.engagement.id+'/release'); openEngagement(current.engagement.id); }
+    catch(err){ alert('Release failed'); }
+  };
+
+  window.buildReport = async function(){
+    const picks = Array.from(document.querySelectorAll('.repPick:checked')).map(c=>parseInt(c.value,10));
+    if (!picks.length){ alert('Select at least one finding'); return; }
+    const body = {
+      title: document.getElementById('rTitle').value,
+      client_name: document.getElementById('rClient').value,
+      scope: document.getElementById('rScope').value,
+      executive_summary: document.getElementById('rSummary').value,
+      body: document.getElementById('rBody').value,
+      engagement_id: current.engagement.id,
+      ticket_ids: picks
+    };
+    try {
+      let rep;
+      if (currentReportId){ rep = await api('PUT','/api/reports/branded/'+currentReportId, body); }
+      else { rep = await api('POST','/api/reports/branded', body); currentReportId = rep.id; }
+      document.getElementById('repMsg').textContent = 'Saved ✓';
+      setTimeout(()=>document.getElementById('repMsg').textContent='', 2000);
+      showReportLinks(rep.id);
+    } catch(err){ alert('Report save failed ('+(err.status||'')+')'); }
+  };
+
+  // ---- alerts (severity proposals) ----
+  async function loadAlerts(){
+    try {
+      const d = await api('GET','/api/severity-proposals/mine');
+      const list = d.proposals || [];
+      const box = document.getElementById('alerts');
+      if (!list.length){ box.style.display='none'; return; }
+      box.style.display='block';
+      document.getElementById('alertList').innerHTML = list.map(p => `
+        <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #fed7aa;padding:6px 0;">
+          <div style="font-size:.88rem;">Finding #${p.ticket_id}: ${badge(p.from_severity,sevColor(p.from_severity))} → ${badge(p.to_severity,sevColor(p.to_severity))}
+            <span style="color:#7c2d12;">— ${esc(p.justification)}</span> <span style="color:#9a3412;font-size:.78rem;">(by ${esc(p.proposed_by)})</span></div>
+          <div style="display:flex;gap:6px;">
+            <button onclick="acceptProp(${p.id})" style="padding:4px 10px;background:#2f6f4f;color:#fff;border:none;border-radius:5px;cursor:pointer;">Accept</button>
+            <button onclick="contestProp(${p.id})" style="padding:4px 10px;background:#fff;color:#b4232c;border:1px solid #fca5a5;border-radius:5px;cursor:pointer;">Contest</button>
+          </div>
+        </div>`).join('');
+    } catch(e){}
+  }
+  window.acceptProp = async function(id){ try { await api('POST','/api/severity-proposals/'+id+'/accept'); loadAlerts(); if(current) openEngagement(current.engagement.id); } catch(e){ alert('Accept failed'); } };
+  window.contestProp = async function(id){ const note = prompt('Why are you contesting? (goes to the Sheriff)'); if(note===null) return; try { await api('POST','/api/severity-proposals/'+id+'/contest',{note}); loadAlerts(); } catch(e){ alert('Contest failed'); } };
+
+  loadEngagements();
+  loadAlerts();
+  setInterval(loadAlerts, 20000);
+})();
+</script>
+{{end}}

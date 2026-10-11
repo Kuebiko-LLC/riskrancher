@@ -8,9 +8,11 @@ import (
 	"net/http"
 	"strings"
 
-	coreUI "github.com/Kuebiko-LLC/riskrancher/ui"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
+	coredomain "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 	"github.com/Kuebiko-LLC/riskrancher/pro/license"
 	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
+	coreUI "github.com/Kuebiko-LLC/riskrancher/ui"
 )
 
 // 🚨 UPDATED: Embed the full copied templates directory, components, and magic links
@@ -68,6 +70,7 @@ func InjectProTemplates(licenseManager *license.Manager, proStore storage.ProSto
 	coreUI.Pages["adapter_builder"] = template.Must(template.New("base").Funcs(funcMap).ParseFS(ProUIFS, "templates/base.gohtml", "templates/adapter_builder.gohtml", "templates/components/*.gohtml"))
 	coreUI.Pages["report_upload"] = template.Must(template.New("base").Funcs(funcMap).ParseFS(ProUIFS, "templates/base.gohtml", "templates/report_upload.gohtml", "templates/components/*.gohtml"))
 	coreUI.Pages["report_parser"] = template.Must(template.New("base").Funcs(funcMap).ParseFS(ProUIFS, "templates/base.gohtml", "templates/report_parser.gohtml", "templates/components/*.gohtml"))
+	coreUI.Pages["engagements"] = template.Must(template.New("base").Funcs(funcMap).ParseFS(ProUIFS, "templates/base.gohtml", "templates/engagements.gohtml", "templates/components/*.gohtml"))
 
 	coreUI.Pages["login"] = template.Must(template.New("login").Funcs(funcMap).ParseFS(ProUIFS, "templates/login.gohtml"))
 	coreUI.Pages["register"] = template.Must(template.New("register").Funcs(funcMap).ParseFS(ProUIFS, "templates/register.gohtml"))
@@ -83,6 +86,29 @@ func HandleLicenseSetupUI() http.HandlerFunc {
 			}
 		} else {
 			http.Error(w, "Setup template not found. (Did you delete setup.gohtml during the copy?)", http.StatusInternalServerError)
+		}
+	}
+}
+
+// HandleEngagementsUI serves the Bounty Hunter workspace (engagements + report
+// builder). The page is JS-driven against the engagement/report/proposal APIs;
+// the handler only supplies the signed-in user's identity.
+func HandleEngagementsUI(store coredomain.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		id, ok := r.Context().Value(auth.UserIDKey).(int)
+		if !ok {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+		u, err := store.GetUserByID(r.Context(), id)
+		if err != nil {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+		data := map[string]any{"Email": u.Email, "Role": u.GlobalRole}
+		if err := coreUI.Pages["engagements"].ExecuteTemplate(w, "base", data); err != nil {
+			http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 		}
 	}
 }

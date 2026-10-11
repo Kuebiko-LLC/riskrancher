@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	coredomain "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
@@ -30,6 +31,8 @@ func (s *ProSQLiteStore) CreateEngagement(ctx context.Context, e *proModels.Enga
 	if _, err := s.db.ExecContext(ctx, `UPDATE engagements SET number = ? WHERE id = ?`, e.Number, e.ID); err != nil {
 		return 0, err
 	}
+	// Populate the DB-assigned created_at so the response carries a real time.
+	_ = s.db.QueryRowContext(ctx, `SELECT created_at FROM engagements WHERE id = ?`, e.ID).Scan(&e.CreatedAt)
 	return e.ID, nil
 }
 
@@ -90,15 +93,22 @@ func (s *ProSQLiteStore) ReleaseEngagement(ctx context.Context, id int) error {
 // is still 'Waiting to be Triaged'), so a Bounty Hunter cannot hijack a finding
 // that is already in another engagement or already being worked.
 func (s *ProSQLiteStore) AddFindingsToEngagement(ctx context.Context, engagementID int, ticketIDs []int) error {
-	for _, tid := range ticketIDs {
-		if _, err := s.db.ExecContext(ctx,
-			`UPDATE tickets SET engagement_id = ?, released = 0
-			 WHERE id = ? AND engagement_id IS NULL AND status = 'Waiting to be Triaged'`,
-			engagementID, tid); err != nil {
-			return err
-		}
+	if len(ticketIDs) == 0 {
+		return nil
 	}
-	return nil
+	placeholders := make([]string, len(ticketIDs))
+	args := make([]any, 0, len(ticketIDs)+1)
+	args = append(args, engagementID)
+	for i, tid := range ticketIDs {
+		placeholders[i] = "?"
+		args = append(args, tid)
+	}
+	_, err := s.db.ExecContext(ctx,
+		`UPDATE tickets SET engagement_id = ?, released = 0
+		 WHERE id IN (`+strings.Join(placeholders, ",")+`)
+		   AND engagement_id IS NULL AND status = 'Waiting to be Triaged'`,
+		args...)
+	return err
 }
 
 // ListEngagementsByOwner returns the engagements owned by ownerEmail, newest first.

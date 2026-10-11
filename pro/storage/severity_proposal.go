@@ -18,6 +18,7 @@ var ErrNotBountyHunterFinding = errors.New("finding is not from a Bounty Hunter 
 var (
 	ErrProposalNotPending   = errors.New("proposal is not pending")
 	ErrProposalNotContested = errors.New("proposal is not contested")
+	ErrProposalAlreadyOpen  = errors.New("an open severity proposal already exists for this finding")
 )
 
 // txResolve applies a final severity to the finding and resolves the proposal
@@ -89,6 +90,14 @@ func (s *ProSQLiteStore) ProposeSeverityChange(ctx context.Context, ticketID int
 	}
 	if !engagementID.Valid {
 		return nil, ErrNotBountyHunterFinding
+	}
+
+	var openCount int
+	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM severity_proposals WHERE ticket_id = ? AND status = 'Pending'`, ticketID).Scan(&openCount); err != nil {
+		return nil, err
+	}
+	if openCount > 0 {
+		return nil, ErrProposalAlreadyOpen
 	}
 
 	res, err := s.db.ExecContext(ctx, `

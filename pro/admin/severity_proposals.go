@@ -37,11 +37,14 @@ func (h *ProHandler) HandleProposeSeverity(w http.ResponseWriter, r *http.Reques
 
 	p, err := h.ProStore.ProposeSeverityChange(r.Context(), ticketID, req.ToSeverity, req.Justification, h.currentUserEmail(r))
 	if err != nil {
-		if errors.Is(err, storage.ErrNotBountyHunterFinding) {
+		switch {
+		case errors.Is(err, storage.ErrNotBountyHunterFinding):
 			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
+		case errors.Is(err, storage.ErrProposalAlreadyOpen):
+			http.Error(w, err.Error(), http.StatusConflict)
+		default:
+			httpServerError(w, "ProposeSeverityChange", err)
 		}
-		httpServerError(w, "ProposeSeverityChange", err)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

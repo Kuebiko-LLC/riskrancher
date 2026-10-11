@@ -34,6 +34,8 @@ func (s *ProSQLiteStore) CreatePentestReport(ctx context.Context, report *proMod
 		return 0, err
 	}
 	report.ID = int(id)
+	// Populate the DB-assigned created_at so the response carries a real time.
+	_ = s.db.QueryRowContext(ctx, `SELECT created_at FROM pentest_reports WHERE id = ?`, report.ID).Scan(&report.CreatedAt)
 	return report.ID, nil
 }
 

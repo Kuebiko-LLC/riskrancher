@@ -15,9 +15,10 @@ func TestProposalStateMachine(t *testing.T) {
 	store, done := newEngStore(t)
 	defer done()
 
-	tid := seedBHFinding(t, store, "bh@ranch.com", "Critical")
-
+	// Each sub-test uses its own finding, since only one open proposal is allowed
+	// per finding.
 	t.Run("accept only works once (second accept is rejected)", func(t *testing.T) {
+		tid := seedBHFinding(t, store, "bh@ranch.com", "Critical")
 		p, _ := store.ProposeSeverityChange(ctx, tid, "Low", "x", "rh@ranch.com")
 		if err := store.AcceptSeverityProposal(ctx, p.ID, "bh@ranch.com"); err != nil {
 			t.Fatalf("first accept: %v", err)
@@ -28,6 +29,7 @@ func TestProposalStateMachine(t *testing.T) {
 	})
 
 	t.Run("adjudicate requires a contested proposal", func(t *testing.T) {
+		tid := seedBHFinding(t, store, "bh@ranch.com", "Critical")
 		p, _ := store.ProposeSeverityChange(ctx, tid, "Low", "x", "rh@ranch.com")
 		// still Pending, not Contested
 		if err := store.AdjudicateSeverityProposal(ctx, p.ID, "High", "sheriff@ranch.com", "n"); !errors.Is(err, storage.ErrProposalNotContested) {
@@ -36,6 +38,7 @@ func TestProposalStateMachine(t *testing.T) {
 	})
 
 	t.Run("contest requires a pending proposal", func(t *testing.T) {
+		tid := seedBHFinding(t, store, "bh@ranch.com", "Critical")
 		p, _ := store.ProposeSeverityChange(ctx, tid, "Low", "x", "rh@ranch.com")
 		store.AcceptSeverityProposal(ctx, p.ID, "bh@ranch.com")
 		if err := store.ContestSeverityProposal(ctx, p.ID, "bh@ranch.com", "wait"); !errors.Is(err, storage.ErrProposalNotPending) {

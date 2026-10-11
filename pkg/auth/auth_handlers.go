@@ -9,6 +9,14 @@ import (
 
 const SessionCookieName = "session_token"
 
+// secureRequest reports whether the request arrived over HTTPS, either directly
+// (TLS) or via a reverse proxy that set X-Forwarded-Proto. Used to set the
+// session cookie's Secure flag so it is HTTPS-only in production but still works
+// over plain localhost HTTP in development.
+func secureRequest(r *http.Request) bool {
+	return r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
+}
+
 // RegisterRequest represents the JSON payload expected for user registration.
 type RegisterRequest struct {
 	Email      string `json:"email"`
@@ -106,7 +114,7 @@ func (h *Handler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		Expires:  expiresAt,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false, // Set to TRUE in production for HTTPS!
+		Secure:   secureRequest(r), // HTTPS only when served over TLS (or behind an https proxy)
 		SameSite: http.SameSiteLaxMode,
 	})
 

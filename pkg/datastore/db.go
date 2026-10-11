@@ -58,6 +58,9 @@ func InitDB(dbPath string) *sql.DB {
 			SELECT id,email,password_hash,full_name,global_role,department,is_active,created_at FROM users;
 		DROP TABLE users;
 		ALTER TABLE users_rebuild RENAME TO users;`,
+		// v3: findings held in an unreleased engagement are hidden from the
+		// triage queue until released. Normal findings default to visible (1).
+		`ALTER TABLE tickets ADD COLUMN released INTEGER NOT NULL DEFAULT 1;`,
 	}
 
 	if err := RunMigrations(db, migrations); err != nil {

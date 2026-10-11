@@ -185,28 +185,29 @@ func (s *SQLiteStore) GetDashboardTickets(ctx context.Context, tabStatus, filter
 	if userRole != "Sheriff" {
 		var critCount, overCount, mineCount, verifyCount, returnedCount int
 
-		critQ := "SELECT COUNT(t.id) FROM tickets t WHERE t.severity = 'Critical' AND t.status NOT IN ('Patched', 'Risk Accepted', 'False Positive')" + scope
+		critQ := "SELECT COUNT(t.id) FROM tickets t WHERE t.released = 1 AND t.severity = 'Critical' AND t.status NOT IN ('Patched', 'Risk Accepted', 'False Positive')" + scope
 		s.DB.QueryRowContext(ctx, critQ, scopeArgs...).Scan(&critCount)
 		metrics["critical"] = critCount
 
-		overQ := "SELECT COUNT(t.id) FROM tickets t WHERE t.remediation_due_date < CURRENT_TIMESTAMP AND t.status NOT IN ('Patched', 'Risk Accepted', 'False Positive')" + scope
+		overQ := "SELECT COUNT(t.id) FROM tickets t WHERE t.released = 1 AND t.remediation_due_date < CURRENT_TIMESTAMP AND t.status NOT IN ('Patched', 'Risk Accepted', 'False Positive')" + scope
 		s.DB.QueryRowContext(ctx, overQ, scopeArgs...).Scan(&overCount)
 		metrics["overdue"] = overCount
 
-		mineQ := "SELECT COUNT(t.id) FROM tickets t WHERE LOWER(t.assignee) = LOWER(?) AND t.status NOT IN ('Patched', 'Risk Accepted', 'False Positive')"
+		mineQ := "SELECT COUNT(t.id) FROM tickets t WHERE t.released = 1 AND LOWER(t.assignee) = LOWER(?) AND t.status NOT IN ('Patched', 'Risk Accepted', 'False Positive')"
 		s.DB.QueryRowContext(ctx, mineQ, userEmail).Scan(&mineCount)
 		metrics["mine"] = mineCount
 
-		verifyQ := "SELECT COUNT(t.id) FROM tickets t WHERE t.status = 'Pending Verification'" + scope
+		verifyQ := "SELECT COUNT(t.id) FROM tickets t WHERE t.released = 1 AND t.status = 'Pending Verification'" + scope
 		s.DB.QueryRowContext(ctx, verifyQ, scopeArgs...).Scan(&verifyCount)
 		metrics["verification"] = verifyCount
 
-		retQ := "SELECT COUNT(t.id) FROM tickets t WHERE t.status = 'Returned to Security'" + scope
+		retQ := "SELECT COUNT(t.id) FROM tickets t WHERE t.released = 1 AND t.status = 'Returned to Security'" + scope
 		s.DB.QueryRowContext(ctx, retQ, scopeArgs...).Scan(&returnedCount)
 		metrics["returned"] = returnedCount
 	}
 
-	baseQ := "FROM tickets t WHERE 1=1" + scope
+	// Hide findings held in an unreleased engagement (released = 0).
+	baseQ := "FROM tickets t WHERE t.released = 1" + scope
 	var args []any
 	args = append(args, scopeArgs...)
 

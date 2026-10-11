@@ -79,6 +79,8 @@ CREATE TABLE IF NOT EXISTS tickets (
                                        'Risk Accepted',
                                        'Pending Verification'
 )),
+    -- NOTE: the `released` column is added by migration v3 (see db.go), not here,
+    -- so the v3 ALTER does not collide with a fresh schema on first boot.
     dedupe_hash TEXT UNIQUE NOT NULL,
     patch_evidence TEXT,
     accessible_to_internet BOOLEAN DEFAULT 0,

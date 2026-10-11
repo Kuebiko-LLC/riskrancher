@@ -334,6 +334,7 @@ func RegisterProRoutes(app *core.App, licenseManager *license.Manager) {
 	// 💎 AUDITOR & REPORTING ENGINE
 	// ==========================================
 	app.Router.Handle("POST /api/reports/branded", protected(proAdminH.HandleGenerateBrandedReport))
+	app.Router.Handle("PUT /api/reports/branded/{id}", protected(proAdminH.HandleUpdateReport))
 	app.Router.Handle("GET /api/reports/branded/{id}", protected(proAdminH.HandleGetPentestReport))
 	app.Router.Handle("GET /api/reports/generated", protected(proAdminH.HandleListPentestReports))
 

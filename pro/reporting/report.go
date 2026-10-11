@@ -21,6 +21,7 @@ type ReportInput struct {
 	Author           string
 	Scope            string
 	ExecutiveSummary string
+	Body             string // author prose/narrative (Markdown), rendered as-is
 	GeneratedAt      time.Time
 }
 
@@ -115,6 +116,10 @@ func BuildMarkdown(in ReportInput, findings []domain.Ticket) string {
 	}
 	if in.ExecutiveSummary != "" {
 		fmt.Fprintf(&b, "## Executive Summary\n\n%s\n\n", in.ExecutiveSummary)
+	}
+	if in.Body != "" {
+		// Author prose is Markdown; emit it as-is (the author owns its headings).
+		fmt.Fprintf(&b, "%s\n\n", in.Body)
 	}
 
 	b.WriteString("## Findings at a Glance\n\n")
@@ -216,6 +221,7 @@ var htmlTmpl = template.Must(template.New("report").Parse(`<!doctype html>
 
   {{if .In.Scope}}<h2>Scope</h2><pre>{{.In.Scope}}</pre>{{end}}
   {{if .In.ExecutiveSummary}}<h2>Executive Summary</h2><pre>{{.In.ExecutiveSummary}}</pre>{{end}}
+  {{if .In.Body}}<pre class="report-body">{{.In.Body}}</pre>{{end}}
 
   <h2>Findings at a Glance</h2>
   {{if .Summary}}

@@ -204,6 +204,8 @@ CREATE TABLE IF NOT EXISTS pentest_reports (
     author            TEXT,
     scope             TEXT,
     executive_summary TEXT,
+    body              TEXT,                        -- author prose/narrative (editable)
+    engagement_id     INTEGER,                     -- optional link to an engagement
     ticket_ids        TEXT NOT NULL DEFAULT '[]', -- JSON array of the finding IDs snapshotted
     markdown          TEXT NOT NULL DEFAULT '',   -- rendered deliverable (frozen at generation)
     html              TEXT NOT NULL DEFAULT '',   -- rendered deliverable (frozen at generation)

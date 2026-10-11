@@ -11,6 +11,8 @@ type PentestReport struct {
 	Author           string    `json:"author"`
 	Scope            string    `json:"scope"`
 	ExecutiveSummary string    `json:"executive_summary"`
+	Body             string    `json:"body"`          // author prose/narrative (editable)
+	EngagementID     int       `json:"engagement_id"` // 0 if not tied to an engagement
 	TicketIDs        []int     `json:"ticket_ids"`
 	Markdown         string    `json:"markdown,omitempty"`
 	HTML             string    `json:"html,omitempty"`

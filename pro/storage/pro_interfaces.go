@@ -58,6 +58,7 @@ type ProStoreInterface interface {
 
 	// --- 💎 PRO PENTEST REPORTS (findings -> deliverable) ---
 	CreatePentestReport(ctx context.Context, report *proModels.PentestReport) (int, error)
+	UpdateReport(ctx context.Context, report *proModels.PentestReport) error
 	GetPentestReport(ctx context.Context, id int) (*proModels.PentestReport, error)
 	ListPentestReports(ctx context.Context) ([]proModels.PentestReport, error)
 

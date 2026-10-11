@@ -17,7 +17,31 @@ type generateReportRequest struct {
 	Author           string `json:"author"`
 	Scope            string `json:"scope"`
 	ExecutiveSummary string `json:"executive_summary"`
+	Body             string `json:"body"`
+	EngagementID     int    `json:"engagement_id"`
 	TicketIDs        []int  `json:"ticket_ids"`
+}
+
+// renderReport fetches the selected findings and renders the report to Markdown
+// and HTML. Missing ticket ids are skipped so a stale selection still renders.
+func (h *ProHandler) renderReport(r *http.Request, req generateReportRequest) (findings int, md, html string) {
+	var tickets []coredomain.Ticket
+	for _, id := range req.TicketIDs {
+		t, err := h.Store.GetTicketByID(r.Context(), id)
+		if err != nil {
+			continue
+		}
+		tickets = append(tickets, t)
+	}
+	in := reporting.ReportInput{
+		Title:            req.Title,
+		ClientName:       req.ClientName,
+		Author:           req.Author,
+		Scope:            req.Scope,
+		ExecutiveSummary: req.ExecutiveSummary,
+		Body:             req.Body,
+	}
+	return len(tickets), reporting.BuildMarkdown(in, tickets), reporting.BuildHTML(in, tickets)
 }
 
 // HandleGenerateBrandedReport turns a set of findings (tickets) into a pentest
@@ -34,27 +58,10 @@ func (h *ProHandler) HandleGenerateBrandedReport(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// Pull the selected findings. Missing IDs are skipped rather than failing
-	// the whole report, so a stale selection still produces a deliverable.
-	findings := make([]coredomain.Ticket, 0, len(req.TicketIDs))
-	for _, id := range req.TicketIDs {
-		t, err := h.Store.GetTicketByID(r.Context(), id)
-		if err != nil {
-			continue
-		}
-		findings = append(findings, t)
-	}
-	if len(findings) == 0 {
+	matched, md, html := h.renderReport(r, req)
+	if matched == 0 {
 		http.Error(w, "none of the requested ticket_ids matched a finding", http.StatusNotFound)
 		return
-	}
-
-	in := reporting.ReportInput{
-		Title:            req.Title,
-		ClientName:       req.ClientName,
-		Author:           req.Author,
-		Scope:            req.Scope,
-		ExecutiveSummary: req.ExecutiveSummary,
 	}
 
 	report := &proModels.PentestReport{
@@ -63,9 +70,11 @@ func (h *ProHandler) HandleGenerateBrandedReport(w http.ResponseWriter, r *http.
 		Author:           req.Author,
 		Scope:            req.Scope,
 		ExecutiveSummary: req.ExecutiveSummary,
+		Body:             req.Body,
+		EngagementID:     req.EngagementID,
 		TicketIDs:        req.TicketIDs,
-		Markdown:         reporting.BuildMarkdown(in, findings),
-		HTML:             reporting.BuildHTML(in, findings),
+		Markdown:         md,
+		HTML:             html,
 		CreatedBy:        h.currentUserEmail(r),
 	}
 
@@ -77,6 +86,54 @@ func (h *ProHandler) HandleGenerateBrandedReport(w http.ResponseWriter, r *http.
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(report)
+}
+
+// HandleUpdateReport saves edits to a report (prose and finding selection),
+// re-renders the Markdown and HTML, and returns the updated report. The report
+// is a live document, so edits are persisted and shown on the next read.
+// PUT /api/reports/branded/{id}
+func (h *ProHandler) HandleUpdateReport(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "Invalid report id", http.StatusBadRequest)
+		return
+	}
+	existing, err := h.ProStore.GetPentestReport(r.Context(), id)
+	if err != nil {
+		http.Error(w, "Report not found", http.StatusNotFound)
+		return
+	}
+
+	var req generateReportRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	_, md, html := h.renderReport(r, req)
+
+	updated := &proModels.PentestReport{
+		ID:               id,
+		Title:            req.Title,
+		ClientName:       req.ClientName,
+		Author:           req.Author,
+		Scope:            req.Scope,
+		ExecutiveSummary: req.ExecutiveSummary,
+		Body:             req.Body,
+		EngagementID:     req.EngagementID,
+		TicketIDs:        req.TicketIDs,
+		Markdown:         md,
+		HTML:             html,
+		CreatedBy:        existing.CreatedBy,
+		CreatedAt:        existing.CreatedAt,
+	}
+	if err := h.ProStore.UpdateReport(r.Context(), updated); err != nil {
+		http.Error(w, "DB Error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(updated)
 }
 
 // HandleGetPentestReport returns one stored report. The ?format query selects

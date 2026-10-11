@@ -2,30 +2,29 @@ package storage
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 
 	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
 )
 
-// CreatePentestReport persists a generated engagement report (a frozen snapshot
-// of the selected findings plus the rendered Markdown and HTML) and returns its
-// new id.
-func (s *ProSQLiteStore) CreatePentestReport(ctx context.Context, report *proModels.PentestReport) (int, error) {
-	ids := report.TicketIDs
+func marshalIDs(ids []int) string {
 	if ids == nil {
 		ids = []int{}
 	}
-	idsJSON, err := json.Marshal(ids)
-	if err != nil {
-		return 0, err
-	}
+	b, _ := json.Marshal(ids)
+	return string(b)
+}
 
+// CreatePentestReport persists a report (its editable fields plus the rendered
+// Markdown and HTML) and returns its new id.
+func (s *ProSQLiteStore) CreatePentestReport(ctx context.Context, report *proModels.PentestReport) (int, error) {
 	res, err := s.db.ExecContext(ctx, `
 		INSERT INTO pentest_reports
-			(title, client_name, author, scope, executive_summary, ticket_ids, markdown, html, created_by)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			(title, client_name, author, scope, executive_summary, body, engagement_id, ticket_ids, markdown, html, created_by)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		report.Title, report.ClientName, report.Author, report.Scope, report.ExecutiveSummary,
-		string(idsJSON), report.Markdown, report.HTML, report.CreatedBy,
+		report.Body, report.EngagementID, marshalIDs(report.TicketIDs), report.Markdown, report.HTML, report.CreatedBy,
 	)
 	if err != nil {
 		return 0, err
@@ -38,18 +37,36 @@ func (s *ProSQLiteStore) CreatePentestReport(ctx context.Context, report *proMod
 	return report.ID, nil
 }
 
+// UpdateReport persists edits to a report, including the re-rendered Markdown
+// and HTML. The report keeps its id, created_by, and created_at.
+func (s *ProSQLiteStore) UpdateReport(ctx context.Context, report *proModels.PentestReport) error {
+	_, err := s.db.ExecContext(ctx, `
+		UPDATE pentest_reports SET
+			title = ?, client_name = ?, author = ?, scope = ?, executive_summary = ?,
+			body = ?, engagement_id = ?, ticket_ids = ?, markdown = ?, html = ?
+		WHERE id = ?`,
+		report.Title, report.ClientName, report.Author, report.Scope, report.ExecutiveSummary,
+		report.Body, report.EngagementID, marshalIDs(report.TicketIDs), report.Markdown, report.HTML, report.ID,
+	)
+	return err
+}
+
 // GetPentestReport returns one stored report, including the rendered bodies.
 func (s *ProSQLiteStore) GetPentestReport(ctx context.Context, id int) (*proModels.PentestReport, error) {
 	var r proModels.PentestReport
 	var idsJSON string
+	var body sql.NullString
+	var engagementID sql.NullInt64
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, title, client_name, author, scope, executive_summary, ticket_ids, markdown, html, created_by, created_at
+		SELECT id, title, client_name, author, scope, executive_summary, body, engagement_id, ticket_ids, markdown, html, created_by, created_at
 		FROM pentest_reports WHERE id = ?`, id,
 	).Scan(&r.ID, &r.Title, &r.ClientName, &r.Author, &r.Scope, &r.ExecutiveSummary,
-		&idsJSON, &r.Markdown, &r.HTML, &r.CreatedBy, &r.CreatedAt)
+		&body, &engagementID, &idsJSON, &r.Markdown, &r.HTML, &r.CreatedBy, &r.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
+	r.Body = body.String
+	r.EngagementID = int(engagementID.Int64)
 	_ = json.Unmarshal([]byte(idsJSON), &r.TicketIDs)
 	return &r, nil
 }

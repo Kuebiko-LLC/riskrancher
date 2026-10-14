@@ -1,6 +1,5 @@
 # Build output
 /rr
-/rrpro
 *.exe
 
 # Local database + runtime state
@@ -24,5 +23,5 @@
 # Local security working doc (do not publish)
 docs/SECURITY-REVIEW.md
 
-# Local product roadmap (competitive notes; keep out of the OSS repo)
+# Local product roadmap (competitive notes; keep out of the public repo)
 docs/REPORT-ROADMAP.md

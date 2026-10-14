@@ -17,8 +17,8 @@ import (
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
-// setupReportsTest builds a ProHandler over a real SQLite DB with the full core
-// and Pro schema, seeds a Critical and a Low finding, and returns their IDs plus
+// setupReportsTest builds a Handler over a real SQLite DB with the full
+// schema, seeds a Critical and a Low finding, and returns their IDs plus
 // a request decorator that authenticates as the report author.
 func setupReportsTest(t *testing.T) (*Handler, *sql.DB, []int, func(*http.Request) *http.Request) {
 	t.Helper()

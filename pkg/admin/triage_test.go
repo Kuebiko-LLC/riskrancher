@@ -17,7 +17,7 @@ func TestAutoTriageRuleLifecycleBDD(t *testing.T) {
 	app, db := setupTestAdmin(t)
 	defer db.Close()
 
-	// Convert the core.Store to ProStore so we can check the DB directly
+	// Reach the database directly to check what was written
 	store := app.Store
 
 	var createdRuleID int

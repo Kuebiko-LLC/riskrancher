@@ -24,7 +24,7 @@ func NewSuppressionEngine(db *sql.DB) *SuppressionEngine {
 }
 
 // EvaluateBatch applies suppression rules to a slice of tickets during ingestion.
-// It mutates the tickets in-place before they hit the core database.
+// It mutates the tickets in-place before they hit the database.
 func (e *SuppressionEngine) EvaluateBatch(ctx context.Context, batch []domain.Ticket) error {
 	// 1. Fetch active rules once per batch to avoid N+1 query performance hits
 	query := `
@@ -65,7 +65,7 @@ func (e *SuppressionEngine) EvaluateBatch(ctx context.Context, batch []domain.Ti
 			if rule.MatchAsset.Valid && !strings.Contains(strings.ToLower(batch[i].AssetIdentifier), strings.ToLower(rule.MatchAsset.String)) {
 				continue
 			}
-			// Use Title instead of CVE, since Title forms the DedupeHash in core
+			// Title forms the dedupe hash, so match on it
 			if rule.MatchTitle.Valid && !strings.Contains(strings.ToLower(batch[i].Title), strings.ToLower(rule.MatchTitle.String)) {
 				continue
 			}

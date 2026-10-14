@@ -40,7 +40,7 @@ func TestAuditLogger_BDD(t *testing.T) {
 			panic("simulated nil pointer dereference")
 		})
 
-		req := httptest.NewRequest(http.MethodPost, "/api/pro/dangerous", nil)
+		req := httptest.NewRequest(http.MethodPost, "/api/admin/dangerous", nil)
 		w := httptest.NewRecorder()
 
 		// 2. Act: Run the request through the middleware
@@ -68,7 +68,7 @@ func TestAuditLogger_BDD(t *testing.T) {
 			w.Write([]byte(`{"status":"created"}`))
 		})
 
-		req := httptest.NewRequest(http.MethodPost, "/api/pro/triage-rules", nil)
+		req := httptest.NewRequest(http.MethodPost, "/api/admin/triage", nil)
 		w := httptest.NewRecorder()
 
 		// 2. Act

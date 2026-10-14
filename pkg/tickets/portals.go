@@ -214,7 +214,6 @@ func (h *Handler) HandleWranglerReject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Assuming the Store has been updated to include the Pro interface methods
 	store := h.Store
 
 	ids := inBatch(batch, req.TicketIDs)

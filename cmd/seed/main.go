@@ -18,7 +18,7 @@ func main() {
 	db := datastore.InitDB("./data/riskrancher.db")
 	defer db.Close()
 
-	// Inject enterprise schema
+	// Apply the schema
 	store := datastore.NewSQLiteStore(db)
 
 	ctx := context.Background()

@@ -10,7 +10,7 @@ import (
 
 // HandleCreateTriageRule allows the Sheriff to build a new ingestion interceptor rule
 func (h *Handler) HandleCreateTriageRule(w http.ResponseWriter, r *http.Request) {
-	var rule domain.AutoTriageRule // 🚀 FIX: Use the Pro Model
+	var rule domain.AutoTriageRule
 	if err := json.NewDecoder(r.Body).Decode(&rule); err != nil {
 		http.Error(w, "Invalid payload", http.StatusBadRequest)
 		return

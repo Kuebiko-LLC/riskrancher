@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS tickets (
     assignee TEXT DEFAULT 'Unassigned',
     latest_comment TEXT DEFAULT '',
 
-    -- 🚀 RE-ADDED: The missing Enterprise Risk & CISA tracking fields!
+    -- Risk acceptance and KEV tracking
     is_cisa_kev BOOLEAN DEFAULT 0,
     verification_requested_at DATETIME,
     extension_count INTEGER DEFAULT 0,
@@ -176,13 +176,6 @@ CREATE INDEX IF NOT EXISTS idx_tickets_remediation_due ON tickets(remediation_du
 -- ==========================================
 -- Workflow, rules, portals, reporting
 -- ==========================================
--- File: RiskRancher/pro/storage/pro_schema.sql
--- These tables unlock the Enterprise features
-
--- ==========================================
--- 0. WORKSPACES (Multi-Tenancy Foundation)
--- ==========================================
-
 -- ==========================================
 -- 1. THE MISSING AUDIT & ACTIVITY ENGINE
 -- ==========================================
@@ -293,7 +286,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 );
 
 -- ==========================================
--- 5. ASSET TOPOLOGY (ASPM)
+-- 5. ASSET TOPOLOGY
 -- ==========================================
 CREATE TABLE IF NOT EXISTS asset_sequences (
                                                asset_identifier TEXT PRIMARY KEY,
@@ -419,7 +412,7 @@ CREATE TABLE IF NOT EXISTS pentest_reports (
 );
 
 -- ==========================================
--- 6. ENTERPRISE PERFORMANCE INDEXES
+-- 6. INDEXES
 -- ==========================================
 CREATE INDEX IF NOT EXISTS idx_activity_ticket_id ON ticket_activity(ticket_id);
 CREATE INDEX IF NOT EXISTS idx_activity_created_at ON ticket_activity(created_at);

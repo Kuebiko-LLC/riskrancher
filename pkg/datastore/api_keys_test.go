@@ -15,7 +15,7 @@ func TestAPIKeys_BDD(t *testing.T) {
 	defer db.Close()
 
 	// Disable foreign-key enforcement to test the API key logic in isolation
-	// without needing to perfectly mock the free tier's Users and Workspaces tables.
+	// against the real schema.
 	_, _ = db.Exec("PRAGMA foreign_keys = OFF;")
 
 	store := datastore.NewSQLiteStore(db)

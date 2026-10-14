@@ -152,11 +152,11 @@ func (s *SQLiteStore) GetDashboardTicketsWithPortals(ctx context.Context, tabSta
 		return nil, 0, nil, err
 	}
 
-	var proTickets []domain.DashboardTicket
+	var withPortals []domain.DashboardTicket
 
 	// 2. If no tickets were returned, skip enrichment
 	if len(coreTickets) == 0 {
-		return proTickets, total, metrics, nil
+		return withPortals, total, metrics, nil
 	}
 
 	// 3. Fetch the portal tokens for the returned tickets
@@ -172,10 +172,10 @@ func (s *SQLiteStore) GetDashboardTicketsWithPortals(ctx context.Context, tabSta
 		if err == nil {
 			pt.MagicToken = token
 		}
-		proTickets = append(proTickets, pt)
+		withPortals = append(withPortals, pt)
 	}
 
-	return proTickets, total, metrics, nil
+	return withPortals, total, metrics, nil
 }
 
 // requestKind reads what the owner asked for from the stored rationale,

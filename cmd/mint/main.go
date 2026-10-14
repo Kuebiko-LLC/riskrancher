@@ -27,7 +27,7 @@ func main() {
 	db.Exec("DELETE FROM magic_batches")
 	db.Exec("DELETE FROM sqlite_sequence") // Reset auto-increment IDs
 
-	// Inject enterprise schema
+	// Apply the schema
 	store := datastore.NewSQLiteStore(db)
 
 	ctx := context.Background()

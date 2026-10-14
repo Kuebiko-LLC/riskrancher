@@ -126,8 +126,10 @@ func RegisterRoutes(app *App) {
 	app.Router.Handle("DELETE /api/drafts/{draft_id}", protected(reportH.HandleDeleteDraft))
 	app.Router.Handle("POST /api/reports/promote/{id}", protected(reportH.HandlePromoteDrafts))
 	app.Router.Handle("POST /api/images/upload", protected(reportH.HandleImageUpload))
-	// Report images are handed out as /testdata/images/<file> and served from data/testdata.
-	app.Router.Handle("GET /testdata/", http.StripPrefix("/testdata/", http.FileServer(http.Dir("./data/testdata"))))
+	// Report images are handed out as /testdata/images/<file> and served from
+	// data/testdata, to a signed-in user only: they are a client's evidence.
+	uploads := http.StripPrefix("/testdata/", http.FileServer(http.Dir("./data/testdata")))
+	app.Router.Handle("GET /testdata/", protectedUI(uploads.ServeHTTP))
 
 	// Engagements, finding templates, evidence, reports out
 	app.Router.Handle("POST /api/engagements", bountyHunter(adminH.HandleCreateEngagement))

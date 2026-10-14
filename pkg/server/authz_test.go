@@ -66,3 +66,14 @@ func TestUploadsRouteServesFiles(t *testing.T) {
 		t.Fatalf("uploaded file should be served, got %d %q", rec.Code, rec.Body.String())
 	}
 }
+
+// Report images are evidence from a client's pentest: no session, no file.
+func TestUploadsRouteRequiresAuth(t *testing.T) {
+	app, _ := appWithUser(t, "Sheriff")
+	req := httptest.NewRequest(http.MethodGet, "/testdata/images/anything.png", nil)
+	rec := httptest.NewRecorder()
+	app.Router.ServeHTTP(rec, req)
+	if rec.Code == http.StatusOK || rec.Code == http.StatusNotFound {
+		t.Fatalf("without a session the uploads route must refuse, got %d", rec.Code)
+	}
+}

@@ -7,6 +7,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	"github.com/Kuebiko-LLC/riskrancher/pkg/server"
@@ -58,6 +59,10 @@ func main() {
 	// manager they pass every request through and only handle Pro UI render.
 	handler := proapi.ProUIInterceptor(app, lm, middleware.GlobalLicenseGate(lm, app.Router))
 
-	log.Println("🤠 RiskRancher running on http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", handler))
+	addr := os.Getenv("RR_ADDR")
+	if addr == "" {
+		addr = ":8080"
+	}
+	log.Printf("🤠 RiskRancher running on http://localhost%s", addr)
+	log.Fatal(http.ListenAndServe(addr, handler))
 }

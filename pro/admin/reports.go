@@ -8,7 +8,7 @@ import (
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	coredomain "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/reporting"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/reporting"
 )
 
 type generateReportRequest struct {

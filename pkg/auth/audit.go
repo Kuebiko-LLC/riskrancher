@@ -1,4 +1,4 @@
-package middleware
+package auth
 
 import (
 	"bytes"
@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"runtime/debug"
 	"time"
-
-	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 )
 
 type responseRecorder struct {
@@ -64,7 +62,7 @@ func AuditLogger(proStore domain.Store, logger *slog.Logger) func(http.Handler) 
 
 			// 🚀 FIX: Actually extract the User from the context!
 			actor := "Unknown User"
-			if userIDVal := r.Context().Value(auth.UserIDKey); userIDVal != nil {
+			if userIDVal := r.Context().Value(UserIDKey); userIDVal != nil {
 				userID := userIDVal.(int)
 				// Fetch the user to get their email/name
 				user, err := proStore.GetUserByID(r.Context(), userID)

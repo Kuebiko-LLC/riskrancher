@@ -8,7 +8,7 @@ import (
 	"image/png"
 	"testing"
 
-	"github.com/Kuebiko-LLC/riskrancher/pro/evidence"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/evidence"
 )
 
 func makePNG(t *testing.T, w, h int) []byte {

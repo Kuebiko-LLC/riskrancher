@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/evidence"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/evidence"
 )
 
 const maxEvidenceBytes = 10 << 20 // 10 MB per upload

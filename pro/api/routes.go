@@ -17,7 +17,6 @@ import (
 	coreUI "github.com/Kuebiko-LLC/riskrancher/ui"
 
 	proAdmin "github.com/Kuebiko-LLC/riskrancher/pro/admin"
-	"github.com/Kuebiko-LLC/riskrancher/pro/middleware"
 	proTickets "github.com/Kuebiko-LLC/riskrancher/pro/tickets"
 	proUI "github.com/Kuebiko-LLC/riskrancher/pro/ui"
 )
@@ -210,7 +209,7 @@ func RegisterProRoutes(app *core.App) {
 	proAdminH := proAdmin.NewProHandler(app.Store)
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	auditH := middleware.AuditLogger(proStore, logger)
+	auditH := auth.AuditLogger(proStore, logger)
 
 	// Flow: Auth Check -> Audit Logger -> Role Check -> Handler
 	protected := func(h http.HandlerFunc) http.Handler {

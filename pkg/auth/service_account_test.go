@@ -1,4 +1,4 @@
-package middleware_test
+package auth_test
 
 import (
 	"context"
@@ -6,9 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/middleware"
 )
 
 func TestServiceAccountAuth_BDD(t *testing.T) {
@@ -33,7 +33,7 @@ func TestServiceAccountAuth_BDD(t *testing.T) {
 	}
 
 	// 3. Setup the Middleware and a Dummy Target Handler
-	authMiddleware := middleware.ServiceAccountAuth(store)
+	authMiddleware := auth.ServiceAccountAuth(store)
 
 	// This dummy handler just checks if the middleware successfully injected the context
 	targetHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

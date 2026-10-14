@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/reporting"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/reporting"
 )
 
 func sampleFindings() []domain.Ticket {

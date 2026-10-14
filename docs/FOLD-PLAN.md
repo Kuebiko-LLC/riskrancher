@@ -147,3 +147,14 @@ shutdown that never exited, the tickets API leaking held findings, filters
 lost on paging, an audit filter that never matched. A contract test now
 checks every call the pages make against the router and lists API routes
 nothing reaches. Dead code and schema-only tables are gone.
+
+## Round 2 -- 2026-10-14
+
+A second claim check of the book's new chapter against the code found that the owner's
+link and the approver's link were one token: an owner could request an exception and
+approve it with the same link. Links now carry a kind and an owner, the Sheriff mints the
+approver's link from Risk Reviews with context the approver can read, Deny acts on one
+finding, and a link is revoked as soon as its findings have left the person it was for.
+Also: a withdrawn false positive gets a fresh clock, the scan writes history rows, the audit
+log records sign-ins, pages, refusals and the owner behind a link, and the role prompt
+offers all five roles.

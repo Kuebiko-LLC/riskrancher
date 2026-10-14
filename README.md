@@ -35,7 +35,7 @@ It wipes the ticket table, seeds every dashboard tab, and prints working portal 
 
 **Route.** Rules that match a source or an asset assign incoming findings to the right owner at ingest, and pick up unowned findings already on the asset. Severity rules rewrite the severity of everything from a source or on an asset. Suppression rules close known noise at ingest.
 
-**Hand off without accounts.** The people who fix things get a link (`/share/{token}`) to submit a fix with evidence, send a finding back, or ask for more time or for the risk to be accepted. Risk approvers get their own (`/review/{token}`) to approve or deny. Nobody outside the security team needs a login.
+**Hand off without accounts.** The people who fix things get a link (`/share/{token}`) to submit a fix with evidence, send a finding back, or ask for more time or for the risk to be accepted. Risk approvers get a link of their own kind (`/review/{token}`), minted by the Sheriff from Risk Reviews with context for the approver, to approve or deny one finding at a time. An owner's link cannot decide and an approver's link cannot fix, and a link ends as soon as its findings have left that person. Nobody outside the security team needs a login.
 
 **Accept risk on the record.** The approver's decision either pushes the due date, counted against the SLA policy's extension cap, or holds the finding as Risk Accepted with the approver and an expiry recorded. When the expiry passes, the next restart or upload puts the finding back on the queue with a fresh clock. Every step is in the audit log.
 
@@ -47,13 +47,13 @@ It wipes the ticket table, seeds every dashboard tab, and prints working portal 
 
 **Log a false positive.** `POST /api/admin/suppression` with the finding's source, asset and title (or its dedupe hash) and a rationale. That finding lands closed as False Positive on every scan after, on that asset, until the rule is deleted.
 
-**Roles, keys, audit.** Five roles enforced by middleware: Sheriff (admin), RangeHand (analyst), Wrangler (fixer), Magistrate (risk approver), Bounty Hunter (pentester). API keys act as the user who minted them. Every API call lands in an append-only audit log.
+**Roles, keys, audit.** Five roles enforced by middleware: Sheriff (admin), RangeHand (analyst), Wrangler (fixer), Magistrate (risk approver), Bounty Hunter (pentester). API keys act as the user who minted them. Every change, every refusal and every sign-in lands in an append-only audit log, by the person who did it, including the owner behind a link; successful reads are left out.
 
 ## API
 
 Everything the pages do is a route a script can call with a session cookie or a bearer key. The ones not covered above:
 
-- `GET /api/tickets?limit=100&offset=0` lists released findings with asset, source, owner, status and clock; `GET /api/tickets/{id}/activity` is one finding's history; `POST /api/tickets` creates one; `PATCH /api/tickets/{id}` edits severity, text and comment; `PATCH /api/tickets/bulk` changes status or owner for many and mints the owner's link.
+- `GET /api/tickets?limit=100&offset=0` lists released findings with asset, source, owner, status and clock; `GET /api/tickets/{id}/activity` is one finding's history; `POST /api/tickets` creates one; `PATCH /api/tickets/{id}` edits severity, text and comment; `PATCH /api/tickets/bulk` changes status or owner for many and mints the owner's link; `POST /api/tickets/review-link` mints the approver's link over findings waiting for a decision; `PATCH /api/tickets/{id}/review` is the Sheriff deciding one from the office.
 - `POST /api/ingest/{adapter}` (JSON), `POST /api/ingest/csv` (multipart `file` + `adapter_name`), `POST /api/ingest` (raw JSON array). `GET`/`POST /api/adapters`, `DELETE /api/adapters/{id}`.
 - `GET /api/admin/users`, `GET`/`POST /api/admin/routing`, `GET`/`POST`/`DELETE /api/admin/triage` (severity rules), `GET`/`POST`/`DELETE /api/admin/suppression`, `GET`/`POST`/`DELETE /api/admin/apikeys`, `GET`/`PUT /api/config` (SLA matrix and defaults), `GET /api/admin/logs`, `GET /api/admin/export`.
 - `GET`/`POST /api/integrations/cisa` (status; `cisa/sync` takes the catalog as multipart `cisa_catalog_file`).

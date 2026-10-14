@@ -174,3 +174,23 @@ func (s *SQLiteStore) GetTicketByID(ctx context.Context, id int) (domain.Ticket,
 
 	return t, nil
 }
+
+// TicketActivity is everything that happened to a finding, newest first.
+func (s *SQLiteStore) TicketActivity(ctx context.Context, id int) ([]domain.ActivityEntry, error) {
+	rows, err := s.DB.QueryContext(ctx, `SELECT COALESCE(actor, ''), activity_type, COALESCE(old_value, ''), COALESCE(new_value, ''), created_at FROM ticket_activity WHERE ticket_id = ? ORDER BY created_at DESC, id DESC`, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	entries := []domain.ActivityEntry{}
+	for rows.Next() {
+		var e domain.ActivityEntry
+		var at sql.NullTime
+		if err := rows.Scan(&e.Actor, &e.Type, &e.OldValue, &e.NewValue, &at); err != nil {
+			return nil, err
+		}
+		e.At = at.Time
+		entries = append(entries, e)
+	}
+	return entries, rows.Err()
+}

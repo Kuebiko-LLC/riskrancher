@@ -372,7 +372,7 @@ func (s *SQLiteStore) GetAnalyticsSummary(ctx context.Context) (map[string]int, 
 func (s *SQLiteStore) GetPaginatedActivityFeed(ctx context.Context, filter string, limit, offset int) ([]domain2.FeedItem, int, error) {
 	where := ""
 	var args []any
-	if filter != "" {
+	if filter != "" && filter != "All" {
 		where = " WHERE actor LIKE ? OR action LIKE ? OR target_resource LIKE ?"
 		like := "%" + filter + "%"
 		args = append(args, like, like, like)

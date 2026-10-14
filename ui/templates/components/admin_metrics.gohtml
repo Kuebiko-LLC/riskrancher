@@ -1,16 +1,16 @@
 {{define "admin_metrics"}}
 <div id="tab-metrics" class="tab-pane active">
     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
-        <a href="/dashboard?filter=critical" class="kpi-card" style="text-align: center; border-top: 4px solid #dc2626;">
+        <a href="/dashboard?tab=holding_pen&filter=critical" class="kpi-card" style="text-align: center; border-top: 4px solid #dc2626;">
             <h4 style="margin: 0; color: #64748b; font-size: 0.85rem; text-transform: uppercase;">Active CISA KEVs</h4>
             <p style="font-size: 2rem; margin: 10px 0 0 0; font-weight: bold; color: {{if gt .Analytics.ActiveKEVs 0}}#dc2626{{else}}#10b981{{end}};">{{.Analytics.ActiveKEVs}}</p>
             <p id="kevCatalogState" style="font-size: 0.75rem; color: #94a3b8; margin: 4px 0 0 0;">{{if gt .KEV.Loaded 0}}{{.KEV.Loaded}} CVEs loaded, newest {{.KEV.LastAdded}}{{else}}no catalog loaded{{end}}</p>
         </a>
-        <a href="/dashboard?filter=critical" class="kpi-card" style="text-align: center; border-top: 4px solid #ea580c;">
+        <a href="/dashboard?tab=holding_pen&filter=critical" class="kpi-card" style="text-align: center; border-top: 4px solid #ea580c;">
             <h4 style="margin: 0; color: #64748b; font-size: 0.85rem; text-transform: uppercase;">Open Criticals</h4>
             <p style="font-size: 2rem; margin: 10px 0 0 0; font-weight: bold; color: #ea580c;">{{.Analytics.OpenCriticals}}</p>
         </a>
-        <a href="/dashboard?filter=overdue" class="kpi-card" style="text-align: center; border-top: 4px solid #eab308;">
+        <a href="/dashboard?tab=holding_pen&filter=overdue" class="kpi-card" style="text-align: center; border-top: 4px solid #eab308;">
             <h4 style="margin: 0; color: #64748b; font-size: 0.85rem; text-transform: uppercase;">SLA Breaches</h4>
             <p style="font-size: 2rem; margin: 10px 0 0 0; font-weight: bold; color: #eab308;">{{.Analytics.TotalOverdue}}</p>
         </a>
@@ -63,7 +63,7 @@
         <div class="card" style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
             <h3 style="margin: 0 0 15px 0;">🎯 Top Vulnerable Assets</h3>
             {{range .Analytics.TopAssets}}
-            <a href="/dashboard?asset={{.Asset}}" style="display: block; text-decoration: none; color: inherit; margin-bottom: 12px; padding: 4px; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+            <a href="/dashboard?tab=holding_pen&asset={{.Asset}}" style="display: block; text-decoration: none; color: inherit; margin-bottom: 12px; padding: 4px; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
                 <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px;">
                     <span style="font-family: monospace; font-weight: bold; color: #3b82f6;">{{.Asset}}</span>
                     <span style="color: #64748b; font-weight: bold;">{{.Count}} Findings</span>

@@ -31,6 +31,8 @@ type Store interface {
 type TicketStore interface {
 	// GetTickets lists released findings, oldest first, a page at a time.
 	GetTickets(ctx context.Context, limit, offset int) ([]Ticket, error)
+	// TicketActivity is a finding's history, newest first.
+	TicketActivity(ctx context.Context, id int) ([]ActivityEntry, error)
 	GetDashboardTickets(ctx context.Context, tabStatus, filter, assetFilter, userEmail, userRole string, limit, offset int) ([]Ticket, int, map[string]int, error)
 	CreateTicket(ctx context.Context, t *Ticket) error
 	GetTicketByID(ctx context.Context, id int) (Ticket, error)

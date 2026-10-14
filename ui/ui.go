@@ -94,7 +94,7 @@ func HandleDashboard(store domain.Store) http.HandlerFunc {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
-		if user.GlobalRole == "Sheriff" {
+		if user.GlobalRole == "Sheriff" && r.URL.RawQuery == "" {
 			http.Redirect(w, r, "/admin", http.StatusSeeOther)
 			return
 		}

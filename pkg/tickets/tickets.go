@@ -60,6 +60,18 @@ func (h *Handler) HandleUpdateTicket(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// HandleTicketActivity is a finding's history for the drawer.
+func (h *Handler) HandleTicketActivity(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(r.PathValue("id"))
+	entries, err := h.Store.TicketActivity(r.Context(), id)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(entries)
+}
+
 // HandleGetTickets fetches a list of tickets via the API
 func (h *Handler) HandleGetTickets(w http.ResponseWriter, r *http.Request) {
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))

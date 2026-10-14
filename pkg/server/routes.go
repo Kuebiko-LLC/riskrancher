@@ -78,6 +78,7 @@ func RegisterRoutes(app *App) {
 	app.Router.Handle("GET /api/tickets", protected(ticketH.HandleGetTickets))
 	app.Router.Handle("POST /api/tickets", protected(ticketH.HandleCreateTicket))
 	app.Router.Handle("PATCH /api/tickets/{id}", protected(ticketH.HandleUpdateTicket))
+	app.Router.Handle("GET /api/tickets/{id}/activity", protected(ticketH.HandleTicketActivity))
 	app.Router.Handle("PATCH /api/tickets/bulk", protected(ticketH.HandleBulkUpdate))
 	app.Router.Handle("GET /api/wranglers", protected(adminH.HandleGetWranglers))
 

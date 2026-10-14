@@ -127,8 +127,8 @@
         <div class="pagination" style="padding: 20px;">
             <span style="color: var(--text-muted); font-size: 0.9rem;">Page <strong>{{.CurrentPage}}</strong> of <strong>{{.TotalPages}}</strong></span>
             <div style="display: flex; gap: 10px;">
-                <a href="/dashboard?tab={{.CurrentTab}}&page={{if .HasPrev}}{{.PrevPage}}{{else}}1{{end}}" class="btn {{if not .HasPrev}}disabled{{end}}">&larr; Previous</a>
-                <a href="/dashboard?tab={{.CurrentTab}}&page={{if .HasNext}}{{.NextPage}}{{else}}{{.TotalPages}}{{end}}" class="btn {{if not .HasNext}}disabled{{end}}">Next &rarr;</a>
+                <a href="/dashboard?tab={{.CurrentTab}}{{if .CurrentFilter}}&filter={{.CurrentFilter}}{{end}}{{if .CurrentAsset}}&asset={{.CurrentAsset}}{{end}}&page={{if .HasPrev}}{{.PrevPage}}{{else}}1{{end}}" class="btn {{if not .HasPrev}}disabled{{end}}">&larr; Previous</a>
+                <a href="/dashboard?tab={{.CurrentTab}}{{if .CurrentFilter}}&filter={{.CurrentFilter}}{{end}}{{if .CurrentAsset}}&asset={{.CurrentAsset}}{{end}}&page={{if .HasNext}}{{.NextPage}}{{else}}{{.TotalPages}}{{end}}" class="btn {{if not .HasNext}}disabled{{end}}">Next &rarr;</a>
             </div>
         </div>
     </div>

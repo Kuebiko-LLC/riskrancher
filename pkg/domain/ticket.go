@@ -103,6 +103,15 @@ type MagicBatch struct {
 	TicketIDs []int
 }
 
+// ActivityEntry is one line of a finding's history.
+type ActivityEntry struct {
+	Actor    string    `json:"actor"`
+	Type     string    `json:"type"`
+	OldValue string    `json:"old_value,omitempty"`
+	NewValue string    `json:"new_value,omitempty"`
+	At       time.Time `json:"at"`
+}
+
 // NormalizeSeverity maps a scanner's spelling of a severity onto the one the
 // SLA matrix and the counts use. Unknown values pass through unchanged.
 func NormalizeSeverity(raw string) string {

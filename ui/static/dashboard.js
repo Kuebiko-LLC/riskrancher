@@ -82,6 +82,22 @@ window.openDrawer = function(id, title, asset, severity) {
     document.getElementById('drawerSeverity').value = severity;
     document.getElementById('drawerComment').value = "";
 
+    // Everything that happened to this finding, newest first
+    const history = document.getElementById('drawerHistory');
+    if (history) {
+        history.innerText = "Loading...";
+        fetch(`/api/tickets/${id}/activity`).then(r => r.ok ? r.json() : []).then(entries => {
+            if (!entries.length) { history.innerText = "No changes recorded yet."; return; }
+            history.innerHTML = entries.map(e => {
+                const when = e.at ? new Date(e.at).toLocaleString() : "";
+                const what = (e.type || "").replace(/_/g, " ");
+                const detail = e.old_value && e.new_value ? `${e.old_value} \u2192 ${e.new_value}` : (e.new_value || "");
+                const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+                return `<div style="padding: 4px 0; border-bottom: 1px dashed #e2e8f0;"><strong>${esc(e.actor)}</strong> ${esc(what)} <span style="color: #64748b;">${esc(detail)}</span><div style="color: #94a3b8; font-size: 0.72rem;">${esc(when)}</div></div>`;
+            }).join("");
+        }).catch(() => { history.innerText = "History unavailable."; });
+    }
+
 // Grab the raw markdown from the hidden textareas using .value!
     const rawDesc = document.getElementById('desc-' + id) ? document.getElementById('desc-' + id).value : "";
     const rawRem = document.getElementById('rem-' + id) ? document.getElementById('rem-' + id).value : "";

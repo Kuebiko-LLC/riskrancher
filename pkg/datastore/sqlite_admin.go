@@ -52,6 +52,21 @@ func (s *SQLiteStore) buildSLAMap(ctx context.Context) (map[string]map[string]do
 	return slaMap, nil
 }
 
+// dueDates returns the triage and remediation clocks for a domain and severity
+// from the SLA matrix, falling back to 3 and 30 days when no policy matches.
+func (s *SQLiteStore) dueDates(ctx context.Context, domain, severity string) (time.Time, time.Time) {
+	daysToTriage, daysToRemediate := 3, 30
+	if slaMap, err := s.buildSLAMap(ctx); err == nil {
+		if dMap, ok := slaMap[domain]; ok {
+			if policy, ok := dMap[severity]; ok {
+				daysToTriage, daysToRemediate = policy.DaysToTriage, policy.DaysToRemediate
+			}
+		}
+	}
+	now := time.Now()
+	return now.AddDate(0, 0, daysToTriage), now.AddDate(0, 0, daysToRemediate)
+}
+
 func (s *SQLiteStore) ExportSystemState(ctx context.Context) (domain2.ExportState, error) {
 	var state domain2.ExportState
 	state.Version = "1.1"

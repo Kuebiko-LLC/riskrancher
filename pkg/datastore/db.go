@@ -66,6 +66,14 @@ func InitDB(dbPath string) *sql.DB {
 		 ALTER TABLE tickets ADD COLUMN cvss_score REAL;
 		 ALTER TABLE tickets ADD COLUMN cwe TEXT;
 		 ALTER TABLE tickets ADD COLUMN business_impact TEXT;`,
+		// v5: the Holding Pen pages by asset. This covering index lets the page
+		// query walk assets in order and stop at LIMIT, so a page costs the same
+		// at a million findings as at thirty.
+		`CREATE INDEX IF NOT EXISTS idx_tickets_asset_status ON tickets(asset_identifier, status, released);`,
+		// v6: the dashboard's headline counts (open criticals, overdue) read
+		// these instead of filtering a severity or due-date range row by row.
+		`CREATE INDEX IF NOT EXISTS idx_tickets_severity_status ON tickets(severity, status, released);
+		 CREATE INDEX IF NOT EXISTS idx_tickets_remediation_due ON tickets(remediation_due_date, status, released);`,
 	}
 
 	if err := RunMigrations(db, migrations); err != nil {

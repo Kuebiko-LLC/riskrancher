@@ -2,6 +2,7 @@ package datastore
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -207,46 +208,54 @@ func (s *SQLiteStore) GetDashboardTickets(ctx context.Context, tabStatus, filter
 	}
 
 	// Hide findings held in an unreleased engagement (released = 0).
-	baseQ := "FROM tickets t WHERE t.released = 1" + scope
+	whereQ := " WHERE t.released = 1" + scope
 	var args []any
 	args = append(args, scopeArgs...)
 
 	if assetFilter != "" {
-		baseQ += " AND t.asset_identifier = ?"
+		whereQ += " AND t.asset_identifier = ?"
 		args = append(args, assetFilter)
 	}
 
 	if tabStatus == "Waiting to be Triaged" || tabStatus == "holding_pen" {
-		baseQ += " AND t.status IN ('Waiting to be Triaged', 'Returned to Security', 'Triaged')"
+		whereQ += " AND t.status IN ('Waiting to be Triaged', 'Returned to Security', 'Triaged')"
 	} else if tabStatus == "Exceptions" {
-		baseQ += " AND t.status NOT IN ('Patched', 'Risk Accepted', 'False Positive')"
+		whereQ += " AND t.status NOT IN ('Patched', 'Risk Accepted', 'False Positive')"
 	} else if tabStatus == "archives" {
-		baseQ += " AND t.status IN ('Patched', 'Risk Accepted', 'False Positive')"
+		whereQ += " AND t.status IN ('Patched', 'Risk Accepted', 'False Positive')"
 	} else if tabStatus != "" {
-		baseQ += " AND t.status = ?"
+		whereQ += " AND t.status = ?"
 		args = append(args, tabStatus)
 	}
 
 	if filter == "critical" {
-		baseQ += " AND t.severity = 'Critical'"
+		whereQ += " AND t.severity = 'Critical'"
 	} else if filter == "overdue" {
-		baseQ += " AND t.remediation_due_date < CURRENT_TIMESTAMP"
+		whereQ += " AND t.remediation_due_date < CURRENT_TIMESTAMP"
 	} else if filter == "mine" {
-		baseQ += " AND LOWER(t.assignee) = LOWER(?)"
+		whereQ += " AND LOWER(t.assignee) = LOWER(?)"
 		args = append(args, userEmail)
 	} else if tabStatus == "archives" && filter != "" && filter != "all" {
-		baseQ += " AND t.status = ?"
+		whereQ += " AND t.status = ?"
 		args = append(args, filter)
 	}
 
+	// Page by asset, not by row. A page holds whole asset groups, the pager
+	// counts assets, and a host with two hundred findings never straddles pages.
+	// Assets come in name order off the covering index so a page costs the same
+	// at a million rows as at thirty; returned-to-security findings sort first
+	// within the page.
 	var total int
-	s.DB.QueryRowContext(ctx, "SELECT COUNT(t.id) "+baseQ, args...).Scan(&total)
+	s.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM (SELECT 1 FROM tickets t INDEXED BY idx_tickets_asset_status"+whereQ+" GROUP BY t.asset_identifier)", args...).Scan(&total)
 
 	orderClause := "ORDER BY (CASE WHEN t.status = 'Returned to Security' THEN 0 ELSE 1 END) ASC, t.id DESC"
 
 	query := `
-	WITH PaginatedIDs AS (
-		SELECT t.id ` + baseQ + ` ` + orderClause + ` LIMIT ? OFFSET ?
+	WITH PagedAssets AS (
+		SELECT t.asset_identifier FROM tickets t INDEXED BY idx_tickets_asset_status` + whereQ + `
+		GROUP BY t.asset_identifier
+		ORDER BY t.asset_identifier
+		LIMIT ? OFFSET ?
 	)
 	SELECT 
 		t.id, t.source, t.asset_identifier, t.title, COALESCE(t.description, ''), COALESCE(t.recommended_remediation, ''), t.severity, t.status, 
@@ -256,11 +265,12 @@ func (s *SQLiteStore) GetDashboardTickets(ctx context.Context, tabStatus, filter
 		t.updated_at, 
 		CAST(julianday(COALESCE(t.patched_at, t.updated_at)) - julianday(t.created_at) AS INTEGER) as days_to_resolve,
 		COALESCE(t.latest_comment, '') as latest_comment
-	FROM PaginatedIDs p
-	JOIN tickets t ON t.id = p.id
+	FROM tickets t
+	JOIN PagedAssets p ON p.asset_identifier = t.asset_identifier` + whereQ + `
 	` + orderClause
 
-	args = append(args, limit, offset)
+	pageArgs := append(append(append([]any{}, args...), limit, offset), args...)
+	args = pageArgs
 
 	rows, err := s.DB.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -272,11 +282,12 @@ func (s *SQLiteStore) GetDashboardTickets(ctx context.Context, tabStatus, filter
 	for rows.Next() {
 		var t domain2.Ticket
 		var assignee string
+		var triageDue, remediationDue sql.NullTime
 
 		err := rows.Scan(
 			&t.ID, &t.Source, &t.AssetIdentifier, &t.Title, &t.Description,
 			&t.RecommendedRemediation, &t.Severity, &t.Status,
-			&t.TriageDueDate, &t.RemediationDueDate, &t.PatchEvidence,
+			&triageDue, &remediationDue, &t.PatchEvidence,
 			&assignee,
 			&t.OwnerViewedAt,
 			&t.UpdatedAt,
@@ -286,6 +297,7 @@ func (s *SQLiteStore) GetDashboardTickets(ctx context.Context, tabStatus, filter
 
 		if err == nil {
 			t.Assignee = assignee
+			t.TriageDueDate, t.RemediationDueDate = triageDue.Time, remediationDue.Time
 			t.IsOverdue = !t.RemediationDueDate.IsZero() && t.RemediationDueDate.Before(time.Now()) && t.Status != "Patched" && t.Status != "Risk Accepted"
 
 			if tabStatus == "archives" {
@@ -294,6 +306,8 @@ func (s *SQLiteStore) GetDashboardTickets(ctx context.Context, tabStatus, filter
 				} else {
 					t.SLAString = "Unknown"
 				}
+			} else if t.RemediationDueDate.IsZero() {
+				t.SLAString = "no clock set"
 			} else {
 				t.SLAString = t.RemediationDueDate.Format("Jan 02, 2006")
 			}

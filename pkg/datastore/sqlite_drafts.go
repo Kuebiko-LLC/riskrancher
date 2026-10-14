@@ -75,13 +75,14 @@ func (s *SQLiteStore) PromotePentestDrafts(ctx context.Context, reportID string,
 	for _, t := range tickets {
 		hash := fmt.Sprintf("manual-pentest-%s-%s", t.AssetIdentifier, t.Title)
 
+		promoteTriageDue, promoteRemediationDue := s.dueDates(ctx, "", t.Severity)
 		res, err := tx.ExecContext(ctx, `
 			INSERT INTO tickets (
 				source, asset_identifier, title, description, recommended_remediation, severity, status, dedupe_hash,
 				triage_due_date, remediation_due_date, created_at, updated_at
 			)
-			VALUES (?, ?, ?, ?, ?, ?, 'Waiting to be Triaged', ?, DATETIME('now', '+3 days'), DATETIME('now', '+14 days'), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-		`, "Manual Pentest", t.AssetIdentifier, t.Title, t.Description, t.RecommendedRemediation, t.Severity, hash)
+			VALUES (?, ?, ?, ?, ?, ?, 'Waiting to be Triaged', ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		`, "Manual Pentest", t.AssetIdentifier, t.Title, t.Description, t.RecommendedRemediation, t.Severity, hash, promoteTriageDue, promoteRemediationDue)
 		if err != nil {
 			return err
 		}

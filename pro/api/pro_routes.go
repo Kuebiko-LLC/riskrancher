@@ -128,7 +128,7 @@ func ProUIInterceptor(app *core.App, licenseManager *license.Manager, next http.
 		if page < 1 {
 			page = 1
 		}
-		limit := 50
+		limit := 10 // assets per page; each asset group arrives whole
 		offset := (page - 1) * limit
 
 		proStore, ok := app.Store.(storage.ProStoreInterface)

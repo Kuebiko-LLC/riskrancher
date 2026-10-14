@@ -4,6 +4,7 @@
         <a href="/dashboard?filter=critical" class="kpi-card" style="text-align: center; border-top: 4px solid #dc2626;">
             <h4 style="margin: 0; color: #64748b; font-size: 0.85rem; text-transform: uppercase;">Active CISA KEVs</h4>
             <p style="font-size: 2rem; margin: 10px 0 0 0; font-weight: bold; color: {{if gt .Analytics.ActiveKEVs 0}}#dc2626{{else}}#10b981{{end}};">{{.Analytics.ActiveKEVs}}</p>
+            <p id="kevCatalogState" style="font-size: 0.75rem; color: #94a3b8; margin: 4px 0 0 0;">{{if gt .KEV.Loaded 0}}{{.KEV.Loaded}} CVEs loaded, newest {{.KEV.LastAdded}}{{else}}no catalog loaded{{end}}</p>
         </a>
         <a href="/dashboard?filter=critical" class="kpi-card" style="text-align: center; border-top: 4px solid #ea580c;">
             <h4 style="margin: 0; color: #64748b; font-size: 0.85rem; text-transform: uppercase;">Open Criticals</h4>

@@ -77,6 +77,20 @@ window.editRole = async function(id, currentRole) {
 }
 window.resetPassword = async function(id) { if(confirm("Generate new password?")) await fetch(`/api/admin/users/${id}/reset-password`, { method: 'PATCH' }).then(async r => r.ok ? alert("New Password: \n\n" + await r.text()) : alert("Failed")); }
 window.deleteRule = async function(id) { if(confirm("Delete rule?")) await fetch(`/api/admin/routing/${id}`, { method: 'DELETE' }).then(r => r.ok ? window.location.reload() : alert("Failed")); }
+window.loadKEVCatalog = async function() {
+    const input = document.getElementById("kevCatalogFile");
+    const out = document.getElementById("kevLoadResult");
+    if (!input || !input.files.length) return alert("Pick the CISA KEV catalog JSON first.");
+    const fd = new FormData();
+    fd.append("cisa_catalog_file", input.files[0]);
+    out.innerText = "Loading and flagging...";
+    const res = await fetch("/api/integrations/cisa/sync", { method: "POST", body: fd });
+    if (!res.ok) { out.innerText = "Load failed: " + await res.text(); return; }
+    const st = await fetch("/api/integrations/cisa").then(r => r.json());
+    out.innerText = `${st.loaded} CVEs loaded, newest ${st.last_added}, flagging ${st.flagged_open} open findings.`;
+    const card = document.getElementById("kevCatalogState");
+    if (card) card.innerText = `${st.loaded} CVEs loaded, newest ${st.last_added}`;
+};
 window.checkUpdates = async function() { await fetch(`/api/admin/check-updates`).then(async r => alert(await r.text())); }
 
 document.addEventListener("DOMContentLoaded", function() {

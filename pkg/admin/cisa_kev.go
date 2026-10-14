@@ -50,8 +50,14 @@ func (h *Handler) HandleSyncCISAKEV(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// HandleGetCISACatalog returns metadata about the current catalog for the UI
+// HandleGetCISACatalog reports the loaded catalog: size, newest entry, and
+// how many open findings it flags.
 func (h *Handler) HandleGetCISACatalog(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "Catalog Active"})
+	st, err := h.Store.KEVCatalogStatus(r.Context())
+	if err != nil {
+		http.Error(w, "Could not read the catalog: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(st)
 }

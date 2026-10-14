@@ -385,6 +385,19 @@ func (s *SQLiteStore) SyncCISACatalog(ctx context.Context, feed *domain.CISAFeed
 	return tx.Commit()
 }
 
+// KEVCatalogStatus reports the loaded catalog: how many CVEs, the newest
+// entry, and how many open findings it flags.
+func (s *SQLiteStore) KEVCatalogStatus(ctx context.Context) (domain.KEVStatus, error) {
+	var st domain.KEVStatus
+	var last sql.NullString
+	if err := s.DB.QueryRowContext(ctx, `SELECT COUNT(*), MAX(date_added) FROM cisa_catalog`).Scan(&st.Loaded, &last); err != nil {
+		return st, err
+	}
+	st.LastAdded = last.String
+	err := s.DB.QueryRowContext(ctx, `SELECT COUNT(*) FROM tickets WHERE is_cisa_kev = 1 AND status NOT IN ('Patched', 'Risk Accepted', 'False Positive')`).Scan(&st.FlaggedOpen)
+	return st, err
+}
+
 func (s *SQLiteStore) GetRoutingRules(ctx context.Context) ([]domain.RoutingRule, error) {
 	rows, err := s.DB.QueryContext(ctx, "SELECT id, rule_type, match_value, assignee, role, created_at FROM routing_rules ORDER BY created_at DESC")
 	if err != nil {

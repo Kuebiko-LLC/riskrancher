@@ -141,6 +141,14 @@ type ServiceAccountStore interface {
 // KEVStore: the CISA known-exploited catalog you load yourself
 type KEVStore interface {
 	SyncCISACatalog(ctx context.Context, feed *CISAFeed) error
+	KEVCatalogStatus(ctx context.Context) (KEVStatus, error)
+}
+
+// KEVStatus is what the loaded catalog looks like from the outside.
+type KEVStatus struct {
+	Loaded      int    `json:"loaded"`       // CVEs in the loaded catalog
+	LastAdded   string `json:"last_added"`   // newest dateAdded in it
+	FlaggedOpen int    `json:"flagged_open"` // open findings it flags
 }
 
 // EngagementStore: a pentest engagement and its findings

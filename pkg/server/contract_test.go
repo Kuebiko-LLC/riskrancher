@@ -153,13 +153,11 @@ var knownOrphans = []string{
 	"GET /api/admin/users",
 	"GET /api/config",
 	"GET /api/finding-templates/{id}",
-	"GET /api/integrations/cisa",
 	"GET /api/reports/view/{id}",
 	"GET /api/tickets",
 	"GET /api/wranglers",
 	"POST /api/admin/shutdown",
 	"POST /api/admin/triage",
-	"POST /api/integrations/cisa/sync",
 	"PUT /api/finding-templates/{id}",
 	"PUT /api/findings/{id}",
 }

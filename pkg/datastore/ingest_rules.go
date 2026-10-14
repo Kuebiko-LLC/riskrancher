@@ -25,11 +25,12 @@ type ingestRules struct {
 	suppressedHashes map[string]bool // dedupe hashes suppressed on this asset
 	global           []GlobalSuppressionRule
 	triage           []triageRule
+	kev              map[string]bool // the loaded KEV catalog, by CVE id
 }
 
 // loadIngestRules reads the rules once for a batch on one asset.
 func (s *SQLiteStore) loadIngestRules(ctx context.Context, asset string) (*ingestRules, error) {
-	r := &ingestRules{suppressedHashes: map[string]bool{}}
+	r := &ingestRules{suppressedHashes: map[string]bool{}, kev: s.kevSet(ctx)}
 
 	rows, err := s.DB.QueryContext(ctx, `SELECT dedupe_hash FROM suppression_rules WHERE asset_identifier = ?`, asset)
 	if err != nil {
@@ -90,6 +91,14 @@ func (g GlobalSuppressionRule) matches(t *domain.Ticket) bool {
 // apply runs the pre-insert rules on one finding.
 func (r *ingestRules) apply(t *domain.Ticket) {
 	t.Severity = domain.NormalizeSeverity(t.Severity)
+	if len(r.kev) > 0 {
+		for _, m := range cveToken.FindAllString(t.Title+" "+t.Description, -1) {
+			if r.kev[strings.ToUpper(m)] {
+				t.IsCISAKEV = true
+				break
+			}
+		}
+	}
 	if t.DedupeHash == "" {
 		t.DedupeHash = dedupeHash(t.Source, t.AssetIdentifier, t.Title)
 	}

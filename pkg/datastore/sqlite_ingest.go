@@ -220,7 +220,7 @@ func (s *SQLiteStore) executeBatchMutations(ctx context.Context, tx *sql.Tx, sou
 
 	// A. Inserts
 	if len(inserts) > 0 {
-		insertStmt, err := tx.PrepareContext(ctx, `INSERT INTO tickets (source, asset_identifier, title, severity, description, recommended_remediation, status, dedupe_hash, domain, triage_due_date, remediation_due_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+		insertStmt, err := tx.PrepareContext(ctx, `INSERT INTO tickets (source, asset_identifier, title, severity, description, recommended_remediation, status, dedupe_hash, domain, is_cisa_kev, triage_due_date, remediation_due_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 		if err != nil {
 			return err
 		}
@@ -233,7 +233,7 @@ func (s *SQLiteStore) executeBatchMutations(ctx context.Context, tx *sql.Tx, sou
 					daysToTriage, daysToRemediate = policy.DaysToTriage, policy.DaysToRemediate
 				}
 			}
-			_, err := insertStmt.ExecContext(ctx, source, asset, t.Title, t.Severity, t.Description, t.RecommendedRemediation, t.Status, t.DedupeHash, t.Domain, now.AddDate(0, 0, daysToTriage), now.AddDate(0, 0, daysToRemediate))
+			_, err := insertStmt.ExecContext(ctx, source, asset, t.Title, t.Severity, t.Description, t.RecommendedRemediation, t.Status, t.DedupeHash, t.Domain, t.IsCISAKEV, now.AddDate(0, 0, daysToTriage), now.AddDate(0, 0, daysToRemediate))
 			if err != nil {
 				return err
 			}

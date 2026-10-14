@@ -60,6 +60,8 @@ type Ticket struct {
 	BusinessImpact string  `json:"business_impact"`
 	RiskRationale  string  `json:"risk_rationale,omitempty"`
 	ExtensionCount int     `json:"extension_count,omitempty"`
+	// IsCISAKEV is set when the finding names a CVE in the loaded KEV catalog.
+	IsCISAKEV bool `json:"is_cisa_kev"`
 	// ExceptionExpiresAt is set when the risk was accepted: the date it comes back.
 	ExceptionExpiresAt *time.Time `json:"exception_expires_at,omitempty"`
 }

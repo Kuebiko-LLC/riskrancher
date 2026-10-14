@@ -310,6 +310,7 @@ var cveToken = regexp.MustCompile(`(?i)CVE-\d{4}-\d{4,}`)
 // It reads every finding that mentions a CVE once and matches the ids in Go,
 // so the cost is one pass over the table, not one scan per catalog entry.
 func (s *SQLiteStore) SyncCISACatalog(ctx context.Context, feed *domain.CISAFeed) error {
+	defer s.forgetKEV()
 	known := make(map[string]bool, len(feed.Vulnerabilities))
 	for _, v := range feed.Vulnerabilities {
 		known[strings.ToUpper(v.CVEID)] = true

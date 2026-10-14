@@ -49,15 +49,15 @@ func (s *SQLiteStore) insertTicket(ctx context.Context, t *domain.Ticket) error 
 		INSERT INTO tickets (
 			domain, source, asset_identifier, title, description, recommended_remediation,
 			severity, status, dedupe_hash, cvss_vector, cvss_score, cwe, business_impact,
-			triage_due_date, remediation_due_date, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+			is_cisa_kev, triage_due_date, remediation_due_date, created_at, updated_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 	`
 
 	triageDue, remediationDue := s.dueDates(ctx, t.Domain, t.Severity)
 	res, err := s.DB.ExecContext(ctx, query,
 		t.Domain, t.Source, t.AssetIdentifier, t.Title, t.Description, t.RecommendedRemediation,
 		t.Severity, t.Status, t.DedupeHash, t.CVSSVector, t.CVSSScore, t.CWE, t.BusinessImpact,
-		triageDue, remediationDue,
+		t.IsCISAKEV, triageDue, remediationDue,
 	)
 
 	if err != nil {

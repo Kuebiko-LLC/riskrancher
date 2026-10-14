@@ -6,7 +6,6 @@ import (
 	"html/template"
 	"io/fs"
 	"log"
-	"math"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -18,131 +17,83 @@ import (
 	"github.com/Kuebiko-LLC/riskrancher/pkg/report"
 )
 
-//go:embed templates/* templates/components/* static/*
-var CoreUIFS embed.FS
+//go:embed templates/*.gohtml templates/components/*.gohtml templates/magic/*.gohtml static/*
+var UIFS embed.FS
 
 var (
 	AppVersion = "dev"
 	AppCommit  = "none"
 )
 
-var Pages map[string]*template.Template
+// Pages are the server-rendered pages, keyed by name. Portals are the two
+// account-less views reached by magic link.
+var (
+	Pages   map[string]*template.Template
+	Portals map[string]*template.Template
+)
 
-// SetVersionInfo is called by main.go on startup to inject ldflags
+// SetVersionInfo is called by main on startup to inject ldflags.
 func SetVersionInfo(version, commit string) {
 	AppVersion = version
 	AppCommit = commit
 }
 
 func init() {
-	funcMap := template.FuncMap{
-		"lower": strings.ToLower,
+	funcMap := template.FuncMap{"lower": strings.ToLower}
+	page := func(file string) *template.Template {
+		return template.Must(template.New("base").Funcs(funcMap).ParseFS(UIFS, "templates/base.gohtml", "templates/"+file, "templates/components/*.gohtml"))
 	}
-	Pages = make(map[string]*template.Template)
-
-	var err error
-
-	dashTmpl := template.New("").Funcs(funcMap)
-	dashTmpl, err = dashTmpl.ParseFS(CoreUIFS, "templates/base.gohtml", "templates/dashboard.gohtml", "templates/components/*.gohtml")
-	if err != nil {
-		log.Fatalf("FATAL: Failed to parse dashboard shell. Err: %v", err)
+	Pages = map[string]*template.Template{
+		"dashboard":        page("dashboard.gohtml"),
+		"admin":            page("admin.gohtml"),
+		"ingest":           page("ingest.gohtml"),
+		"adapter_builder":  page("adapter_builder.gohtml"),
+		"report_upload":    page("report_upload.gohtml"),
+		"report_parser":    page("report_parser.gohtml"),
+		"engagements":      page("engagements.gohtml"),
+		"severity_reviews": page("severity_reviews.gohtml"),
+		"login":            template.Must(template.New("login").Funcs(funcMap).ParseFS(UIFS, "templates/login.gohtml")),
+		"register":         template.Must(template.New("register").Funcs(funcMap).ParseFS(UIFS, "templates/register.gohtml")),
 	}
-	Pages["dashboard"] = dashTmpl
-
-	adminTmpl := template.New("").Funcs(funcMap)
-	adminTmpl, err = adminTmpl.ParseFS(CoreUIFS, "templates/base.gohtml", "templates/admin.gohtml", "templates/components/*.gohtml")
-	if err != nil {
-		log.Fatalf("FATAL: Failed to parse admin shell. Err: %v", err)
+	Portals = map[string]*template.Template{
+		"wrangler":   template.Must(template.New("base").Funcs(funcMap).ParseFS(UIFS, "templates/magic/wrangler.gohtml", "templates/components/*.gohtml")),
+		"magistrate": template.Must(template.New("base").Funcs(funcMap).ParseFS(UIFS, "templates/magic/magistrate.gohtml", "templates/components/*.gohtml")),
 	}
-	Pages["admin"] = adminTmpl
-
-	Pages["login"], err = template.New("").Funcs(funcMap).ParseFS(CoreUIFS, "templates/login.gohtml")
-	if err != nil {
-		log.Fatalf("FATAL: Failed to parse login. Err: %v", err)
-	}
-
-	Pages["register"], err = template.New("").Funcs(funcMap).ParseFS(CoreUIFS, "templates/register.gohtml")
-	if err != nil {
-		log.Fatalf("FATAL: Failed to parse register. Err: %v", err)
-	}
-
-	Pages["assets"], err = template.New("").Funcs(funcMap).ParseFS(CoreUIFS, "templates/base.gohtml", "templates/assets.gohtml", "templates/components/*.gohtml")
-	if err != nil {
-		log.Fatalf("FATAL: Failed to parse assets. Err: %v", err)
-	}
-
-	ingestTmpl := template.New("").Funcs(funcMap)
-	ingestTmpl, err = ingestTmpl.ParseFS(CoreUIFS, "templates/base.gohtml", "templates/ingest.gohtml", "templates/components/*.gohtml")
-	if err != nil {
-		log.Fatalf("FATAL: Failed to parse ingest shell. Err: %v", err)
-	}
-	Pages["ingest"] = ingestTmpl
-
-	adapterTmpl := template.New("").Funcs(funcMap)
-	adapterTmpl, err = adapterTmpl.ParseFS(CoreUIFS, "templates/base.gohtml", "templates/adapter_builder.gohtml", "templates/components/*.gohtml")
-	if err != nil {
-		log.Fatalf("FATAL: Failed to parse adapter builder shell. Err: %v", err)
-	}
-	Pages["adapter_builder"] = adapterTmpl
-
-	uploadTmpl := template.New("").Funcs(funcMap)
-	uploadTmpl, err = uploadTmpl.ParseFS(CoreUIFS, "templates/base.gohtml", "templates/report_upload.gohtml", "templates/components/*.gohtml")
-	if err != nil {
-		log.Fatalf("FATAL: Failed to parse report upload template. Err: %v", err)
-	}
-	Pages["report_upload"] = uploadTmpl
-
-	parserTmpl := template.New("").Funcs(funcMap)
-	parserTmpl, err = parserTmpl.ParseFS(CoreUIFS, "templates/base.gohtml", "templates/report_parser.gohtml", "templates/components/*.gohtml")
-	if err != nil {
-		log.Fatalf("FATAL: Failed to parse report parser template. Err: %v", err)
-	}
-	Pages["report_parser"] = parserTmpl
 }
 
+// StaticHandler serves scripts and styles only; templates are never web-served.
 func StaticHandler() http.Handler {
-	staticFS, err := fs.Sub(CoreUIFS, "static")
+	staticFS, err := fs.Sub(UIFS, "static")
 	if err != nil {
 		log.Fatal("Failed to load embedded static files:", err)
 	}
 	return http.StripPrefix("/static/", http.FileServer(http.FS(staticFS)))
 }
 
-type PageData struct {
-	Tickets           any
-	CurrentTab        string
-	CurrentFilter     string
-	CurrentAsset      string
-	ReturnedCount     int
-	CountCritical     int
-	CountOverdue      int
-	CountMine         int
-	CurrentPage       int
-	TotalPages        int
-	NextPage          int
-	PrevPage          int
-	CountVerification int
-	HasNext           bool
-	HasPrev           bool
-	Version           string
-	Commit            string
+func render(w http.ResponseWriter, page string, data any) {
+	var buf bytes.Buffer
+	if err := Pages[page].ExecuteTemplate(&buf, "base", data); err != nil {
+		http.Error(w, "Template render error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	buf.WriteTo(w)
 }
 
+// HandleDashboard is the triage queue: asset groups, a page at a time, with the
+// portal token on each finding.
 func HandleDashboard(store domain.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userIDVal := r.Context().Value(auth.UserIDKey)
-		if userIDVal == nil {
+		id, ok := r.Context().Value(auth.UserIDKey).(int)
+		if !ok {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
-
-		userID := userIDVal.(int)
-		user, err := store.GetUserByID(r.Context(), userID)
+		user, err := store.GetUserByID(r.Context(), id)
 		if err != nil {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
-
 		if user.GlobalRole == "Sheriff" {
 			http.Redirect(w, r, "/admin", http.StatusSeeOther)
 			return
@@ -152,76 +103,92 @@ func HandleDashboard(store domain.Store) http.HandlerFunc {
 			return
 		}
 
-		currentUserEmail := user.Email
-		currentUserRole := user.GlobalRole
-
 		tab := r.URL.Query().Get("tab")
 		if tab == "" {
 			tab = "holding_pen"
 		}
-
 		statusFilter := tab
-		if tab == "holding_pen" {
+		switch tab {
+		case "holding_pen":
 			statusFilter = "Waiting to be Triaged"
-		} else if tab == "chute" {
+		case "chute":
 			statusFilter = "Assigned Out"
-		} else if tab == "verification" {
+		case "verification":
 			statusFilter = "Pending Verification"
 		}
-
 		filter := r.URL.Query().Get("filter")
 		assetFilter := r.URL.Query().Get("asset")
-
-		pageStr := r.URL.Query().Get("page")
-		page, _ := strconv.Atoi(pageStr)
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 		if page < 1 {
 			page = 1
 		}
 		limit := 10 // assets per page; each asset group arrives whole
 		offset := (page - 1) * limit
 
-		tickets, totalRecords, metrics, err := store.GetDashboardTickets(
-			r.Context(), statusFilter, filter, assetFilter, currentUserEmail, currentUserRole, limit, offset,
-		)
-
+		tickets, totalRecords, metrics, err := store.GetDashboardTicketsWithPortals(r.Context(), statusFilter, filter, assetFilter, user.Email, user.GlobalRole, limit, offset)
 		if err != nil {
-			http.Error(w, "Database query error: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "DB Error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		totalPages := int(math.Ceil(float64(totalRecords) / float64(limit)))
+		totalPages := totalRecords / limit
+		if totalRecords%limit != 0 {
+			totalPages++
+		}
 		if totalPages == 0 {
 			totalPages = 1
 		}
+		render(w, "dashboard", map[string]any{
+			"Tickets":           tickets,
+			"CurrentTab":        tab,
+			"CurrentFilter":     filter,
+			"CurrentAsset":      assetFilter,
+			"ReturnedCount":     metrics["returned"],
+			"CountCritical":     metrics["critical"],
+			"CountOverdue":      metrics["overdue"],
+			"CountMine":         metrics["mine"],
+			"CountVerification": metrics["verification"],
+			"CurrentPage":       page,
+			"TotalPages":        totalPages,
+			"NextPage":          page + 1,
+			"PrevPage":          page - 1,
+			"HasNext":           page < totalPages,
+			"HasPrev":           page > 1,
+		})
+	}
+}
 
-		data := PageData{
-			Tickets:           tickets,
-			CurrentTab:        tab,
-			CurrentFilter:     filter,
-			CurrentAsset:      assetFilter,
-			ReturnedCount:     metrics["returned"],
-			CountCritical:     metrics["critical"],
-			CountOverdue:      metrics["overdue"],
-			CountMine:         metrics["mine"],
-			CountVerification: metrics["verification"],
-			CurrentPage:       page,
-			TotalPages:        totalPages,
-			NextPage:          page + 1,
-			PrevPage:          page - 1,
-			HasNext:           page < totalPages,
-			HasPrev:           page > 1,
-			Version:           AppVersion,
-			Commit:            AppCommit,
+// HandleAdminDashboard is the Sheriff's office: people, policy, rules, metrics, and the risk queue.
+func HandleAdminDashboard(store domain.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		users, _ := store.GetAllUsers(r.Context())
+		config, _ := store.GetAppConfig(r.Context())
+		slas, _ := store.GetSLAPolicies(r.Context())
+		adapterList, _ := store.GetAdapters(r.Context())
+		metrics, _ := store.GetSheriffAnalytics(r.Context())
+		activityFeed, _ := store.GetGlobalActivityFeed(r.Context(), 15)
+		syncLogs, _ := store.GetRecentSyncLogs(r.Context(), 10)
+		rules, _ := store.GetRoutingRules(r.Context())
+		riskTickets, _, _, _ := store.GetDashboardTicketsWithPortals(r.Context(), "Pending Risk Approval", "", "", "", "Sheriff", 50, 0)
+		unread := 0
+		for _, t := range riskTickets {
+			if t.OwnerViewedAt == nil {
+				unread++
+			}
 		}
-
-		var buf bytes.Buffer
-		if err := Pages["dashboard"].ExecuteTemplate(&buf, "base", data); err != nil {
-			http.Error(w, "Template rendering error: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		buf.WriteTo(w)
+		render(w, "admin", map[string]any{
+			"Users":            users,
+			"Config":           config,
+			"SLAs":             slas,
+			"Adapters":         adapterList,
+			"Analytics":        metrics,
+			"Feed":             activityFeed,
+			"SyncLogs":         syncLogs,
+			"RiskRequests":     riskTickets,
+			"PendingRiskCount": unread,
+			"Rules":            rules,
+			"Version":          AppVersion,
+			"Commit":           AppCommit,
+		})
 	}
 }
 
@@ -243,103 +210,76 @@ func HandleRegisterUI() http.HandlerFunc {
 	}
 }
 
-func HandleAdminDashboard(store domain.Store) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		users, _ := store.GetAllUsers(r.Context())
-		config, _ := store.GetAppConfig(r.Context())
-		slas, _ := store.GetSLAPolicies(r.Context())
-		adapters, _ := store.GetAdapters(r.Context())
-
-		analytics, _ := store.GetSheriffAnalytics(r.Context())
-		activityFeed, _ := store.GetGlobalActivityFeed(r.Context(), 15)
-		syncLogs, _ := store.GetRecentSyncLogs(r.Context(), 10)
-
-		data := map[string]any{
-			"Users":     users,
-			"Config":    config,
-			"SLAs":      slas,
-			"Adapters":  adapters,
-			"Analytics": analytics,
-			"Feed":      activityFeed,
-			"SyncLogs":  syncLogs,
-			"Version":   AppVersion,
-			"Commit":    AppCommit,
-		}
-
-		var buf bytes.Buffer
-		if err := Pages["admin"].ExecuteTemplate(&buf, "base", data); err != nil {
-			http.Error(w, "Template render error: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		buf.WriteTo(w)
-	}
-}
-
 func HandleIngestUI(store domain.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-		adapters, _ := store.GetAdapters(r.Context())
-		data := map[string]any{
-			"Adapters": adapters,
-			"Version":  AppVersion,
-			"Commit":   AppCommit,
-		}
-
-		if err := Pages["ingest"].ExecuteTemplate(w, "base", data); err != nil {
-			http.Error(w, "Template render error: "+err.Error(), http.StatusInternalServerError)
-		}
+		adapterList, _ := store.GetAdapters(r.Context())
+		render(w, "ingest", map[string]any{"Adapters": adapterList, "Version": AppVersion, "Commit": AppCommit})
 	}
 }
 
 func HandleAdapterBuilderUI(store domain.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		data := map[string]any{
-			"Filename": r.URL.Query().Get("filename"),
-			"Version":  AppVersion,
-			"Commit":   AppCommit,
-		}
-		if err := Pages["adapter_builder"].ExecuteTemplate(w, "base", data); err != nil {
-			http.Error(w, "Template render error: "+err.Error(), http.StatusInternalServerError)
-		}
+		render(w, "adapter_builder", map[string]any{"Filename": r.URL.Query().Get("filename"), "Version": AppVersion, "Commit": AppCommit})
 	}
 }
 
 func HandleParserUI(store domain.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		reportID := r.PathValue("id")
-
-		filePath := filepath.Join(report.UploadDir, reportID)
 		recorder := httptest.NewRecorder()
-		report.ServeDOCXAsHTML(recorder, filePath)
-		safeHTML := template.HTML(recorder.Body.String())
-
-		data := map[string]any{
-			"ReportID":     reportID,
-			"RenderedHTML": safeHTML,
-			"Version":      AppVersion,
-			"Commit":       AppCommit,
-		}
-
-		if err := Pages["report_parser"].ExecuteTemplate(w, "base", data); err != nil {
-			http.Error(w, "Template render error: "+err.Error(), http.StatusInternalServerError)
-		}
+		report.ServeDOCXAsHTML(recorder, filepath.Join(report.UploadDir, reportID))
+		render(w, "report_parser", map[string]any{"ReportID": reportID, "RenderedHTML": template.HTML(recorder.Body.String()), "Version": AppVersion, "Commit": AppCommit})
 	}
 }
 
 func HandlePentestUploadUI(store domain.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		data := map[string]any{
-			"Version": AppVersion,
-			"Commit":  AppCommit,
+		render(w, "report_upload", map[string]any{"Version": AppVersion, "Commit": AppCommit})
+	}
+}
+
+// userPage serves a script-driven page that only needs the signed-in user's
+// identity as server data; the page talks to the JSON APIs.
+func userPage(store domain.Store, page string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, ok := r.Context().Value(auth.UserIDKey).(int)
+		if !ok {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
 		}
-		if err := Pages["report_upload"].ExecuteTemplate(w, "base", data); err != nil {
-			http.Error(w, "Template render error: "+err.Error(), http.StatusInternalServerError)
+		u, err := store.GetUserByID(r.Context(), id)
+		if err != nil {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+		render(w, page, map[string]any{"Email": u.Email, "Role": u.GlobalRole})
+	}
+}
+
+// HandleEngagementsUI serves the Bounty Hunter workspace (engagements and the report builder).
+func HandleEngagementsUI(store domain.Store) http.HandlerFunc { return userPage(store, "engagements") }
+
+// HandleSeverityReviewsUI serves the severity-proposal review page.
+func HandleSeverityReviewsUI(store domain.Store) http.HandlerFunc {
+	return userPage(store, "severity_reviews")
+}
+
+// HandleMagicLinkUI serves the owner's portal (fix, request more time, request an exception).
+func HandleMagicLinkUI() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		if err := Portals["wrangler"].ExecuteTemplate(w, "wrangler.gohtml", nil); err != nil {
+			http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
+		}
+	}
+}
+
+// HandleMagistrateUI serves the risk approver's portal.
+func HandleMagistrateUI() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		if err := Portals["magistrate"].ExecuteTemplate(w, "magistrate.gohtml", nil); err != nil {
+			http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 		}
 	}
 }

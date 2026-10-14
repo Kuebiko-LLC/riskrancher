@@ -53,7 +53,7 @@ While nothing runs in production, the simpler path is fine: edit the baseline, d
 
 ## How it is built
 
-- One Go module, `github.com/Kuebiko-LLC/riskrancher`. Persistence is one store (`pkg/datastore.SQLiteStore`) behind one interface (`pkg/domain.Store`).
+- One Go module, `github.com/Kuebiko-LLC/riskrancher`: `cmd/rr` boots it, `pkg/` is the product (one store, `pkg/datastore.SQLiteStore`, behind one interface, `pkg/domain.Store`), `ui/` is the templates and scripts.
 - Pure-Go SQLite (`modernc.org/sqlite`), so no CGO and no external database. One file holds everything.
 - Server-rendered Go templates with htmx on native `net/http`. No SPA, no build step.
 - Tests run against a real SQLite database: `go test ./...`.

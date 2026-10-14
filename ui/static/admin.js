@@ -1,7 +1,4 @@
-window.showUpsell = function(featureName) {
-    document.getElementById('upsellFeatureName').innerText = featureName;
-    document.getElementById('upsellModal').style.display = 'flex';
-};
+// File: RiskRancher/ui/static/admin.js
 
 function switchTab(tabId, btnElement) {
     document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
@@ -10,6 +7,67 @@ function switchTab(tabId, btnElement) {
     if(btnElement) btnElement.classList.add('active');
 }
 
+// --- MAGISTRATE REVIEW LOGIC ---
+window.toggleRiskGroup = function(safeAsset) {
+    document.querySelectorAll(`.group-${safeAsset}`).forEach(r => {
+        r.style.display = r.style.display === "none" ? "table-row" : "none";
+    });
+};
+
+window.prepMagistrateLink = async function(tokenString, idsString, event) {
+    if (event) event.stopPropagation();
+    const context = prompt("Enter your Security Context/Verification for the Magistrate.\n\n(This will be applied to ALL findings in this batch):");
+    if (!context) return alert("Action cancelled. You must provide context to proceed.");
+
+    try {
+        const ids = idsString.split(',').map(id => parseInt(id));
+
+        // 1. Hit the Bulk API first to unify all these tickets and generate a fresh token!
+        const res = await fetch('/api/tickets/bulk', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            // We pass the status again to force the API to mint a new Batch Token for the Magistrate
+            body: JSON.stringify({ ticket_ids: ids, status: "Pending Risk Approval", comment: "[Sheriff Verification] " + context, actor: "Sheriff" })
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+
+            // 2. Grab the fresh, unified token from the server response
+            const newBatchToken = data.batch_token;
+            if (!newBatchToken) return alert("Failed to generate a unified Magistrate link.");
+
+            const url = window.location.origin + "/share/" + newBatchToken;
+
+            // 3. Copy the NEW URL to the clipboard
+            try {
+                await navigator.clipboard.writeText(url);
+            } catch (err) {
+                const tempInput = document.createElement("input");
+                tempInput.value = url; document.body.appendChild(tempInput); tempInput.select(); document.execCommand("copy"); document.body.removeChild(tempInput);
+            }
+
+            alert("✅ Context saved & Unified Magistrate Link copied to clipboard!");
+            window.location.reload();
+        } else {
+            alert("Failed to save context: " + await res.text());
+        }
+    } catch (err) {
+        alert("Network error.");
+    }
+}
+
+window.denyRisk = async function(token) {
+    const comment = prompt("Enter rationale for denying this request back to IT (Required):");
+    if (!comment) return alert("Action cancelled. An audit comment is required.");
+    try {
+        const res = await fetch(`/api/risk/${token}/review`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'deny', comment: comment, extension_days: 0, actor: "Sheriff" })
+        });
+        if (res.ok) window.location.reload(); else alert("Failed: " + await res.text());
+    } catch (err) { alert("Network error."); }
+}
 
 // --- CONFIG & USERS LOGIC ---
 window.deleteUser = async function(id) { if(confirm("Deactivate this user?")) await fetch(`/api/admin/users/${id}`, { method: 'DELETE' }).then(r => r.ok ? window.location.reload() : alert("Failed")); }
@@ -77,6 +135,54 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
+    // Render the Sheriff Risk Tree
+    const tbody = document.getElementById("riskTableBody");
+    if (tbody) {
+        const rows = Array.from(tbody.querySelectorAll("tr.risk-row"));
+        if (rows.length === 0) {
+            document.getElementById("riskTableHeader").style.display = "table-header-group";
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #94a3b8; padding: 40px;">No pending risk requests.</td></tr>`;
+        } else {
+            const groups = {};
+            rows.forEach(r => {
+                const asset = r.getAttribute("data-asset") || "Unknown";
+                let typeLabel = "Time Extension"; let typeColor = "#ea580c"; let typeIcon = "⏱️";
+                const typeCell = r.querySelector('.risk-type-cell');
+                if (typeCell && typeCell.innerText.includes("ACCEPTANCE")) { typeLabel = "Risk Acceptance"; typeColor = "#dc2626"; typeIcon = "🛑"; }
+                const groupKey = `${asset}_${typeLabel}`;
+                if (!groups[groupKey]) groups[groupKey] = { asset: asset, typeLabel: typeLabel, typeColor: typeColor, typeIcon: typeIcon, rows: [] };
+                groups[groupKey].rows.push(r);
+            });
+            tbody.innerHTML = "";
+            for (const key in groups) {
+                const group = groups[key];
+                const safeKey = key.replace(/[^a-zA-Z0-9-_]/g, '-');
+                let unreadCount = group.rows.filter(r => r.innerHTML.includes("✉️ Unread")).length;
+                let unreadBadge = unreadCount > 0 ? `<span style="background: #ef4444; color: white; border-radius: 12px; padding: 2px 7px; font-size: 0.75rem; font-weight: bold; margin-left: 10px; animation: pulse 2s infinite;">${unreadCount} Unread</span>` : '';
+                const batchTokens = group.rows.map(r => r.getAttribute("data-token")).join(',');
+                const batchIDs = group.rows.map(r => r.getAttribute("data-id")).join(',');
+
+                const headerTr = document.createElement("tr");
+                headerTr.innerHTML = `<td colspan="5" style="padding: 15px 20px; background: #f8fafc; border-top: 1px solid #cbd5e1; border-bottom: 1px solid #cbd5e1; cursor: pointer;" onclick="toggleRiskGroup('${safeKey}')">
+                    <span style="font-family: monospace; font-size: 1.1rem; color: #0f172a; font-weight: bold;">📂 ${group.asset}</span>
+                    <span style="background: ${group.typeColor}15; color: ${group.typeColor}; border: 1px solid ${group.typeColor}40; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: 10px;">${group.typeIcon} ${group.typeLabel}</span>
+                    <span style="color: #64748b; font-size: 0.9rem; margin-left: 5px;">(${group.rows.length} Requests)</span> ${unreadBadge}
+                    <button class="btn" style="float: right; padding: 6px 12px; font-size: 0.8rem; background: #2563eb; color: white; margin-left: 15px;" onclick="prepMagistrateLink('${batchTokens}', '${batchIDs}', event)">🔗 Copy Batch Link</button>
+                </td>`;
+                tbody.appendChild(headerTr);
+
+                const assetDetailsTr = document.createElement("tr");
+                assetDetailsTr.className = `group-${safeKey}`; assetDetailsTr.style.display = "none";
+                assetDetailsTr.innerHTML = `<td colspan="5" style="padding: 0 20px 20px 40px; position: relative; background: #fafafa;"><div style="position: absolute; left: 25px; top: 0; bottom: 30px; width: 3px; background: ${group.typeColor}; border-radius: 2px;"></div><table style="width: 100%; border-collapse: collapse; margin-top: 10px;"><tbody></tbody></table></td>`;
+                tbody.appendChild(assetDetailsTr);
+                group.rows.forEach(r => {
+                    const indBtn = r.querySelector('button[onclick^="prepMagistrateLink"]');
+                    if(indBtn) indBtn.style.display = 'none';
+                    assetDetailsTr.querySelector('tbody').appendChild(r);
+                });
+            }
+        }
+    }
 
     // --- SLA MATRIX SAVE ---
     const saveConfigBtn = document.getElementById("saveConfigBtn");
@@ -108,7 +214,7 @@ document.addEventListener("DOMContentLoaded", function() {
         domainFilter.addEventListener("change", function() {
             document.querySelectorAll(".sla-row").forEach(row => row.style.display = row.getAttribute("data-domain") === this.value ? "table-row" : "none");
         });
-        domainFilter.dispatchEvent(new Event("change"));
+        domainFilter.dispatchEvent(new Event("change")); // init
     }
 
     // --- MODAL EVENT LISTENERS ---

@@ -24,70 +24,96 @@
                 </table>
             </div>
 
-            {{block "pro_source_routing" .}}
-                <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; background: #f8fafc;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h3 style="margin: 0; color: #64748b;">🛤️ Source Routing</h3>
-                    </div>
-                    <div style="text-align: center; padding: 20px; border: 1px dashed #cbd5e1; border-radius: 6px; background: white;">
-                        <p style="color: #475569; font-size: 0.9rem; margin-bottom: 10px;">Automate ticket assignment and triage based on asset tags or CVEs.</p>
-                    </div>
+            <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0;">🛤️ Source Routing</h3>
+                    <button id="openRuleModal" class="btn" style="padding: 6px 12px; font-size: 0.85rem; background: #8b5cf6; color: white;">+ Add Rule</button>
                 </div>
-            {{end}}
+                <table style="font-size: 0.9rem; width: 100%;">
+                    <thead><tr><th style="text-align: left;">Trigger</th><th style="text-align: left;">Match & Assignee</th><th style="text-align: right;">Actions</th></tr></thead>
+                    <tbody>
+                    {{range .Rules}}
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 8px 0;"><strong>{{.RuleType}}</strong></td>
+                            <td><span style="font-family: monospace; color: #2563eb;">{{.MatchValue}}</span><br><span style="font-size: 0.8rem; color: #475569;">&rarr; {{.Assignee}}</span></td>
+                            <td style="text-align: right;"><button class="btn btn-secondary" style="padding: 2px 6px; font-size: 0.75rem; color: #dc2626; border-color: #fca5a5;" onclick="deleteRule({{.ID}})" title="Delete Rule">🗑️</button></td>
+                        </tr>
+                    {{else}}
+                        <tr><td colspan="3" style="text-align: center; color: #94a3b8; padding: 10px;">No active routing rules.</td></tr>
+                    {{end}}
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
-
-            {{block "pro_sla_policy" .}}
-                <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; position: relative;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <div>
-                            <h3 style="margin: 0;">⏱️ SLA Policies & System Time</h3>
-                            <p style="margin: 2px 0 0 0; font-size: 0.8rem; color: #64748b;">Locked to Standard FedRAMP/NIST Default Timeframes</p>
+            <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0;">⏱️ SLA Policies & System Time</h3>
+                    <button id="saveConfigBtn" class="btn" style="padding: 6px 12px; font-size: 0.85rem;">Save Changes</button>
+                </div>
+                <div style="display: flex; gap: 30px;">
+                    <div style="flex: 1; padding: 15px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">
+                        <h4 style="margin-top: 0;">Base Configuration</h4>
+                        <label>System Timezone:</label>
+                        <select id="configTimezone" style="width: 100%; padding: 6px; margin-bottom: 10px;">
+                            <option value="America/New_York" {{if eq .Config.Timezone "America/New_York"}}selected{{end}}>Eastern Time (ET)</option>
+                            <option value="America/Chicago" {{if eq .Config.Timezone "America/Chicago"}}selected{{end}}>Central Time (CT)</option>
+                            <option value="America/Denver" {{if eq .Config.Timezone "America/Denver"}}selected{{end}}>Mountain Time (MT)</option>
+                            <option value="America/Los_Angeles" {{if eq .Config.Timezone "America/Los_Angeles"}}selected{{end}}>Pacific Time (PT)</option>
+                            <option value="UTC" {{if eq .Config.Timezone "UTC"}}selected{{end}}>UTC (Universal)</option>
+                        </select>
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <div style="flex: 1;"><label>Biz Start:</label><input type="number" id="configBizStart" value="{{.Config.BusinessStart}}" style="width: 100%; padding: 6px;"></div>
+                            <div style="flex: 1;"><label>Biz End:</label><input type="number" id="configBizEnd" value="{{.Config.BusinessEnd}}" style="width: 100%; padding: 6px;"></div>
                         </div>
-                        <button class="btn" style="padding: 6px 12px; font-size: 0.85rem; background: #f8fafc; color: #64748b; border: 1px solid #cbd5e1;" onclick="switchTab('tab-config', this)">Customize</button>
+                        <label>Default Exception (Days):</label>
+                        <input type="number" id="configDefExt" value="{{.Config.DefaultExtensionDays}}" style="width: 100%; padding: 6px;">
                     </div>
-                    <div style="display: flex; gap: 30px; opacity: 0.7; pointer-events: none;">
-                        <div style="flex: 1; padding: 15px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">
-                            <h4 style="margin-top: 0;">Base Configuration</h4>
-                            <label>System Timezone:</label>
-                            <select disabled style="width: 100%; padding: 6px; margin-bottom: 10px; background: #e2e8f0;">
-                                <option selected>UTC (Universal)</option>
+                    <div style="flex: 2;">
+                        <div style="margin-bottom: 10px; display: flex; justify-content: space-between;">
+                            <h4 style="margin: 0;">SLA Matrix</h4>
+                            <select id="slaDomainFilter" style="padding: 4px; font-size: 0.85rem;">
+                                <option value="Vulnerability">Vulnerability</option>
+                                <option value="Privacy">Privacy</option>
+                                <option value="Compliance">Compliance</option>
+                                <option value="Incident">Incident</option>
                             </select>
-                            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                                <div style="flex: 1;"><label>Biz Start:</label><input type="text" disabled value="09:00" style="width: 100%; padding: 6px; background: #e2e8f0;"></div>
-                                <div style="flex: 1;"><label>Biz End:</label><input type="text" disabled value="17:00" style="width: 100%; padding: 6px; background: #e2e8f0;"></div>
-                            </div>
                         </div>
-                        <div style="flex: 2;">
-                            <div style="margin-bottom: 10px; display: flex; justify-content: space-between;">
-                                <h4 style="margin: 0;">SLA Matrix (Days to Patch)</h4>
-                            </div>
-                            <table style="font-size: 0.85rem; width: 100%; text-align: left;">
-                                <thead><tr><th style="padding-bottom: 5px;">Severity</th><th>Triage</th><th>Patch</th></tr></thead>
-                                <tbody>
-                                <tr class="sla-row"><td style="padding: 4px 0;"><span class="badge critical">Critical</span></td><td>1</td><td>3</td></tr>
-                                <tr class="sla-row"><td style="padding: 4px 0;"><span class="badge high">High</span></td><td>3</td><td>14</td></tr>
-                                <tr class="sla-row"><td style="padding: 4px 0;"><span class="badge medium">Medium</span></td><td>7</td><td>30</td></tr>
-                                <tr class="sla-row"><td style="padding: 4px 0;"><span class="badge low">Low</span></td><td>14</td><td>90</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
+                        <table style="font-size: 0.85rem; width: 100%; text-align: left;">
+                            <thead><tr><th style="padding-bottom: 5px;">Severity</th><th>Triage</th><th>Patch</th><th>Ext.</th></tr></thead>
+                            <tbody>
+                            {{range .SLAs}}
+                                <tr class="sla-row" data-domain="{{.Domain}}">
+                                    <td style="padding: 4px 0;"><span class="badge {{.Severity | lower}}">{{.Severity}}</span></td>
+                                    <td><input type="number" class="sla-triage" value="{{.DaysToTriage}}" style="width: 45px;"></td>
+                                    <td><input type="number" class="sla-patch" value="{{.DaysToRemediate}}" style="width: 45px;"></td>
+                                    <td><input type="number" class="sla-ext" value="{{.MaxExtensions}}" style="width: 35px;"></td>
+                                </tr>
+                            {{end}}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-            {{end}}
+            </div>
 
             <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; display: flex; flex-direction: column;">
                 <h3 style="margin: 0 0 15px 0;">⚙️ Operations</h3>
-
-                {{block "pro_backups" .}}
-                {{end}}
-
+                <div style="margin-bottom: 20px;">
+                    <label style="font-weight: bold;">Backup Policy</label>
+                    <div style="display: flex; gap: 10px; margin-top: 5px;">
+                        <select id="backupPolicy" style="flex: 1; padding: 6px;">
+                            <option value="daily" {{if and .Config.Backup.Enabled (eq .Config.Backup.IntervalHours 24)}}selected{{end}}>Daily</option>
+                            <option value="weekly" {{if and .Config.Backup.Enabled (eq .Config.Backup.IntervalHours 168)}}selected{{end}}>Weekly</option>
+                            <option value="none" {{if not .Config.Backup.Enabled}}selected{{end}}>Disabled</option>
+                        </select>
+                        <button class="btn btn-secondary" onclick="updateBackupPolicy()">Apply</button>
+                    </div>
+                </div>
                 <div style="margin-bottom: 20px;">
                     <label style="font-weight: bold;">Data Portability</label>
                     <a href="/api/admin/export" class="btn btn-secondary" style="display: block; text-align: center; margin-top: 5px; background: #e0e7ff; color: #3730a3; border-color: #c7d2fe;">⬇️ Export JSON State</a>
                 </div>
-
                 <div style="margin-top: auto; padding-top: 15px; border-top: 1px solid #e2e8f0;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-size: 0.85rem; color: #475569;">Version: <strong>{{.Version}} ({{.Commit}})</strong></span>

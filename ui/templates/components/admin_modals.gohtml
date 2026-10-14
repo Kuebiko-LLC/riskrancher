@@ -22,4 +22,34 @@
         </div>
     </div>
 
+    <div id="ruleModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="width: 450px;">
+            <h3>Create Dispatcher Rule</h3>
+            <label>Trigger Type:</label>
+            <select id="newRuleType" style="width: 100%; padding: 8px; margin-bottom: 15px;">
+                <option value="Source">Source (Scanner/Integration)</option>
+                <option value="Asset">Asset Identifier</option>
+            </select>
+            <label>Match Value:</label>
+            <div style="margin-bottom: 15px;">
+                <select id="newRuleMatchSource" style="width: 100%; padding: 8px;">
+                    <option value="Manual">Manual</option>
+                    {{range .Adapters}}
+                        <option value="{{.SourceName}}">{{.SourceName}} (via {{.Name}})</option>
+                    {{end}}
+                </select>
+                <input type="text" id="newRuleMatchAsset" style="width: 100%; padding: 8px; display: none;" placeholder="e.g. payment-gateway-prod">
+            </div>
+            <label>Assign To (Hold Ctrl/Cmd to select multiple):</label>
+            <select id="newRuleAssignee" multiple style="width: 100%; padding: 8px; margin-bottom: 15px; height: 120px;">
+                {{range .Users}}
+                    <option value="{{.Email}}">{{.FullName}} ({{.Email}})</option>
+                {{end}}
+            </select>
+            <div class="modal-actions">
+                <button id="cancelRule" class="btn btn-secondary">Cancel</button>
+                <button id="submitRule" class="btn" style="background: #8b5cf6; color: white;">Deploy Rule</button>
+            </div>
+        </div>
+    </div>
 {{end}}

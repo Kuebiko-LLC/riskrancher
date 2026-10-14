@@ -1,6 +1,6 @@
 # One RiskRancher: folding the `pro/` layer into the product
 
-Status: Stages 1 and 2 landed 2026-10-14. Stages land as
+Status: Stages 1, 2 and 3 landed 2026-10-14. `pro/` is gone. Stage 4 (loose ends) remains. Stages land as
 separate commits, suite green between each, so any stage can be bisected or reverted on its own.
 
 ## Goal
@@ -81,7 +81,7 @@ Deleted outright: `pro/license`, `pro/middleware/license.go`, `pro/admin/license
    behavior before moving (suppression marks False Positive, severity rule applies,
    routing assigns) so the merge is checked, not assumed.
 
-### Stage 3: one server
+### Stage 3: one server -- DONE (evidence/reporting/middleware moves, tickets, admin, then ui + routes)
 
 1. `pro/api/pro_routes.go` -> `pkg/server/routes.go` (one `RegisterRoutes`), handler
    packages merged: `pro/admin` -> `pkg/admin`, `pro/tickets` -> `pkg/tickets`,
@@ -118,3 +118,4 @@ Deleted outright: `pro/license`, `pro/middleware/license.go`, `pro/admin/license
 - Verified no performance change: pen page on the million-row lab DB 0.5-0.7 s warm before and after.
 - The two create paths disagreed (Stage 2 prep, 583df0a): batch ingest skipped per-finding suppression, severity rules and routing; a global suppression match set a status the schema rejects and rolled back the ingest; the per-finding suppression check ran before the hash existed. One rules engine now runs on both paths. Million-row ingest 77 s (was 68 s); a routing rule set before the upload assigned all 200 findings on its asset.
 - Stage 2 also deleted the embedding and matchmaker sketches (they queried tables the schema never had and nothing called them) and a base GetGlobalActivityFeed that returned an upsell message instead of the audit log.
+- Stage 3 notes: the pro route wrappers logged every API call to the audit log and the base ones did not; the merged set audits every protected API route, so the log now covers the whole product. The core paginated audit feed was a stub returning nothing (fixed with a test, 166d987). `PUT /api/config` still has no role check (Stage 4). `GET /uploads/` strips the wrong prefix and always 404s (Stage 4).

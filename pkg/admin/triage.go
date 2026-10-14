@@ -18,9 +18,9 @@ func (h *Handler) HandleCreateTriageRule(w http.ResponseWriter, r *http.Request)
 
 	rule.WorkspaceID = 1
 
-	proStore := h.Store
+	store := h.Store
 
-	if err := proStore.CreateAutoTriageRule(r.Context(), &rule); err != nil {
+	if err := store.CreateAutoTriageRule(r.Context(), &rule); err != nil {
 		http.Error(w, "Failed to create rule", http.StatusInternalServerError)
 		return
 	}
@@ -31,9 +31,9 @@ func (h *Handler) HandleCreateTriageRule(w http.ResponseWriter, r *http.Request)
 
 // HandleGetTriageRules lists the active interceptor rules for the UI
 func (h *Handler) HandleGetTriageRules(w http.ResponseWriter, r *http.Request) {
-	proStore := h.Store
+	store := h.Store
 
-	rules, err := proStore.GetAutoTriageRules(r.Context(), 1)
+	rules, err := store.GetAutoTriageRules(r.Context(), 1)
 	if err != nil {
 		http.Error(w, "Failed to fetch rules", http.StatusInternalServerError)
 		return
@@ -52,9 +52,9 @@ func (h *Handler) HandleDeleteTriageRule(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	proStore := h.Store
+	store := h.Store
 
-	if err := proStore.DeleteAutoTriageRule(r.Context(), ruleID); err != nil {
+	if err := store.DeleteAutoTriageRule(r.Context(), ruleID); err != nil {
 		http.Error(w, "Failed to delete rule", http.StatusInternalServerError)
 		return
 	}

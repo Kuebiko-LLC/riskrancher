@@ -1,47 +1,55 @@
-async function uploadScan() {
-    const fileInput = document.getElementById('scanFile');
-    const adapterSelect = document.getElementById('adapterSelect');
-    const resultDiv = document.getElementById('ingestResult');
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
 
-    const file = fileInput.files[0];
-    const adapterName = adapterSelect.value;
+async function processFile(file) {
+    const statusText = document.getElementById('status-text');
+    document.getElementById('status-area').classList.remove('d-none');
 
-    if (!file) {
-        showResult("Please select a file to upload.", false);
-        return;
+    const adapterSelect = document.getElementById('adapter-select');
+    const adapterId = adapterSelect.value;
+
+    // Safely extract the data-name attribute if an adapter is selected
+    let adapterName = "";
+    if (adapterSelect.selectedIndex > 0) {
+        adapterName = adapterSelect.options[adapterSelect.selectedIndex].getAttribute('data-name');
     }
-
-    if (!adapterName) {
-        showResult("Please select an adapter.", false);
-        return;
-    }
-
-    // Show processing state
-    showResult("Processing...", true, true);
 
     try {
         let response;
 
-        // Route appropriately based on file extension
+        // 🚀 JSON API ROUTE
         if (file.name.toLowerCase().endsWith('.json')) {
+            // If no adapter is selected, redirect to Builder instead of throwing an error!
+            if (!adapterName) {
+                statusText.innerText = "Unknown JSON format. Redirecting to Adapter Builder...";
+                setTimeout(() => {
+                    window.location.href = `/admin/adapters/new?filename=${encodeURIComponent(file.name)}`;
+                }, 1200);
+                return; // Halt execution and let the browser redirect
+            }
+
             const rawText = await file.text();
             response = await fetch(`/api/ingest/${encodeURIComponent(adapterName)}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: rawText
             });
-        } else {
+        }
+        // 🚀 CSV API ROUTE
+        else {
             let formData = new FormData();
             formData.append('file', file);
-            formData.append('adapter_name', adapterName); // Pass adapter name for CSVs
+            if (adapterId) {
+                formData.append('adapter_id', adapterId);
+            }
 
             response = await fetch('/api/ingest/csv', { method: 'POST', body: formData });
         }
 
+        // Handle the Go Backend Response
         if (!response.ok) {
-            // Auto-redirect to builder if the adapter doesn't match the file structure
             if (response.status === 404) {
-                showResult("Format not recognized. Redirecting to Adapter Builder...", false);
+                statusText.innerText = "Format not recognized. Redirecting to Adapter Builder...";
                 setTimeout(() => {
                     window.location.href = `/admin/adapters/new?filename=${encodeURIComponent(file.name)}`;
                 }, 1200);
@@ -50,31 +58,16 @@ async function uploadScan() {
                 throw new Error(errText);
             }
         } else {
-            showResult("Yeehaw! Tickets corralled successfully.", true);
-            setTimeout(() => window.location.href = "/dashboard", 1000);
+            statusText.innerText = "Yeehaw! Tickets corralled successfully.";
+            setTimeout(() => window.location.href = "/dashboard", 800);
         }
     } catch (err) {
-        showResult("Stampede! Error: " + err.message, false);
+        statusText.innerText = "Stampede! Error: " + err.message;
     }
 }
 
-// Helper function to handle status messages nicely
-function showResult(msg, isSuccess, isInfo = false) {
-    const div = document.getElementById('ingestResult');
-    div.style.display = 'block';
-    div.innerText = msg;
-
-    if (isInfo) {
-        div.style.backgroundColor = '#e0f2fe';
-        div.style.color = '#0369a1';
-        div.style.border = '1px solid #bae6fd';
-    } else if (isSuccess) {
-        div.style.backgroundColor = '#dcfce7';
-        div.style.color = '#166534';
-        div.style.border = '1px solid #bbf7d0';
-    } else {
-        div.style.backgroundColor = '#fee2e2';
-        div.style.color = '#991b1b';
-        div.style.border = '1px solid #fecaca';
-    }
-}
+dropZone.onclick = () => fileInput.click();
+fileInput.onchange = (e) => processFile(e.target.files[0]);
+dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.background = "#e1f5fe"; };
+dropZone.ondragleave = () => dropZone.style.background = "#f8f9fa";
+dropZone.ondrop = (e) => { e.preventDefault(); processFile(e.dataTransfer.files[0]); };

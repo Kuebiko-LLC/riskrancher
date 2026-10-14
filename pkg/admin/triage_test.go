@@ -18,7 +18,7 @@ func TestAutoTriageRuleLifecycleBDD(t *testing.T) {
 	defer db.Close()
 
 	// Convert the core.Store to ProStore so we can check the DB directly
-	proStore := app.Store
+	store := app.Store
 
 	var createdRuleID int
 
@@ -112,7 +112,7 @@ func TestAutoTriageRuleLifecycleBDD(t *testing.T) {
 		}
 
 		// AND the rule should no longer exist in the database
-		rules, _ := proStore.GetAutoTriageRules(context.Background(), 1)
+		rules, _ := store.GetAutoTriageRules(context.Background(), 1)
 		if len(rules) != 0 {
 			t.Errorf("Expected 0 rules after deletion, but found %d", len(rules))
 		}

@@ -1,15 +1,4 @@
 {{define "dash_modals"}}
-    <div id="upsellModal" class="modal-overlay" style="display: none;">
-        <div class="modal-content" style="width: 400px; text-align: center;">
-            <div style="font-size: 3rem; margin-bottom: 10px;">🤠</div>
-            <h3 style="margin-top: 0; color: #0f172a;">Heads up</h3>
-            <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 20px;">The <strong id="upsellFeatureName">feature</strong> is available in this build.</p>
-            <div style="display: flex; gap: 10px; justify-content: center;">
-                <button class="btn btn-secondary" onclick="document.getElementById('upsellModal').style.display='none'">Close</button>
-            </div>
-        </div>
-    </div>
-
     <div id="newTicketModal" class="modal-overlay" style="display: none;">
         <div class="modal-content" style="width: 500px; text-align: left;">
             <h3 style="margin-top: 0; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">+ Log Manual Finding</h3>
@@ -48,6 +37,39 @@
         </div>
     </div>
 
+    <div id="bulkModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="width: 450px;">
+            <div id="bulkFormContainer">
+                <h3>Update <span id="bulkCountDisplay">0</span> Tickets</h3>
+                <label>New Workflow State:</label>
+                <select id="bulkStatus" style="width: 100%; padding: 8px; margin-bottom: 15px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                    <option value="Triaged">Triaged</option>
+                    <option value="Assigned Out">Assigned Out (To The Chute)</option>
+                    <option value="Pending Verification">Pending Verification</option>
+                    <option value="False Positive">False Positive</option>
+                    <option value="Patched">Patched (Verified)</option>
+                </select>
+                <div id="assigneeContainer" style="display: none; margin-bottom: 15px;">
+                    <label>Assign To (Email or Team Name): <span style="color: red;">*</span></label>
+                    <input type="text" id="bulkAssignee" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px;" placeholder="e.g., infrastructure-team@ranch.com">
+                </div>
+                <label>Audit Log Comment:</label>
+                <textarea id="bulkComment" rows="3" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #cbd5e1;" placeholder="Reason for mass update..."></textarea>
+                <div class="modal-actions" style="margin-top: 20px;">
+                    <button id="cancelBulk" class="btn btn-secondary">Cancel</button>
+                    <button id="submitBulk" class="btn" style="background: #2563eb; color: white;">Confirm Update</button>
+                </div>
+            </div>
+            <div id="bulkSuccessContainer" style="display: none; text-align: center; padding: 20px 0;">
+                <div style="font-size: 3rem; margin-bottom: 10px;">🤠</div>
+                <h3 style="color: #0f172a; margin-top: 0;">Tickets Assigned Successfully!</h3>
+                <p style="color: #64748b; margin-bottom: 25px; font-size: 0.95rem;">The tickets have been moved to The Chute. Copy the Magic Link below to send to the IT Wrangler.</p>
+                <div id="bulkSuccessLinkArea" style="margin-bottom: 25px;"></div>
+                <button class="btn btn-secondary" style="width: 100%;" onclick="window.location.reload()">Done & Refresh Dashboard</button>
+            </div>
+        </div>
+    </div>
+
     <div id="drawerOverlay" class="drawer-overlay" onclick="closeDrawer()"></div>
     <div id="ticketDrawer" class="drawer">
         <div class="drawer-header">
@@ -58,7 +80,6 @@
             </div>
             <button onclick="closeDrawer()" style="background: none; border: none; font-size: 1.8rem; cursor: pointer; color: #94a3b8;">&times;</button>
         </div>
-
         <div class="drawer-body" style="max-height: 75vh; overflow-y: auto; padding-right: 10px;">
             <input type="hidden" id="drawerTicketID">
 
@@ -89,33 +110,15 @@
                     <textarea id="drawerRemEdit" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; resize: vertical; min-height: 80px;"></textarea>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-                    <div>
-                        <label style="font-weight: bold; color: #334155; display: block; margin-bottom: 5px;">Adjust Severity:</label>
-                        <select id="drawerSeverity" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.95rem;">
-                            <option value="Critical">Critical</option>
-                            <option value="High">High</option>
-                            <option value="Medium">Medium</option>
-                            <option value="Low">Low</option>
-                            <option value="Info">Info</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label style="font-weight: bold; color: #334155; display: block; margin-bottom: 5px;">Adjust Status:</label>
-                        <select id="drawerStatus" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.95rem;">
-                            <option value="Waiting to be Triaged">Waiting to be Triaged</option>
-                            <option value="Assigned Out">Assigned Out</option>
-                            <option value="Returned to Security">Returned to Security</option>
-                            <option value="Patched">Remediated</option>
-                            <option value="False Positive">False Positive</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label style="font-weight: bold; color: #334155; display: block; margin-bottom: 5px;">Assign to IT (Email):</label>
-                        <input type="text" id="drawerAssignee" placeholder="e.g. sysadmin@company.com" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.95rem; box-sizing: border-box;">
-                    </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="font-weight: bold; color: #334155; display: block; margin-bottom: 5px;">Adjust Severity:</label>
+                    <select id="drawerSeverity" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.95rem;">
+                        <option value="Critical">Critical</option>
+                        <option value="High">High</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Low">Low</option>
+                        <option value="Info">Info</option>
+                    </select>
                 </div>
 
                 <div style="background: #eff6ff; padding: 15px; border-radius: 6px; border-left: 4px solid #3b82f6;">
@@ -124,13 +127,17 @@
                 </div>
             </div>
         </div>
-
         <div class="drawer-footer" style="display: flex; justify-content: space-between; width: 100%;">
             <button class="btn btn-secondary" onclick="closeDrawer()">Discard</button>
 
             <div id="drawerStandardActions" style="display: flex; gap: 10px;">
                 <button class="btn btn-secondary" style="color: #ea580c; border-color: #fdba74; background: #fffbeb;" onclick="markFalsePositive()">🚫 Mark False Positive</button>
-                <button class="btn" id="drawerSubmitBtn" style="background: #2563eb; color: white;">Save & Dispatch</button>
+                <button class="btn" id="drawerSubmitBtn" style="background: #2563eb; color: white;">Save Changes</button>
+            </div>
+
+            <div id="drawerVerifyActions" style="display: none; gap: 10px;">
+                <button class="btn btn-secondary" style="color: #dc2626; border-color: #fca5a5; background: #fff1f2;" onclick="rejectFromDrawer()">❌ Reject Fix</button>
+                <button class="btn" style="background: #10b981; color: white;" onclick="verifyFromDrawer()">✅ Verify Fix</button>
             </div>
         </div>
     </div>

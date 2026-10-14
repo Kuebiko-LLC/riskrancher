@@ -34,10 +34,10 @@ func (h *Handler) HandleSyncCISAKEV(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	proStore := h.Store
+	store := h.Store
 
 	// Execute the Air-Gapped Sync
-	if err := proStore.SyncCISACatalog(r.Context(), &feed); err != nil {
+	if err := store.SyncCISACatalog(r.Context(), &feed); err != nil {
 		http.Error(w, "Database sync failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -10,9 +10,7 @@ import (
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	"github.com/Kuebiko-LLC/riskrancher/pkg/server"
-	coreui "github.com/Kuebiko-LLC/riskrancher/ui"
-
-	proapi "github.com/Kuebiko-LLC/riskrancher/pro/api"
+	"github.com/Kuebiko-LLC/riskrancher/ui"
 )
 
 // Set at build time via -ldflags.
@@ -22,7 +20,7 @@ var (
 )
 
 func main() {
-	coreui.SetVersionInfo(BuildVersion, BuildCommit)
+	ui.SetVersionInfo(BuildVersion, BuildCommit)
 
 	db := datastore.InitDB("./data/riskrancher.db")
 	defer db.Close()
@@ -32,15 +30,11 @@ func main() {
 	app := server.NewApp(store)
 
 	server.RegisterRoutes(app)
-	proapi.RegisterProRoutes(app)
-
-	// The interceptor serves the dashboard and admin pages ahead of the mux.
-	handler := proapi.ProUIInterceptor(app, app.Router)
 
 	addr := os.Getenv("RR_ADDR")
 	if addr == "" {
 		addr = ":8080"
 	}
 	log.Printf("🤠 RiskRancher running on http://localhost%s", addr)
-	log.Fatal(http.ListenAndServe(addr, handler))
+	log.Fatal(http.ListenAndServe(addr, app.Router))
 }

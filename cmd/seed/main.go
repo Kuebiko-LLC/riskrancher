@@ -1,4 +1,3 @@
-// File: RiskRancher/pro/cmd/seed/main.go
 package main
 
 import (

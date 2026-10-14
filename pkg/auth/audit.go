@@ -27,7 +27,7 @@ func (r *responseRecorder) Write(b []byte) (int, error) {
 }
 
 // AuditLogger catches panics and logs structured JSON for SIEMs, plus immutable SQLite logs.
-func AuditLogger(proStore domain.Store, logger *slog.Logger) func(http.Handler) http.Handler {
+func AuditLogger(store domain.Store, logger *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
@@ -53,7 +53,7 @@ func AuditLogger(proStore domain.Store, logger *slog.Logger) func(http.Handler) 
 					)
 
 					http.Error(rec, "Internal Server Error", http.StatusInternalServerError)
-					proStore.LogAuditAction(r.Context(), "System", r.Method, r.URL.Path, 500, stackTrace, r.RemoteAddr)
+					store.LogAuditAction(r.Context(), "System", r.Method, r.URL.Path, 500, stackTrace, r.RemoteAddr)
 				}
 			}()
 
@@ -65,7 +65,7 @@ func AuditLogger(proStore domain.Store, logger *slog.Logger) func(http.Handler) 
 			if userIDVal := r.Context().Value(UserIDKey); userIDVal != nil {
 				userID := userIDVal.(int)
 				// Fetch the user to get their email/name
-				user, err := proStore.GetUserByID(r.Context(), userID)
+				user, err := store.GetUserByID(r.Context(), userID)
 				if err == nil {
 					actor = user.Email // Or user.FullName if you prefer!
 				} else {
@@ -86,7 +86,7 @@ func AuditLogger(proStore domain.Store, logger *slog.Logger) func(http.Handler) 
 					slog.String("error", errorMsg),
 				)
 
-				proStore.LogAuditAction(r.Context(), actor, r.Method, r.URL.Path, rec.statusCode, errorMsg, r.RemoteAddr)
+				store.LogAuditAction(r.Context(), actor, r.Method, r.URL.Path, rec.statusCode, errorMsg, r.RemoteAddr)
 
 				// 3. Log Mutating Actions (POST, PATCH, DELETE)
 			} else if r.Method != http.MethodGet {
@@ -98,7 +98,7 @@ func AuditLogger(proStore domain.Store, logger *slog.Logger) func(http.Handler) 
 					slog.Duration("latency", duration),
 				)
 
-				proStore.LogAuditAction(r.Context(), actor, r.Method, r.URL.Path, rec.statusCode, "Success", r.RemoteAddr)
+				store.LogAuditAction(r.Context(), actor, r.Method, r.URL.Path, rec.statusCode, "Success", r.RemoteAddr)
 			}
 		})
 	}

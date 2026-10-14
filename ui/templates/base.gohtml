@@ -9,14 +9,13 @@
     <body>
     <header style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: white; border-bottom: 1px solid #e2e8f0;">
         <div class="logo">
-            <h2 style="margin: 0;">
-                <a href="/dashboard" style="color: #0f172a; text-decoration: none;">
-                    🐴 RiskRancher
-                </a>
+            <h2 style="margin: 0; color: #0f172a;">
+                🐴 RiskRancher
             </h2>
+            <span style="color: #64748b; font-size: 0.85rem; font-weight: bold;">Tactical Operations</span>
         </div>
         <nav style="display: flex; align-items: center; gap: 15px;">
-            <button onclick="logout()" style="background: #f1f5f9; color: #dc2626; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.85rem;">Log Out</button>
+            <button onclick="logout()" style="background: #f1f5f9; color: #dc2626; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.85rem; transition: all 0.2s;">Log Out</button>
         </nav>
     </header>
     <script>
@@ -31,9 +30,6 @@
     <main class="container">
         {{template "content" .}}
     </main>
-    <footer style="text-align: center; padding: 20px; margin-top: 40px; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: 0.85rem;">
-        🐴 RiskRancher | Version: <strong>{{.Version}}</strong> | Build: <strong>{{.Commit}}</strong>
-    </footer>
     </body>
     </html>
 {{end}}

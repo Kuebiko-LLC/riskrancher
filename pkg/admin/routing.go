@@ -9,8 +9,6 @@ import (
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
-// File: RiskRancher/pro/internal/admin/pro_handler.go
-
 func (h *Handler) HandleCreateRoutingRule(w http.ResponseWriter, r *http.Request) {
 	var rule domain.RoutingRule
 	if err := json.NewDecoder(r.Body).Decode(&rule); err != nil {
@@ -20,9 +18,9 @@ func (h *Handler) HandleCreateRoutingRule(w http.ResponseWriter, r *http.Request
 
 	rule.WorkspaceID = 1
 
-	proStore := h.Store
+	store := h.Store
 
-	if err := proStore.CreateRoutingRule(r.Context(), &rule); err != nil {
+	if err := store.CreateRoutingRule(r.Context(), &rule); err != nil {
 		// 🚀 FIX: Log the actual SQLite error so we aren't flying blind!
 		fmt.Println("🚨 SQLITE ERROR:", err)
 		httpServerError(w, "db", err)
@@ -34,8 +32,8 @@ func (h *Handler) HandleCreateRoutingRule(w http.ResponseWriter, r *http.Request
 }
 
 func (h *Handler) HandleGetRoutingRules(w http.ResponseWriter, r *http.Request) {
-	proStore := h.Store
-	rules, err := proStore.GetRoutingRules(r.Context())
+	store := h.Store
+	rules, err := store.GetRoutingRules(r.Context())
 	if err != nil {
 		http.Error(w, "Failed to fetch rules", http.StatusInternalServerError)
 		return
@@ -46,10 +44,10 @@ func (h *Handler) HandleGetRoutingRules(w http.ResponseWriter, r *http.Request) 
 
 func (h *Handler) HandleDeleteRoutingRule(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(r.PathValue("id"))
-	proStore := h.Store
+	store := h.Store
 
 	// 🚀 FIX: Wire up the delete
-	if err := proStore.DeleteRoutingRule(r.Context(), id); err != nil {
+	if err := store.DeleteRoutingRule(r.Context(), id); err != nil {
 		http.Error(w, "Failed to delete rule", http.StatusInternalServerError)
 		return
 	}

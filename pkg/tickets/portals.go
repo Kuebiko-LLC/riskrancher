@@ -16,10 +16,10 @@ func (h *Handler) HandleBulkUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 1. The store must carry the workflow methods
-	proStore := h.Store
+	store := h.Store
 
 	// 2. Execute the transaction
-	batchToken, err := proStore.BulkUpdateStatusAndAssign(r.Context(), req.TicketIDs, req.Status, req.Assignee, req.Comment, req.Actor)
+	batchToken, err := store.BulkUpdateStatusAndAssign(r.Context(), req.TicketIDs, req.Status, req.Assignee, req.Comment, req.Actor)
 	if err != nil {
 		// 🚀 If it fails here, SQLite is rejecting our query!
 		log.Printf("🚨 DATABASE TRANSACTION ERROR in BulkUpdate: %v", err)
@@ -98,9 +98,9 @@ func (h *Handler) HandleWranglerReject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Assuming the Store has been updated to include the Pro interface methods
-	proStore := h.Store
+	store := h.Store
 
-	if err := proStore.RejectTicketFromWrangler(r.Context(), req.TicketIDs, req.Reason, req.Comment); err != nil {
+	if err := store.RejectTicketFromWrangler(r.Context(), req.TicketIDs, req.Reason, req.Comment); err != nil {
 		http.Error(w, "Failed to reject tickets", http.StatusInternalServerError)
 		return
 	}

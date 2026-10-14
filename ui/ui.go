@@ -26,7 +26,6 @@ var (
 	AppCommit  = "none"
 )
 
-var CoreTemplates *template.Template
 var Pages map[string]*template.Template
 
 // SetVersionInfo is called by main.go on startup to inject ldflags
@@ -37,18 +36,11 @@ func SetVersionInfo(version, commit string) {
 
 func init() {
 	funcMap := template.FuncMap{
-		"lower":          strings.ToLower,
-		"isProActive":    func() bool { return false },
-		"getCompanyName": func() string { return "" },
+		"lower": strings.ToLower,
 	}
 	Pages = make(map[string]*template.Template)
 
 	var err error
-
-	CoreTemplates, err = template.New("").Funcs(funcMap).ParseFS(CoreUIFS, "templates/*.gohtml", "templates/components/*.gohtml")
-	if err != nil && !strings.Contains(err.Error(), "pattern matches no files") {
-		log.Printf("Warning: Failed to parse master core templates: %v", err)
-	}
 
 	dashTmpl := template.New("").Funcs(funcMap)
 	dashTmpl, err = dashTmpl.ParseFS(CoreUIFS, "templates/base.gohtml", "templates/dashboard.gohtml", "templates/components/*.gohtml")

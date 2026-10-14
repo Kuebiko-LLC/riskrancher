@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>RiskRancher {{if isProActive}}PRO{{else}}OSS{{end}}</title>
+        <title>RiskRancher</title>
         <link rel="stylesheet" href="/static/style.css">
     </head>
     <body>
@@ -11,14 +11,11 @@
         <div class="logo">
             <h2 style="margin: 0;">
                 <a href="/dashboard" style="color: #0f172a; text-decoration: none;">
-                    🐴 RiskRancher{{if isProActive}}{{with getCompanyName}} | {{.}}{{end}}{{end}}
+                    🐴 RiskRancher
                 </a>
             </h2>
         </div>
         <nav style="display: flex; align-items: center; gap: 15px;">
-            <span style="color: #059669; font-size: 0.9rem; font-family: monospace; padding-left: 15px; margin-left: 5px; font-weight: bold;">
-                Open Source
-            </span>
             <button onclick="logout()" style="background: #f1f5f9; color: #dc2626; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.85rem;">Log Out</button>
         </nav>
     </header>

@@ -34,10 +34,6 @@ type ProStoreInterface interface {
 	// --- 💎 PRO INTEGRATIONS (CISA) ---
 	SyncCISACatalog(ctx context.Context, feed *proModels.CISAFeed) error
 
-	// --- 💎 PRO OFFLINE LICENSE ---
-	SaveLicenseKey(ctx context.Context, token string) error
-	GetLicenseKey(ctx context.Context) (string, error)
-
 	// --- 💎 ENGAGEMENTS (a pentest owned by a Bounty Hunter) ---
 	CreateEngagement(ctx context.Context, e *proModels.Engagement) (int, error)
 	GetEngagement(ctx context.Context, id int) (*proModels.Engagement, error)

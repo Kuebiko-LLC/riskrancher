@@ -17,14 +17,13 @@ import (
 	coreUI "github.com/Kuebiko-LLC/riskrancher/ui"
 
 	proAdmin "github.com/Kuebiko-LLC/riskrancher/pro/admin"
-	"github.com/Kuebiko-LLC/riskrancher/pro/license"
 	"github.com/Kuebiko-LLC/riskrancher/pro/middleware"
 	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 	proTickets "github.com/Kuebiko-LLC/riskrancher/pro/tickets"
 	proUI "github.com/Kuebiko-LLC/riskrancher/pro/ui"
 )
 
-func ProUIInterceptor(app *core.App, licenseManager *license.Manager, next http.Handler) http.Handler {
+func ProUIInterceptor(app *core.App, next http.Handler) http.Handler {
 	authH := auth.NewHandler(app.Store)
 
 	// 🚀 NEW: Initialize the ProAdmin handler here so we can use it in the interceptor
@@ -187,8 +186,8 @@ func ProUIInterceptor(app *core.App, licenseManager *license.Manager, next http.
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimSuffix(r.URL.Path, "/")
 
-		// If Pro is active, catch the UI paths and route them to our custom handlers
-		if r.Method == "GET" && licenseManager.IsEnterpriseActive() {
+		// Serve the rendered pages ahead of the mux.
+		if r.Method == "GET" {
 			if path == "/admin" {
 				proAdminUI.ServeHTTP(w, r)
 				return
@@ -209,11 +208,10 @@ func ProUIInterceptor(app *core.App, licenseManager *license.Manager, next http.
 	})
 }
 
-func RegisterProRoutes(app *core.App, licenseManager *license.Manager) {
+func RegisterProRoutes(app *core.App) {
 	proStore := app.Store.(storage.ProStoreInterface)
 
-	// 🤠 Fire the Hostile Takeover of the UI Templates
-	proUI.InjectProTemplates(licenseManager, proStore)
+	proUI.InjectProTemplates(proStore)
 
 	authH := auth.NewHandler(app.Store)
 	proTicketH := proTickets.NewProHandler(app.Store)
@@ -222,24 +220,21 @@ func RegisterProRoutes(app *core.App, licenseManager *license.Manager) {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	auditH := middleware.EnterpriseAuditLogger(proStore, logger)
 
-	// 🚀 Initialize the Enterprise License Bouncer
-	licenseBouncer := middleware.RequireProLicense(licenseManager)
-
-	// Flow: License Check -> Auth Check -> Audit Logger -> Role Check -> Handler
+	// Flow: Auth Check -> Audit Logger -> Role Check -> Handler
 	protected := func(h http.HandlerFunc) http.Handler {
-		return licenseBouncer(authH.RequireAuth(auditH(http.HandlerFunc(h))))
+		return authH.RequireAuth(auditH(http.HandlerFunc(h)))
 	}
 	sheriffOnly := func(h http.HandlerFunc) http.Handler {
-		return licenseBouncer(authH.RequireAuth(auditH(authH.RequireRole("Sheriff")(http.HandlerFunc(h)))))
+		return authH.RequireAuth(auditH(authH.RequireRole("Sheriff")(http.HandlerFunc(h))))
 	}
 	execOnly := func(h http.HandlerFunc) http.Handler {
-		return licenseBouncer(authH.RequireAuth(auditH(authH.RequireRole("Magistrate")(http.HandlerFunc(h)))))
+		return authH.RequireAuth(auditH(authH.RequireRole("Magistrate")(http.HandlerFunc(h))))
 	}
 	bountyHunter := func(h http.HandlerFunc) http.Handler {
-		return licenseBouncer(authH.RequireAuth(auditH(authH.RequireAnyRole("Bounty Hunter", "Sheriff")(http.HandlerFunc(h)))))
+		return authH.RequireAuth(auditH(authH.RequireAnyRole("Bounty Hunter", "Sheriff")(http.HandlerFunc(h))))
 	}
 	rangeHand := func(h http.HandlerFunc) http.Handler {
-		return licenseBouncer(authH.RequireAuth(auditH(authH.RequireAnyRole("RangeHand", "Sheriff")(http.HandlerFunc(h)))))
+		return authH.RequireAuth(auditH(authH.RequireAnyRole("RangeHand", "Sheriff")(http.HandlerFunc(h))))
 	}
 
 	// ==========================================

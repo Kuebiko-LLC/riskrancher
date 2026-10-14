@@ -11,7 +11,7 @@ import (
 // HandleProposeSeverity lets a RangeHand propose a severity change on a
 // Bounty-Hunter-origin finding (it does not apply it).
 // POST /api/findings/{id}/severity-proposal  { "to_severity": ..., "justification": ... }
-func (h *ProHandler) HandleProposeSeverity(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleProposeSeverity(w http.ResponseWriter, r *http.Request) {
 	ticketID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, "Invalid finding id", http.StatusBadRequest)
@@ -34,7 +34,7 @@ func (h *ProHandler) HandleProposeSeverity(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	p, err := h.ProStore.ProposeSeverityChange(r.Context(), ticketID, req.ToSeverity, req.Justification, h.currentUserEmail(r))
+	p, err := h.Store.ProposeSeverityChange(r.Context(), ticketID, req.ToSeverity, req.Justification, h.currentUserEmail(r))
 	if err != nil {
 		switch {
 		case errors.Is(err, datastore.ErrNotBountyHunterFinding):
@@ -53,7 +53,7 @@ func (h *ProHandler) HandleProposeSeverity(w http.ResponseWriter, r *http.Reques
 
 // ownsProposalOrSheriff reports whether the caller owns the engagement behind a
 // proposal (or is a Sheriff), for owner-only accept/contest.
-func (h *ProHandler) ownsProposalOrSheriff(r *http.Request, proposalID int) bool {
+func (h *Handler) ownsProposalOrSheriff(r *http.Request, proposalID int) bool {
 	u := h.currentUser(r)
 	if u == nil {
 		return false
@@ -61,7 +61,7 @@ func (h *ProHandler) ownsProposalOrSheriff(r *http.Request, proposalID int) bool
 	if u.GlobalRole == "Sheriff" {
 		return true
 	}
-	owner, err := h.ProStore.EngagementOwnerForProposal(r.Context(), proposalID)
+	owner, err := h.Store.EngagementOwnerForProposal(r.Context(), proposalID)
 	if err != nil {
 		return false
 	}
@@ -79,7 +79,7 @@ func proposalStateError(w http.ResponseWriter, err error) {
 
 // HandleAcceptSeverityProposal (owning Bounty Hunter) applies a proposed severity.
 // POST /api/severity-proposals/{id}/accept
-func (h *ProHandler) HandleAcceptSeverityProposal(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleAcceptSeverityProposal(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, "Invalid proposal id", http.StatusBadRequest)
@@ -89,7 +89,7 @@ func (h *ProHandler) HandleAcceptSeverityProposal(w http.ResponseWriter, r *http
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
-	if err := h.ProStore.AcceptSeverityProposal(r.Context(), id, h.currentUserEmail(r)); err != nil {
+	if err := h.Store.AcceptSeverityProposal(r.Context(), id, h.currentUserEmail(r)); err != nil {
 		proposalStateError(w, err)
 		return
 	}
@@ -99,7 +99,7 @@ func (h *ProHandler) HandleAcceptSeverityProposal(w http.ResponseWriter, r *http
 
 // HandleContestSeverityProposal (Bounty Hunter) escalates a proposal to the Sheriff.
 // POST /api/severity-proposals/{id}/contest  { "note": ... }
-func (h *ProHandler) HandleContestSeverityProposal(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleContestSeverityProposal(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, "Invalid proposal id", http.StatusBadRequest)
@@ -113,7 +113,7 @@ func (h *ProHandler) HandleContestSeverityProposal(w http.ResponseWriter, r *htt
 		Note string `json:"note"`
 	}
 	json.NewDecoder(r.Body).Decode(&req)
-	if err := h.ProStore.ContestSeverityProposal(r.Context(), id, h.currentUserEmail(r), req.Note); err != nil {
+	if err := h.Store.ContestSeverityProposal(r.Context(), id, h.currentUserEmail(r), req.Note); err != nil {
 		proposalStateError(w, err)
 		return
 	}
@@ -123,7 +123,7 @@ func (h *ProHandler) HandleContestSeverityProposal(w http.ResponseWriter, r *htt
 
 // HandleAdjudicateSeverityProposal (Sheriff) breaks the tie and applies the final call.
 // POST /api/severity-proposals/{id}/adjudicate  { "final_severity": ..., "note": ... }
-func (h *ProHandler) HandleAdjudicateSeverityProposal(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleAdjudicateSeverityProposal(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, "Invalid proposal id", http.StatusBadRequest)
@@ -141,7 +141,7 @@ func (h *ProHandler) HandleAdjudicateSeverityProposal(w http.ResponseWriter, r *
 		http.Error(w, "final_severity must be one of Critical, High, Medium, Low, Informational", http.StatusBadRequest)
 		return
 	}
-	if err := h.ProStore.AdjudicateSeverityProposal(r.Context(), id, req.FinalSeverity, h.currentUserEmail(r), req.Note); err != nil {
+	if err := h.Store.AdjudicateSeverityProposal(r.Context(), id, req.FinalSeverity, h.currentUserEmail(r), req.Note); err != nil {
 		proposalStateError(w, err)
 		return
 	}
@@ -152,8 +152,8 @@ func (h *ProHandler) HandleAdjudicateSeverityProposal(w http.ResponseWriter, r *
 // HandleMyPendingProposals (Bounty Hunter) is the alert feed of pending
 // proposals on the caller's own engagements.
 // GET /api/severity-proposals/mine
-func (h *ProHandler) HandleMyPendingProposals(w http.ResponseWriter, r *http.Request) {
-	list, err := h.ProStore.ListPendingProposalsForOwner(r.Context(), h.currentUserEmail(r))
+func (h *Handler) HandleMyPendingProposals(w http.ResponseWriter, r *http.Request) {
+	list, err := h.Store.ListPendingProposalsForOwner(r.Context(), h.currentUserEmail(r))
 	if err != nil {
 		httpServerError(w, "db", err)
 		return
@@ -164,8 +164,8 @@ func (h *ProHandler) HandleMyPendingProposals(w http.ResponseWriter, r *http.Req
 
 // HandleContestedProposals (Sheriff) is the adjudication queue.
 // GET /api/severity-proposals/contested
-func (h *ProHandler) HandleContestedProposals(w http.ResponseWriter, r *http.Request) {
-	list, err := h.ProStore.ListContestedProposals(r.Context())
+func (h *Handler) HandleContestedProposals(w http.ResponseWriter, r *http.Request) {
+	list, err := h.Store.ListContestedProposals(r.Context())
 	if err != nil {
 		httpServerError(w, "db", err)
 		return

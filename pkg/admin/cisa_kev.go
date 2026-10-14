@@ -8,7 +8,7 @@ import (
 )
 
 // HandleSyncCISAKEV accepts a multipart file upload of the official CISA JSON catalog
-func (h *ProHandler) HandleSyncCISAKEV(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleSyncCISAKEV(w http.ResponseWriter, r *http.Request) {
 	// Parse the multipart form (Max 50MB upload size)
 	if err := r.ParseMultipartForm(50 << 20); err != nil {
 		http.Error(w, "Failed to parse form", http.StatusBadRequest)
@@ -48,4 +48,10 @@ func (h *ProHandler) HandleSyncCISAKEV(w http.ResponseWriter, r *http.Request) {
 		"message":         "CISA KEV Catalog synced successfully",
 		"vulnerabilities": len(feed.Vulnerabilities),
 	})
+}
+
+// HandleGetCISACatalog returns metadata about the current catalog for the UI
+func (h *Handler) HandleGetCISACatalog(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "Catalog Active"})
 }

@@ -19,7 +19,7 @@ func TestProposeRejectsInvalidSeverity(t *testing.T) {
 		t.Errorf("expected 400 for a bogus severity, got %d", rr.Code)
 	}
 	// nothing should have been recorded
-	hist, _ := e.h.ProStore.ListProposalsForTicket(context.Background(), e.bhFind)
+	hist, _ := e.h.Store.ListProposalsForTicket(context.Background(), e.bhFind)
 	if len(hist) != 0 {
 		t.Errorf("a rejected proposal must not be stored, got %d", len(hist))
 	}

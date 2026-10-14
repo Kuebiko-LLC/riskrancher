@@ -13,13 +13,13 @@ import (
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	datastore "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
-	core "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 // setupEngagementsTest builds a ProHandler over a real DB with the full schema
 // and a Bounty Hunter user, and returns a request decorator that authenticates
 // as that user (so handlers resolve the owner from context).
-func setupEngagementsTest(t *testing.T) (*ProHandler, *sql.DB, func(*http.Request) *http.Request) {
+func setupEngagementsTest(t *testing.T) (*Handler, *sql.DB, func(*http.Request) *http.Request) {
 	t.Helper()
 	db := datastore.InitDB(filepath.Join(t.TempDir(), "eng.db"))
 	store := datastore.NewSQLiteStore(db)
@@ -31,7 +31,7 @@ func setupEngagementsTest(t *testing.T) (*ProHandler, *sql.DB, func(*http.Reques
 	asBH := func(r *http.Request) *http.Request {
 		return r.WithContext(context.WithValue(r.Context(), auth.UserIDKey, bh.ID))
 	}
-	return NewProHandler(store), db, asBH
+	return NewHandler(store), db, asBH
 }
 
 func TestEngagementHandlersLifecycle(t *testing.T) {
@@ -49,7 +49,7 @@ func TestEngagementHandlersLifecycle(t *testing.T) {
 		if rr.Code != http.StatusCreated {
 			t.Fatalf("expected 201, got %d: %s", rr.Code, rr.Body.String())
 		}
-		var e core.Engagement
+		var e domain.Engagement
 		json.Unmarshal(rr.Body.Bytes(), &e)
 		if e.ID == 0 || e.Number != "ENG-0001" || e.OwnerEmail != "hunter@ranch.com" || e.Status != "Active" {
 			t.Fatalf("unexpected engagement: %+v", e)
@@ -75,9 +75,9 @@ func TestEngagementHandlersLifecycle(t *testing.T) {
 
 	t.Run("findings can be added and are returned with the engagement", func(t *testing.T) {
 		// seed two findings
-		store := h.ProStore
-		t1 := &core.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "XSS", Severity: "High", Status: "Waiting to be Triaged"}
-		t2 := &core.Ticket{Source: "Burp", AssetIdentifier: "api", Title: "IDOR", Severity: "Critical", Status: "Waiting to be Triaged"}
+		store := h.Store
+		t1 := &domain.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "XSS", Severity: "High", Status: "Waiting to be Triaged"}
+		t2 := &domain.Ticket{Source: "Burp", AssetIdentifier: "api", Title: "IDOR", Severity: "Critical", Status: "Waiting to be Triaged"}
 		store.CreateTicket(context.Background(), t1)
 		store.CreateTicket(context.Background(), t2)
 
@@ -98,8 +98,8 @@ func TestEngagementHandlersLifecycle(t *testing.T) {
 			t.Fatalf("expected 200, got %d", getRR.Code)
 		}
 		var detail struct {
-			Engagement core.Engagement `json:"engagement"`
-			Findings   []core.Ticket   `json:"findings"`
+			Engagement domain.Engagement `json:"engagement"`
+			Findings   []domain.Ticket   `json:"findings"`
 		}
 		json.Unmarshal(getRR.Body.Bytes(), &detail)
 		if len(detail.Findings) != 2 {
@@ -115,7 +115,7 @@ func TestEngagementHandlersLifecycle(t *testing.T) {
 		if rr.Code != http.StatusOK {
 			t.Fatalf("expected 200, got %d: %s", rr.Code, rr.Body.String())
 		}
-		got, _ := h.ProStore.GetEngagement(context.Background(), engID)
+		got, _ := h.Store.GetEngagement(context.Background(), engID)
 		if got.Status != "Released" {
 			t.Errorf("expected Released, got %q", got.Status)
 		}

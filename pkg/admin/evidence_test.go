@@ -118,7 +118,7 @@ func TestEvidenceUploadAuthzAndServe(t *testing.T) {
 		if delRR.Code != http.StatusOK {
 			t.Errorf("owner delete should be 200, got %d", delRR.Code)
 		}
-		if list, _ := e.h.ProStore.ListEvidenceForTicket(context.Background(), e.finding); len(list) != 0 {
+		if list, _ := e.h.Store.ListEvidenceForTicket(context.Background(), e.finding); len(list) != 0 {
 			t.Errorf("evidence should be gone after delete")
 		}
 	})

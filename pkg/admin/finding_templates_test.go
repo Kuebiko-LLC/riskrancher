@@ -62,7 +62,7 @@ func TestFindingTemplateHandlers(t *testing.T) {
 		if rr.Code != http.StatusCreated {
 			t.Fatalf("apply expected 201, got %d: %s", rr.Code, rr.Body.String())
 		}
-		findings, _ := e.h.ProStore.ListEngagementFindings(context.Background(), e.engID)
+		findings, _ := e.h.Store.ListEngagementFindings(context.Background(), e.engID)
 		found := false
 		for _, f := range findings {
 			if f.Title == "Missing security headers" && f.AssetIdentifier == "web-app-01" {

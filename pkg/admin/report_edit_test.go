@@ -74,7 +74,7 @@ func TestReportIsEditableAndReRenders(t *testing.T) {
 	}
 
 	// The dropped finding must be gone; the kept one present.
-	persisted, _ := h.ProStore.GetPentestReport(getReq.Context(), report.ID)
+	persisted, _ := h.Store.GetPentestReport(getReq.Context(), report.ID)
 	if len(persisted.TicketIDs) != 1 || persisted.TicketIDs[0] != ids[0] {
 		t.Errorf("finding selection edit not saved: %v", persisted.TicketIDs)
 	}

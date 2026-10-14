@@ -9,7 +9,7 @@ import (
 )
 
 // HandleCreateTriageRule allows the Sheriff to build a new ingestion interceptor rule
-func (h *ProHandler) HandleCreateTriageRule(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleCreateTriageRule(w http.ResponseWriter, r *http.Request) {
 	var rule domain.AutoTriageRule // 🚀 FIX: Use the Pro Model
 	if err := json.NewDecoder(r.Body).Decode(&rule); err != nil {
 		http.Error(w, "Invalid payload", http.StatusBadRequest)
@@ -30,7 +30,7 @@ func (h *ProHandler) HandleCreateTriageRule(w http.ResponseWriter, r *http.Reque
 }
 
 // HandleGetTriageRules lists the active interceptor rules for the UI
-func (h *ProHandler) HandleGetTriageRules(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleGetTriageRules(w http.ResponseWriter, r *http.Request) {
 	proStore := h.Store
 
 	rules, err := proStore.GetAutoTriageRules(r.Context(), 1)
@@ -44,7 +44,7 @@ func (h *ProHandler) HandleGetTriageRules(w http.ResponseWriter, r *http.Request
 }
 
 // HandleDeleteTriageRule removes an interceptor rule
-func (h *ProHandler) HandleDeleteTriageRule(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleDeleteTriageRule(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	ruleID, err := strconv.Atoi(idStr)
 	if err != nil {

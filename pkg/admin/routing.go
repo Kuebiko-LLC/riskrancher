@@ -11,7 +11,7 @@ import (
 
 // File: RiskRancher/pro/internal/admin/pro_handler.go
 
-func (h *ProHandler) HandleCreateRoutingRule(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleCreateRoutingRule(w http.ResponseWriter, r *http.Request) {
 	var rule domain.RoutingRule
 	if err := json.NewDecoder(r.Body).Decode(&rule); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
@@ -33,7 +33,7 @@ func (h *ProHandler) HandleCreateRoutingRule(w http.ResponseWriter, r *http.Requ
 	json.NewEncoder(w).Encode(rule)
 }
 
-func (h *ProHandler) HandleGetRoutingRules(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleGetRoutingRules(w http.ResponseWriter, r *http.Request) {
 	proStore := h.Store
 	rules, err := proStore.GetRoutingRules(r.Context())
 	if err != nil {
@@ -44,7 +44,7 @@ func (h *ProHandler) HandleGetRoutingRules(w http.ResponseWriter, r *http.Reques
 	json.NewEncoder(w).Encode(rules)
 }
 
-func (h *ProHandler) HandleDeleteRoutingRule(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleDeleteRoutingRule(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(r.PathValue("id"))
 	proStore := h.Store
 

@@ -12,11 +12,11 @@ import (
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	datastore "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
-	core "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 type authzEnv struct {
-	h       *ProHandler
+	h       *Handler
 	db      *sql.DB
 	asOwner func(*http.Request) *http.Request
 	asOther func(*http.Request) *http.Request
@@ -40,13 +40,13 @@ func setupAuthz(t *testing.T) authzEnv {
 		}
 	}
 
-	eng := &core.Engagement{Name: "Owner Pentest", Client: "Acme", OwnerEmail: "owner@ranch.com"}
+	eng := &domain.Engagement{Name: "Owner Pentest", Client: "Acme", OwnerEmail: "owner@ranch.com"}
 	store.CreateEngagement(ctx, eng)
-	f := &core.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "XSS", Severity: "High", Status: "Waiting to be Triaged"}
+	f := &domain.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "XSS", Severity: "High", Status: "Waiting to be Triaged"}
 	store.CreateTicket(ctx, f)
 	store.AddFindingsToEngagement(ctx, eng.ID, []int{f.ID})
 
-	return authzEnv{NewProHandler(store), db, as(owner.ID), as(other.ID), as(chief.ID), eng.ID, f.ID}
+	return authzEnv{NewHandler(store), db, as(owner.ID), as(other.ID), as(chief.ID), eng.ID, f.ID}
 }
 
 func getEngagement(e authzEnv, who func(*http.Request) *http.Request) *httptest.ResponseRecorder {
@@ -77,8 +77,8 @@ func TestEngagementListIsScoped(t *testing.T) {
 	defer e.db.Close()
 
 	// A second engagement owned by someone else.
-	store := e.h.ProStore
-	store.CreateEngagement(context.Background(), &core.Engagement{Name: "Other", OwnerEmail: "other@ranch.com"})
+	store := e.h.Store
+	store.CreateEngagement(context.Background(), &domain.Engagement{Name: "Other", OwnerEmail: "other@ranch.com"})
 
 	total := func(who func(*http.Request) *http.Request) int {
 		req := who(httptest.NewRequest(http.MethodGet, "/api/engagements", nil))
@@ -110,7 +110,7 @@ func TestEngagementMutationsAreOwnerOnly(t *testing.T) {
 	if relRR.Code != http.StatusForbidden {
 		t.Errorf("non-owner release should be 403, got %d", relRR.Code)
 	}
-	if eng, _ := e.h.ProStore.GetEngagement(context.Background(), e.engID); eng.Status != "Active" {
+	if eng, _ := e.h.Store.GetEngagement(context.Background(), e.engID); eng.Status != "Active" {
 		t.Errorf("engagement should still be Active, got %q", eng.Status)
 	}
 
@@ -129,10 +129,10 @@ func TestAddFindingsCannotHijackWorkedFindings(t *testing.T) {
 	e := setupAuthz(t)
 	defer e.db.Close()
 	ctx := context.Background()
-	store := e.h.ProStore
+	store := e.h.Store
 
 	// A finding already being worked (assigned out, in the queue).
-	worked := &core.Ticket{Source: "Trivy", AssetIdentifier: "host", Title: "worked", Severity: "High", Status: "Assigned Out"}
+	worked := &domain.Ticket{Source: "Trivy", AssetIdentifier: "host", Title: "worked", Severity: "High", Status: "Assigned Out"}
 	store.CreateTicket(ctx, worked)
 
 	body, _ := json.Marshal(map[string][]int{"ticket_ids": {worked.ID}})

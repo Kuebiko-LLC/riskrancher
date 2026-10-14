@@ -14,7 +14,7 @@ const maxEvidenceBytes = 10 << 20 // 10 MB per upload
 
 // ownsTicketOrSheriff reports whether the caller owns the engagement a finding
 // belongs to (or is a Sheriff). Evidence attaches to engagement findings.
-func (h *ProHandler) ownsTicketOrSheriff(r *http.Request, ticketID int) bool {
+func (h *Handler) ownsTicketOrSheriff(r *http.Request, ticketID int) bool {
 	u := h.currentUser(r)
 	if u == nil {
 		return false
@@ -22,7 +22,7 @@ func (h *ProHandler) ownsTicketOrSheriff(r *http.Request, ticketID int) bool {
 	if u.GlobalRole == "Sheriff" {
 		return true
 	}
-	owner, err := h.ProStore.EngagementOwnerForTicket(r.Context(), ticketID)
+	owner, err := h.Store.EngagementOwnerForTicket(r.Context(), ticketID)
 	if err != nil {
 		return false
 	}
@@ -32,7 +32,7 @@ func (h *ProHandler) ownsTicketOrSheriff(r *http.Request, ticketID int) bool {
 // HandleUploadEvidence accepts a multipart image upload (field "image" + optional
 // "caption"), processes it (resize/thumbnail/strip metadata), and stores it on
 // the finding. POST /api/findings/{id}/evidence
-func (h *ProHandler) HandleUploadEvidence(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleUploadEvidence(w http.ResponseWriter, r *http.Request) {
 	tid, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, "Invalid finding id", http.StatusBadRequest)
@@ -75,7 +75,7 @@ func (h *ProHandler) HandleUploadEvidence(w http.ResponseWriter, r *http.Request
 		Size:        len(p.Web),
 		CreatedBy:   h.currentUserEmail(r),
 	}
-	if _, err := h.ProStore.AddEvidence(r.Context(), ev, p.Web, p.Thumb); err != nil {
+	if _, err := h.Store.AddEvidence(r.Context(), ev, p.Web, p.Thumb); err != nil {
 		httpServerError(w, "AddEvidence", err)
 		return
 	}
@@ -86,7 +86,7 @@ func (h *ProHandler) HandleUploadEvidence(w http.ResponseWriter, r *http.Request
 
 // HandleListEvidence lists a finding's evidence metadata.
 // GET /api/findings/{id}/evidence
-func (h *ProHandler) HandleListEvidence(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleListEvidence(w http.ResponseWriter, r *http.Request) {
 	tid, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, "Invalid finding id", http.StatusBadRequest)
@@ -96,7 +96,7 @@ func (h *ProHandler) HandleListEvidence(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
-	list, err := h.ProStore.ListEvidenceForTicket(r.Context(), tid)
+	list, err := h.Store.ListEvidenceForTicket(r.Context(), tid)
 	if err != nil {
 		httpServerError(w, "ListEvidence", err)
 		return
@@ -107,13 +107,13 @@ func (h *ProHandler) HandleListEvidence(w http.ResponseWriter, r *http.Request) 
 
 // HandleGetEvidenceImage serves the web image, or the thumbnail with ?thumb=1.
 // GET /api/evidence/{id}
-func (h *ProHandler) HandleGetEvidenceImage(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleGetEvidenceImage(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, "Invalid evidence id", http.StatusBadRequest)
 		return
 	}
-	meta, err := h.ProStore.GetEvidenceMeta(r.Context(), id)
+	meta, err := h.Store.GetEvidenceMeta(r.Context(), id)
 	if err != nil {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
@@ -122,7 +122,7 @@ func (h *ProHandler) HandleGetEvidenceImage(w http.ResponseWriter, r *http.Reque
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
-	data, ct, err := h.ProStore.GetEvidenceBlob(r.Context(), id, r.URL.Query().Get("thumb") == "1")
+	data, ct, err := h.Store.GetEvidenceBlob(r.Context(), id, r.URL.Query().Get("thumb") == "1")
 	if err != nil {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
@@ -133,13 +133,13 @@ func (h *ProHandler) HandleGetEvidenceImage(w http.ResponseWriter, r *http.Reque
 }
 
 // HandleDeleteEvidence removes one evidence image. DELETE /api/evidence/{id}
-func (h *ProHandler) HandleDeleteEvidence(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleDeleteEvidence(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, "Invalid evidence id", http.StatusBadRequest)
 		return
 	}
-	meta, err := h.ProStore.GetEvidenceMeta(r.Context(), id)
+	meta, err := h.Store.GetEvidenceMeta(r.Context(), id)
 	if err != nil {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
@@ -148,7 +148,7 @@ func (h *ProHandler) HandleDeleteEvidence(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
-	if err := h.ProStore.DeleteEvidence(r.Context(), id); err != nil {
+	if err := h.Store.DeleteEvidence(r.Context(), id); err != nil {
 		httpServerError(w, "DeleteEvidence", err)
 		return
 	}

@@ -12,11 +12,11 @@ import (
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	datastore "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
-	core "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 type propTestEnv struct {
-	h       *ProHandler
+	h       *Handler
 	db      *sql.DB
 	asRH    func(*http.Request) *http.Request
 	asBH    func(*http.Request) *http.Request
@@ -41,16 +41,16 @@ func setupProposalsTest(t *testing.T) propTestEnv {
 		}
 	}
 
-	eng := &core.Engagement{Name: "Pentest", Client: "Acme", OwnerEmail: "bh@ranch.com"}
+	eng := &domain.Engagement{Name: "Pentest", Client: "Acme", OwnerEmail: "bh@ranch.com"}
 	store.CreateEngagement(ctx, eng)
-	bhFinding := &core.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "XSS", Severity: "High", Status: "Waiting to be Triaged"}
+	bhFinding := &domain.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "XSS", Severity: "High", Status: "Waiting to be Triaged"}
 	store.CreateTicket(ctx, bhFinding)
 	store.AddFindingsToEngagement(ctx, eng.ID, []int{bhFinding.ID})
 
-	plain := &core.Ticket{Source: "Trivy", AssetIdentifier: "host", Title: "old TLS", Severity: "Medium", Status: "Waiting to be Triaged"}
+	plain := &domain.Ticket{Source: "Trivy", AssetIdentifier: "host", Title: "old TLS", Severity: "Medium", Status: "Waiting to be Triaged"}
 	store.CreateTicket(ctx, plain)
 
-	return propTestEnv{NewProHandler(store), db, as(rh.ID), as(bh.ID), as(chief.ID), bhFinding.ID, plain.ID}
+	return propTestEnv{NewHandler(store), db, as(rh.ID), as(bh.ID), as(chief.ID), bhFinding.ID, plain.ID}
 }
 
 func propose(e propTestEnv, who func(*http.Request) *http.Request, ticketID int, to, why string) *httptest.ResponseRecorder {
@@ -71,7 +71,7 @@ func TestProposeSeverityHandler(t *testing.T) {
 		if rr.Code != http.StatusCreated {
 			t.Fatalf("expected 201, got %d: %s", rr.Code, rr.Body.String())
 		}
-		got, _ := e.h.ProStore.GetTicketByID(context.Background(), e.bhFind)
+		got, _ := e.h.Store.GetTicketByID(context.Background(), e.bhFind)
 		if got.Severity != "High" {
 			t.Errorf("proposal must not change severity yet, got %q", got.Severity)
 		}
@@ -101,7 +101,7 @@ func TestProposalAcceptAndContestFlow(t *testing.T) {
 	if accRR.Code != http.StatusOK {
 		t.Fatalf("accept expected 200, got %d: %s", accRR.Code, accRR.Body.String())
 	}
-	if got, _ := e.h.ProStore.GetTicketByID(ctx, e.bhFind); got.Severity != "Low" {
+	if got, _ := e.h.Store.GetTicketByID(ctx, e.bhFind); got.Severity != "Low" {
 		t.Errorf("accept should apply severity, got %q", got.Severity)
 	}
 }
@@ -145,7 +145,7 @@ func TestProposalContestEscalatesToSheriff(t *testing.T) {
 	if adjRR.Code != http.StatusOK {
 		t.Fatalf("adjudicate expected 200, got %d: %s", adjRR.Code, adjRR.Body.String())
 	}
-	if got, _ := e.h.ProStore.GetTicketByID(ctx, e.bhFind); got.Severity != "Medium" {
+	if got, _ := e.h.Store.GetTicketByID(ctx, e.bhFind); got.Severity != "Medium" {
 		t.Errorf("adjudication should apply final severity, got %q", got.Severity)
 	}
 }
@@ -173,7 +173,7 @@ func TestBountyHunterAlertFeed(t *testing.T) {
 
 func proposalIDForTicket(t *testing.T, e propTestEnv, ticketID int) int {
 	t.Helper()
-	hist, err := e.h.ProStore.ListProposalsForTicket(context.Background(), ticketID)
+	hist, err := e.h.Store.ListProposalsForTicket(context.Background(), ticketID)
 	if err != nil || len(hist) == 0 {
 		t.Fatalf("no proposal found for ticket %d: %v", ticketID, err)
 	}

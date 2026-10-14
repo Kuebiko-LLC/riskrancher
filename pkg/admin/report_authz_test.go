@@ -13,11 +13,11 @@ import (
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	datastore "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
-	core "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 type reportAuthzEnv struct {
-	h         *ProHandler
+	h         *Handler
 	db        *sql.DB
 	asAuthor  func(*http.Request) *http.Request
 	asOther   func(*http.Request) *http.Request
@@ -41,16 +41,16 @@ func setupReportAuthz(t *testing.T) reportAuthzEnv {
 		}
 	}
 
-	released := &core.Ticket{Source: "Trivy", AssetIdentifier: "host", Title: "RELEASED-FINDING", Severity: "High", Status: "Waiting to be Triaged"}
+	released := &domain.Ticket{Source: "Trivy", AssetIdentifier: "host", Title: "RELEASED-FINDING", Severity: "High", Status: "Waiting to be Triaged"}
 	store.CreateTicket(ctx, released)
 
-	engB := &core.Engagement{Name: "Other", OwnerEmail: "other@ranch.com"}
+	engB := &domain.Engagement{Name: "Other", OwnerEmail: "other@ranch.com"}
 	store.CreateEngagement(ctx, engB)
-	held := &core.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "HELD-SECRET-FINDING", Severity: "Critical", Status: "Waiting to be Triaged"}
+	held := &domain.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "HELD-SECRET-FINDING", Severity: "Critical", Status: "Waiting to be Triaged"}
 	store.CreateTicket(ctx, held)
 	store.AddFindingsToEngagement(ctx, engB.ID, []int{held.ID})
 
-	return reportAuthzEnv{NewProHandler(store), db, as(author.ID), as(other.ID), as(chief.ID), released.ID, held.ID}
+	return reportAuthzEnv{NewHandler(store), db, as(author.ID), as(other.ID), as(chief.ID), released.ID, held.ID}
 }
 
 // generate a report as `author` over the released finding; returns its id.
@@ -63,7 +63,7 @@ func (e reportAuthzEnv) makeReport(t *testing.T) int {
 	if rr.Code != http.StatusCreated {
 		t.Fatalf("make report: %d %s", rr.Code, rr.Body.String())
 	}
-	var rep core.PentestReport
+	var rep domain.PentestReport
 	json.Unmarshal(rr.Body.Bytes(), &rep)
 	return rep.ID
 }
@@ -113,7 +113,7 @@ func TestReportGenerationCannotPullHeldFindings(t *testing.T) {
 	if rr.Code != http.StatusCreated {
 		t.Fatalf("expected 201, got %d: %s", rr.Code, rr.Body.String())
 	}
-	var rep core.PentestReport
+	var rep domain.PentestReport
 	json.Unmarshal(rr.Body.Bytes(), &rep)
 
 	if !strings.Contains(rep.Markdown, "RELEASED-FINDING") {

@@ -14,13 +14,13 @@ import (
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	datastore "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
-	core "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 // setupReportsTest builds a ProHandler over a real SQLite DB with the full core
 // and Pro schema, seeds a Critical and a Low finding, and returns their IDs plus
 // a request decorator that authenticates as the report author.
-func setupReportsTest(t *testing.T) (*ProHandler, *sql.DB, []int, func(*http.Request) *http.Request) {
+func setupReportsTest(t *testing.T) (*Handler, *sql.DB, []int, func(*http.Request) *http.Request) {
 	t.Helper()
 	db := datastore.InitDB(filepath.Join(t.TempDir(), "reports.db"))
 	store := datastore.NewSQLiteStore(db)
@@ -30,15 +30,15 @@ func setupReportsTest(t *testing.T) (*ProHandler, *sql.DB, []int, func(*http.Req
 	as := func(r *http.Request) *http.Request {
 		return r.WithContext(context.WithValue(r.Context(), auth.UserIDKey, author.ID))
 	}
-	crit := &core.Ticket{Source: "Burp", AssetIdentifier: "web-app", Title: "SQL injection in /login", Severity: "Critical", Status: "Waiting to be Triaged"}
-	low := &core.Ticket{Source: "testssl", AssetIdentifier: "edge-lb", Title: "Weak TLS ciphers", Severity: "Low", Status: "Waiting to be Triaged"}
+	crit := &domain.Ticket{Source: "Burp", AssetIdentifier: "web-app", Title: "SQL injection in /login", Severity: "Critical", Status: "Waiting to be Triaged"}
+	low := &domain.Ticket{Source: "testssl", AssetIdentifier: "edge-lb", Title: "Weak TLS ciphers", Severity: "Low", Status: "Waiting to be Triaged"}
 	if err := store.CreateTicket(ctx, crit); err != nil {
 		t.Fatalf("seed crit: %v", err)
 	}
 	if err := store.CreateTicket(ctx, low); err != nil {
 		t.Fatalf("seed low: %v", err)
 	}
-	return NewProHandler(store), db, []int{crit.ID, low.ID}, as
+	return NewHandler(store), db, []int{crit.ID, low.ID}, as
 }
 
 func TestGenerateBrandedReportBDD(t *testing.T) {
@@ -63,7 +63,7 @@ func TestGenerateBrandedReportBDD(t *testing.T) {
 			t.Fatalf("expected 201, got %d. Body: %s", rr.Code, rr.Body.String())
 		}
 
-		var got core.PentestReport
+		var got domain.PentestReport
 		if err := json.Unmarshal(rr.Body.Bytes(), &got); err != nil {
 			t.Fatalf("decode response: %v", err)
 		}
@@ -117,7 +117,7 @@ func TestGenerateBrandedReportBDD(t *testing.T) {
 		}
 		var resp struct {
 			Total   int `json:"total"`
-			Reports []core.PentestReport
+			Reports []domain.PentestReport
 		}
 		json.Unmarshal(rr.Body.Bytes(), &resp)
 		if resp.Total != 1 {

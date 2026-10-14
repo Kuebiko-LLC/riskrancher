@@ -10,7 +10,7 @@ import (
 
 // HandleCreateEngagement lets a Bounty Hunter open a new engagement they own.
 // POST /api/engagements  { "name": ..., "client": ... }
-func (h *ProHandler) HandleCreateEngagement(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleCreateEngagement(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Name   string `json:"name"`
 		Client string `json:"client"`
@@ -25,7 +25,7 @@ func (h *ProHandler) HandleCreateEngagement(w http.ResponseWriter, r *http.Reque
 	}
 
 	e := &domain.Engagement{Name: req.Name, Client: req.Client, OwnerEmail: h.currentUserEmail(r)}
-	if _, err := h.ProStore.CreateEngagement(r.Context(), e); err != nil {
+	if _, err := h.Store.CreateEngagement(r.Context(), e); err != nil {
 		httpServerError(w, "db", err)
 		return
 	}
@@ -36,7 +36,7 @@ func (h *ProHandler) HandleCreateEngagement(w http.ResponseWriter, r *http.Reque
 
 // HandleListEngagements returns engagements the caller may see: a Bounty Hunter
 // sees their own, a Sheriff sees all. GET /api/engagements
-func (h *ProHandler) HandleListEngagements(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleListEngagements(w http.ResponseWriter, r *http.Request) {
 	u := h.currentUser(r)
 	if u == nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -47,9 +47,9 @@ func (h *ProHandler) HandleListEngagements(w http.ResponseWriter, r *http.Reques
 		err  error
 	)
 	if u.GlobalRole == "Sheriff" {
-		list, err = h.ProStore.ListEngagements(r.Context())
+		list, err = h.Store.ListEngagements(r.Context())
 	} else {
-		list, err = h.ProStore.ListEngagementsByOwner(r.Context(), u.Email)
+		list, err = h.Store.ListEngagementsByOwner(r.Context(), u.Email)
 	}
 	if err != nil {
 		httpServerError(w, "db", err)
@@ -62,13 +62,13 @@ func (h *ProHandler) HandleListEngagements(w http.ResponseWriter, r *http.Reques
 // HandleGetEngagement returns one engagement and its findings. Restricted to the
 // owning Bounty Hunter or a Sheriff so unreleased findings do not leak.
 // GET /api/engagements/{id}
-func (h *ProHandler) HandleGetEngagement(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleGetEngagement(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, "Invalid engagement id", http.StatusBadRequest)
 		return
 	}
-	eng, err := h.ProStore.GetEngagement(r.Context(), id)
+	eng, err := h.Store.GetEngagement(r.Context(), id)
 	if err != nil {
 		http.Error(w, "Engagement not found", http.StatusNotFound)
 		return
@@ -77,7 +77,7 @@ func (h *ProHandler) HandleGetEngagement(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
-	findings, err := h.ProStore.ListEngagementFindings(r.Context(), id)
+	findings, err := h.Store.ListEngagementFindings(r.Context(), id)
 	if err != nil {
 		httpServerError(w, "db", err)
 		return
@@ -88,13 +88,13 @@ func (h *ProHandler) HandleGetEngagement(w http.ResponseWriter, r *http.Request)
 
 // HandleAddEngagementFindings links findings to an engagement.
 // POST /api/engagements/{id}/findings  { "ticket_ids": [...] }
-func (h *ProHandler) HandleAddEngagementFindings(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleAddEngagementFindings(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, "Invalid engagement id", http.StatusBadRequest)
 		return
 	}
-	eng, err := h.ProStore.GetEngagement(r.Context(), id)
+	eng, err := h.Store.GetEngagement(r.Context(), id)
 	if err != nil {
 		http.Error(w, "Engagement not found", http.StatusNotFound)
 		return
@@ -114,7 +114,7 @@ func (h *ProHandler) HandleAddEngagementFindings(w http.ResponseWriter, r *http.
 		http.Error(w, "too many ticket_ids", http.StatusBadRequest)
 		return
 	}
-	if err := h.ProStore.AddFindingsToEngagement(r.Context(), id, req.TicketIDs); err != nil {
+	if err := h.Store.AddFindingsToEngagement(r.Context(), id, req.TicketIDs); err != nil {
 		httpServerError(w, "db", err)
 		return
 	}
@@ -124,13 +124,13 @@ func (h *ProHandler) HandleAddEngagementFindings(w http.ResponseWriter, r *http.
 
 // HandleReleaseEngagement hands an engagement's findings off to the RangeHand
 // queue. POST /api/engagements/{id}/release
-func (h *ProHandler) HandleReleaseEngagement(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleReleaseEngagement(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, "Invalid engagement id", http.StatusBadRequest)
 		return
 	}
-	eng, err := h.ProStore.GetEngagement(r.Context(), id)
+	eng, err := h.Store.GetEngagement(r.Context(), id)
 	if err != nil {
 		http.Error(w, "Engagement not found", http.StatusNotFound)
 		return
@@ -139,11 +139,11 @@ func (h *ProHandler) HandleReleaseEngagement(w http.ResponseWriter, r *http.Requ
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
-	if err := h.ProStore.ReleaseEngagement(r.Context(), id); err != nil {
+	if err := h.Store.ReleaseEngagement(r.Context(), id); err != nil {
 		httpServerError(w, "db", err)
 		return
 	}
-	eng, _ = h.ProStore.GetEngagement(r.Context(), id)
+	eng, _ = h.Store.GetEngagement(r.Context(), id)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(eng)
 }

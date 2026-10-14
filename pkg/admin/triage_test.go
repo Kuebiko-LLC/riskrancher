@@ -42,7 +42,7 @@ func TestAutoTriageRuleLifecycleBDD(t *testing.T) {
 		rr := httptest.NewRecorder()
 
 		// Execute handler
-		proHandler := NewProHandler(app.Store)
+		proHandler := NewHandler(app.Store)
 		proHandler.HandleCreateTriageRule(rr, req)
 
 		// THEN the API should return 201 Created
@@ -70,7 +70,7 @@ func TestAutoTriageRuleLifecycleBDD(t *testing.T) {
 		req.AddCookie(GetVIPCookie(app.Store))
 		rr := httptest.NewRecorder()
 
-		proHandler := NewProHandler(app.Store)
+		proHandler := NewHandler(app.Store)
 		proHandler.HandleGetTriageRules(rr, req)
 
 		// THEN the API should return 200 OK
@@ -103,7 +103,7 @@ func TestAutoTriageRuleLifecycleBDD(t *testing.T) {
 		req.AddCookie(GetVIPCookie(app.Store))
 		rr := httptest.NewRecorder()
 
-		proHandler := NewProHandler(app.Store)
+		proHandler := NewHandler(app.Store)
 		proHandler.HandleDeleteTriageRule(rr, req)
 
 		// THEN the API should return 200 OK

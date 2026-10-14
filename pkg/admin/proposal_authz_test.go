@@ -11,7 +11,7 @@ import (
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	datastore "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
-	core "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 func TestProposalAcceptIsOwnerOnlyAndStateChecked(t *testing.T) {
@@ -19,7 +19,7 @@ func TestProposalAcceptIsOwnerOnlyAndStateChecked(t *testing.T) {
 	db := datastore.InitDB(t.TempDir() + "/pauthz.db")
 	defer db.Close()
 	store := datastore.NewSQLiteStore(db)
-	h := NewProHandler(store)
+	h := NewHandler(store)
 
 	owner, _ := store.CreateUser(ctx, "owner@ranch.com", "Owner BH", "h", "Bounty Hunter")
 	other, _ := store.CreateUser(ctx, "other@ranch.com", "Other BH", "h", "Bounty Hunter")
@@ -29,9 +29,9 @@ func TestProposalAcceptIsOwnerOnlyAndStateChecked(t *testing.T) {
 		}
 	}
 
-	eng := &core.Engagement{Name: "P", OwnerEmail: "owner@ranch.com"}
+	eng := &domain.Engagement{Name: "P", OwnerEmail: "owner@ranch.com"}
 	store.CreateEngagement(ctx, eng)
-	f := &core.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "XSS", Severity: "Critical", Status: "Waiting to be Triaged"}
+	f := &domain.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "XSS", Severity: "Critical", Status: "Waiting to be Triaged"}
 	store.CreateTicket(ctx, f)
 	store.AddFindingsToEngagement(ctx, eng.ID, []int{f.ID})
 	p, _ := store.ProposeSeverityChange(ctx, f.ID, "Low", "fp", "rh@ranch.com")

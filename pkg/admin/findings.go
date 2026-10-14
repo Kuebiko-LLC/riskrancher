@@ -9,7 +9,7 @@ import (
 
 // HandleUpdateFinding edits a finding's report-grade fields (severity, text,
 // CVSS, CWE, business impact). Owner-gated. PUT /api/findings/{id}
-func (h *ProHandler) HandleUpdateFinding(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleUpdateFinding(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, "Invalid finding id", http.StatusBadRequest)
@@ -36,7 +36,7 @@ func (h *ProHandler) HandleUpdateFinding(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "invalid severity", http.StatusBadRequest)
 		return
 	}
-	if err := h.ProStore.UpdateFindingDetails(r.Context(), id, domain.FindingDetails{
+	if err := h.Store.UpdateFindingDetails(r.Context(), id, domain.FindingDetails{
 		Severity: req.Severity, Description: req.Description, Remediation: req.Remediation,
 		CVSSVector: req.CVSSVector, CVSSScore: req.CVSSScore, CWE: req.CWE, BusinessImpact: req.BusinessImpact,
 	}); err != nil {

@@ -16,8 +16,8 @@ import (
 	core "github.com/Kuebiko-LLC/riskrancher/pkg/server"
 	coreUI "github.com/Kuebiko-LLC/riskrancher/ui"
 
+	proAdmin "github.com/Kuebiko-LLC/riskrancher/pkg/admin"
 	proTickets "github.com/Kuebiko-LLC/riskrancher/pkg/tickets"
-	proAdmin "github.com/Kuebiko-LLC/riskrancher/pro/admin"
 	proUI "github.com/Kuebiko-LLC/riskrancher/pro/ui"
 )
 
@@ -25,7 +25,7 @@ func ProUIInterceptor(app *core.App, next http.Handler) http.Handler {
 	authH := auth.NewHandler(app.Store)
 
 	// The admin handler is used by the interceptor
-	proAdminH := proAdmin.NewProHandler(app.Store)
+	proAdminH := proAdmin.NewHandler(app.Store)
 
 	sheriffOnly := func(h http.HandlerFunc) http.Handler {
 		return authH.RequireAuth(authH.RequireRole("Sheriff")(http.HandlerFunc(h)))
@@ -206,7 +206,7 @@ func RegisterProRoutes(app *core.App) {
 
 	authH := auth.NewHandler(app.Store)
 	proTicketH := proTickets.NewHandler(app.Store)
-	proAdminH := proAdmin.NewProHandler(app.Store)
+	proAdminH := proAdmin.NewHandler(app.Store)
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	auditH := auth.AuditLogger(proStore, logger)

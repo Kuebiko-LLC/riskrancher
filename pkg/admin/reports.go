@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
-	coredomain "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 	"github.com/Kuebiko-LLC/riskrancher/pkg/reporting"
 )
 
@@ -26,12 +26,12 @@ type generateReportRequest struct {
 // engagement, or any for a Sheriff) and renders the report to Markdown and HTML.
 // Findings the caller may not see are dropped, so a report cannot exfiltrate
 // another Bounty Hunter's held findings.
-func (h *ProHandler) renderReport(r *http.Request, req generateReportRequest) ([]coredomain.Ticket, string, string) {
+func (h *Handler) renderReport(r *http.Request, req generateReportRequest) ([]domain.Ticket, string, string) {
 	email, sheriff := "", false
 	if u := h.currentUser(r); u != nil {
 		email, sheriff = u.Email, u.GlobalRole == "Sheriff"
 	}
-	tickets, _ := h.ProStore.FindingsVisibleTo(r.Context(), req.TicketIDs, email, sheriff)
+	tickets, _ := h.Store.FindingsVisibleTo(r.Context(), req.TicketIDs, email, sheriff)
 	in := reporting.ReportInput{
 		Title:            req.Title,
 		ClientName:       req.ClientName,
@@ -46,15 +46,15 @@ func (h *ProHandler) renderReport(r *http.Request, req generateReportRequest) ([
 
 // evidenceForFindings loads each finding's screenshots as base64 data URIs so
 // the rendered report is self-contained.
-func (h *ProHandler) evidenceForFindings(r *http.Request, tickets []coredomain.Ticket) map[int][]reporting.EvidenceImage {
+func (h *Handler) evidenceForFindings(r *http.Request, tickets []domain.Ticket) map[int][]reporting.EvidenceImage {
 	ev := map[int][]reporting.EvidenceImage{}
 	for _, f := range tickets {
-		list, err := h.ProStore.ListEvidenceForTicket(r.Context(), f.ID)
+		list, err := h.Store.ListEvidenceForTicket(r.Context(), f.ID)
 		if err != nil {
 			continue
 		}
 		for _, m := range list {
-			data, ct, err := h.ProStore.GetEvidenceBlob(r.Context(), m.ID, false)
+			data, ct, err := h.Store.GetEvidenceBlob(r.Context(), m.ID, false)
 			if err != nil {
 				continue
 			}
@@ -65,7 +65,7 @@ func (h *ProHandler) evidenceForFindings(r *http.Request, tickets []coredomain.T
 	return ev
 }
 
-func ticketIDsOf(tickets []coredomain.Ticket) []int {
+func ticketIDsOf(tickets []domain.Ticket) []int {
 	ids := make([]int, len(tickets))
 	for i, t := range tickets {
 		ids[i] = t.ID
@@ -75,7 +75,7 @@ func ticketIDsOf(tickets []coredomain.Ticket) []int {
 
 // canAccessReport reports whether the caller may read/edit a report (its author
 // or a Sheriff).
-func (h *ProHandler) canAccessReport(r *http.Request, rep *coredomain.PentestReport) bool {
+func (h *Handler) canAccessReport(r *http.Request, rep *domain.PentestReport) bool {
 	u := h.currentUser(r)
 	if u == nil || rep == nil {
 		return false
@@ -86,7 +86,7 @@ func (h *ProHandler) canAccessReport(r *http.Request, rep *coredomain.PentestRep
 // HandleGenerateBrandedReport turns a set of findings (tickets) into a pentest
 // engagement report, renders it to Markdown and HTML, stores the frozen
 // snapshot, and returns it. POST /api/reports/branded
-func (h *ProHandler) HandleGenerateBrandedReport(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleGenerateBrandedReport(w http.ResponseWriter, r *http.Request) {
 	var req generateReportRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
@@ -107,7 +107,7 @@ func (h *ProHandler) HandleGenerateBrandedReport(w http.ResponseWriter, r *http.
 		return
 	}
 
-	report := &coredomain.PentestReport{
+	report := &domain.PentestReport{
 		Title:            req.Title,
 		ClientName:       req.ClientName,
 		Author:           req.Author,
@@ -121,7 +121,7 @@ func (h *ProHandler) HandleGenerateBrandedReport(w http.ResponseWriter, r *http.
 		CreatedBy:        h.currentUserEmail(r),
 	}
 
-	if _, err := h.ProStore.CreatePentestReport(r.Context(), report); err != nil {
+	if _, err := h.Store.CreatePentestReport(r.Context(), report); err != nil {
 		httpServerError(w, "db", err)
 		return
 	}
@@ -135,13 +135,13 @@ func (h *ProHandler) HandleGenerateBrandedReport(w http.ResponseWriter, r *http.
 // re-renders the Markdown and HTML, and returns the updated report. The report
 // is a live document, so edits are persisted and shown on the next read.
 // PUT /api/reports/branded/{id}
-func (h *ProHandler) HandleUpdateReport(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleUpdateReport(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, "Invalid report id", http.StatusBadRequest)
 		return
 	}
-	existing, err := h.ProStore.GetPentestReport(r.Context(), id)
+	existing, err := h.Store.GetPentestReport(r.Context(), id)
 	if err != nil {
 		http.Error(w, "Report not found", http.StatusNotFound)
 		return
@@ -163,7 +163,7 @@ func (h *ProHandler) HandleUpdateReport(w http.ResponseWriter, r *http.Request) 
 
 	findings, md, html := h.renderReport(r, req)
 
-	updated := &coredomain.PentestReport{
+	updated := &domain.PentestReport{
 		ID:               id,
 		Title:            req.Title,
 		ClientName:       req.ClientName,
@@ -178,7 +178,7 @@ func (h *ProHandler) HandleUpdateReport(w http.ResponseWriter, r *http.Request) 
 		CreatedBy:        existing.CreatedBy,
 		CreatedAt:        existing.CreatedAt,
 	}
-	if err := h.ProStore.UpdateReport(r.Context(), updated); err != nil {
+	if err := h.Store.UpdateReport(r.Context(), updated); err != nil {
 		httpServerError(w, "db", err)
 		return
 	}
@@ -190,14 +190,14 @@ func (h *ProHandler) HandleUpdateReport(w http.ResponseWriter, r *http.Request) 
 // HandleGetPentestReport returns one stored report. The ?format query selects
 // the representation: json (default), md, or html (served as a downloadable
 // document). GET /api/reports/branded/{id}
-func (h *ProHandler) HandleGetPentestReport(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleGetPentestReport(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		http.Error(w, "Invalid report id", http.StatusBadRequest)
 		return
 	}
 
-	report, err := h.ProStore.GetPentestReport(r.Context(), id)
+	report, err := h.Store.GetPentestReport(r.Context(), id)
 	if err != nil {
 		http.Error(w, "Report not found", http.StatusNotFound)
 		return
@@ -223,20 +223,20 @@ func (h *ProHandler) HandleGetPentestReport(w http.ResponseWriter, r *http.Reque
 
 // HandleListPentestReports returns report metadata (no rendered bodies).
 // GET /api/reports/generated
-func (h *ProHandler) HandleListPentestReports(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleListPentestReports(w http.ResponseWriter, r *http.Request) {
 	u := h.currentUser(r)
 	if u == nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 	var (
-		reports []coredomain.PentestReport
+		reports []domain.PentestReport
 		err     error
 	)
 	if u.GlobalRole == "Sheriff" {
-		reports, err = h.ProStore.ListPentestReports(r.Context())
+		reports, err = h.Store.ListPentestReports(r.Context())
 	} else {
-		reports, err = h.ProStore.ListPentestReportsByAuthor(r.Context(), u.Email)
+		reports, err = h.Store.ListPentestReportsByAuthor(r.Context(), u.Email)
 	}
 	if err != nil {
 		httpServerError(w, "db", err)
@@ -247,7 +247,7 @@ func (h *ProHandler) HandleListPentestReports(w http.ResponseWriter, r *http.Req
 }
 
 // currentUser resolves the signed-in user, or nil if none is present.
-func (h *ProHandler) currentUser(r *http.Request) *coredomain.User {
+func (h *Handler) currentUser(r *http.Request) *domain.User {
 	id, ok := r.Context().Value(auth.UserIDKey).(int)
 	if !ok {
 		return nil
@@ -261,7 +261,7 @@ func (h *ProHandler) currentUser(r *http.Request) *coredomain.User {
 
 // currentUserEmail best-effort resolves the signed-in user's email. Returns ""
 // when no authenticated user is present.
-func (h *ProHandler) currentUserEmail(r *http.Request) string {
+func (h *Handler) currentUserEmail(r *http.Request) string {
 	if u := h.currentUser(r); u != nil {
 		return u.Email
 	}
@@ -269,7 +269,7 @@ func (h *ProHandler) currentUserEmail(r *http.Request) string {
 }
 
 // isOwnerOrSheriff reports whether the caller owns the engagement or is a Sheriff.
-func (h *ProHandler) isOwnerOrSheriff(r *http.Request, eng *coredomain.Engagement) bool {
+func (h *Handler) isOwnerOrSheriff(r *http.Request, eng *domain.Engagement) bool {
 	u := h.currentUser(r)
 	if u == nil || eng == nil {
 		return false

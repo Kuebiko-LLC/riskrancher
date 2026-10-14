@@ -118,4 +118,9 @@ Deleted outright: `pro/license`, `pro/middleware/license.go`, `pro/admin/license
 - Verified no performance change: pen page on the million-row lab DB 0.5-0.7 s warm before and after.
 - The two create paths disagreed (Stage 2 prep, 583df0a): batch ingest skipped per-finding suppression, severity rules and routing; a global suppression match set a status the schema rejects and rolled back the ingest; the per-finding suppression check ran before the hash existed. One rules engine now runs on both paths. Million-row ingest 77 s (was 68 s); a routing rule set before the upload assigned all 200 findings on its asset.
 - Stage 2 also deleted the embedding and matchmaker sketches (they queried tables the schema never had and nothing called them) and a base GetGlobalActivityFeed that returned an upsell message instead of the audit log.
-- Stage 3 notes: the pro route wrappers logged every API call to the audit log and the base ones did not; the merged set audits every protected API route, so the log now covers the whole product. The core paginated audit feed was a stub returning nothing (fixed with a test, 166d987). `PUT /api/config` still has no role check (Stage 4). `GET /uploads/` strips the wrong prefix and always 404s (Stage 4).
+- Stage 3 notes: the pro route wrappers logged every API call to the audit log and the base ones did not; the merged set audits every protected API route, so the log now covers the whole product. The core paginated audit feed was a stub returning nothing (fixed with a test, 166d987). `PUT /api/config` is Sheriff-only and the report-image route serves the URLs the upload handler returns (fixed with tests after Stage 3).
+
+## Stage 4 remaining
+- `workspace_id` hard-coded to 1 in the rules tables and queries; decide whether workspaces are a feature.
+- `ServiceAccountAuth` sets string context keys instead of `auth.UserIDKey`, so API keys never satisfy `RequireAuth`; it is unused in production. Either wire it properly (with a test) or remove it.
+- `HandleGetAPIKeys`, `HandleCreateAPIKey`, `HandleRevokeAPIKey`, `HandleExecDashboardData`, and the suppression-rule handlers are empty stubs behind live routes.

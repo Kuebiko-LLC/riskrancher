@@ -22,7 +22,6 @@ func TestServiceAccountAuth_BDD(t *testing.T) {
 
 	// 2. Mint a valid API Key for testing
 	validAPIKeyReq := domain.APIKey{
-		WorkspaceID: 1,
 		Name:        "CI/CD Pipeline Key",
 		Permissions: "WriteOnly",
 		CreatedBy:   99, // Arbitrary User ID

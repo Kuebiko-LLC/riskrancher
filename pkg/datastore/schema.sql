@@ -182,12 +182,6 @@ CREATE INDEX IF NOT EXISTS idx_tickets_remediation_due ON tickets(remediation_du
 -- ==========================================
 -- 0. WORKSPACES (Multi-Tenancy Foundation)
 -- ==========================================
-CREATE TABLE IF NOT EXISTS workspaces (
-                                          id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                          name TEXT UNIQUE NOT NULL,
-                                          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-INSERT OR IGNORE INTO workspaces (id, name) VALUES (1, 'Default Enterprise Workspace');
 
 -- ==========================================
 -- 1. THE MISSING AUDIT & ACTIVITY ENGINE
@@ -196,7 +190,6 @@ CREATE TABLE IF NOT EXISTS ticket_activity (
                                                id INTEGER PRIMARY KEY AUTOINCREMENT,
                                                ticket_id INTEGER NOT NULL,
                                                actor TEXT NOT NULL DEFAULT 'System',
-                                               workspace_id INTEGER DEFAULT 1 REFERENCES workspaces(id),
     activity_type TEXT NOT NULL,
     old_value TEXT,
     new_value TEXT,
@@ -209,7 +202,6 @@ CREATE TABLE IF NOT EXISTS ticket_activity (
 -- ==========================================
 CREATE TABLE IF NOT EXISTS routing_rules (
                                              id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                             workspace_id INTEGER DEFAULT 1 REFERENCES workspaces(id),
     rule_type TEXT NOT NULL CHECK(rule_type IN ('Source', 'Asset', 'Domain')),
     match_value TEXT NOT NULL,
     assignee TEXT NOT NULL,
@@ -219,7 +211,6 @@ CREATE TABLE IF NOT EXISTS routing_rules (
 
 CREATE TABLE IF NOT EXISTS auto_triage_rules (
                                                  id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                                 workspace_id INTEGER DEFAULT 1 REFERENCES workspaces(id),
     match_source TEXT,
     match_asset TEXT,
     match_cve TEXT,
@@ -272,7 +263,6 @@ CREATE TABLE IF NOT EXISTS cisa_catalog (
 CREATE TABLE IF NOT EXISTS api_keys (
                                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                                         token_hash TEXT UNIQUE NOT NULL,
-                                        workspace_id INTEGER DEFAULT 1 REFERENCES workspaces(id),
     name TEXT NOT NULL,
     permissions TEXT NOT NULL CHECK(permissions IN ('WriteOnly', 'ReadOnly', 'FullAdmin')),
     created_by INTEGER,
@@ -284,7 +274,6 @@ CREATE TABLE IF NOT EXISTS api_keys (
 CREATE TABLE IF NOT EXISTS webhooks (
                                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                                         name TEXT NOT NULL,
-                                        workspace_id INTEGER DEFAULT 1 REFERENCES workspaces(id),
     payload_url TEXT NOT NULL,
     secret_key TEXT NOT NULL,
     event_triggers TEXT NOT NULL,

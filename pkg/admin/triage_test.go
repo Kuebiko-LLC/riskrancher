@@ -112,7 +112,7 @@ func TestAutoTriageRuleLifecycleBDD(t *testing.T) {
 		}
 
 		// AND the rule should no longer exist in the database
-		rules, _ := store.GetAutoTriageRules(context.Background(), 1)
+		rules, _ := store.GetAutoTriageRules(context.Background())
 		if len(rules) != 0 {
 			t.Errorf("Expected 0 rules after deletion, but found %d", len(rules))
 		}

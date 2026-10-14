@@ -71,8 +71,8 @@ func (s *SQLiteStore) BulkUpdateStatusAndAssign(ctx context.Context, ticketIDs [
 // --- Auto-triage rules ---
 func (s *SQLiteStore) CreateAutoTriageRule(ctx context.Context, rule *domain.AutoTriageRule) error {
 	res, err := s.DB.ExecContext(ctx,
-		"INSERT INTO auto_triage_rules (workspace_id, match_source, match_asset, match_cve, action_type, action_value) VALUES (?, ?, ?, ?, ?, ?)",
-		rule.WorkspaceID, rule.MatchSource, rule.MatchAsset, rule.MatchCVE, rule.ActionType, rule.ActionValue)
+		"INSERT INTO auto_triage_rules (match_source, match_asset, match_cve, action_type, action_value) VALUES (?, ?, ?, ?, ?)",
+		rule.MatchSource, rule.MatchAsset, rule.MatchCVE, rule.ActionType, rule.ActionValue)
 	if err != nil {
 		return err
 	}
@@ -111,8 +111,8 @@ func (s *SQLiteStore) GetGlobalActivityFeed(ctx context.Context, limit int) ([]d
 	return feed, nil
 }
 
-func (s *SQLiteStore) GetAutoTriageRules(ctx context.Context, workspaceID int) ([]domain.AutoTriageRule, error) {
-	rows, err := s.DB.QueryContext(ctx, "SELECT id, workspace_id, match_source, match_asset, match_cve, action_type, action_value, created_at FROM auto_triage_rules WHERE workspace_id = ?", workspaceID)
+func (s *SQLiteStore) GetAutoTriageRules(ctx context.Context) ([]domain.AutoTriageRule, error) {
+	rows, err := s.DB.QueryContext(ctx, "SELECT id, match_source, match_asset, match_cve, action_type, action_value, created_at FROM auto_triage_rules ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func (s *SQLiteStore) GetAutoTriageRules(ctx context.Context, workspaceID int) (
 	var rules []domain.AutoTriageRule
 	for rows.Next() {
 		var r domain.AutoTriageRule
-		if err := rows.Scan(&r.ID, &r.WorkspaceID, &r.MatchSource, &r.MatchAsset, &r.MatchCVE, &r.ActionType, &r.ActionValue, &r.CreatedAt); err != nil {
+		if err := rows.Scan(&r.ID, &r.MatchSource, &r.MatchAsset, &r.MatchCVE, &r.ActionType, &r.ActionValue, &r.CreatedAt); err != nil {
 			return nil, err
 		}
 		rules = append(rules, r)
@@ -200,8 +200,8 @@ func (s *SQLiteStore) CreateSuppressionRule(ctx context.Context, rule *domain.Su
 
 func (s *SQLiteStore) CreateRoutingRule(ctx context.Context, rule *domain.RoutingRule) error {
 	res, err := s.DB.ExecContext(ctx,
-		"INSERT INTO routing_rules (workspace_id, rule_type, match_value, assignee, role) VALUES (?, ?, ?, ?, ?)",
-		rule.WorkspaceID, rule.RuleType, rule.MatchValue, rule.Assignee, rule.Role)
+		"INSERT INTO routing_rules (rule_type, match_value, assignee, role) VALUES (?, ?, ?, ?)",
+		rule.RuleType, rule.MatchValue, rule.Assignee, rule.Role)
 	if err != nil {
 		return err
 	}
@@ -260,7 +260,7 @@ func (s *SQLiteStore) SyncCISACatalog(ctx context.Context, feed *domain.CISAFeed
 }
 
 func (s *SQLiteStore) GetRoutingRules(ctx context.Context) ([]domain.RoutingRule, error) {
-	rows, err := s.DB.QueryContext(ctx, "SELECT id, workspace_id, rule_type, match_value, assignee, role, created_at FROM routing_rules WHERE workspace_id = 1 ORDER BY created_at DESC")
+	rows, err := s.DB.QueryContext(ctx, "SELECT id, rule_type, match_value, assignee, role, created_at FROM routing_rules ORDER BY created_at DESC")
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +269,7 @@ func (s *SQLiteStore) GetRoutingRules(ctx context.Context) ([]domain.RoutingRule
 	var rules []domain.RoutingRule
 	for rows.Next() {
 		var r domain.RoutingRule
-		if err := rows.Scan(&r.ID, &r.WorkspaceID, &r.RuleType, &r.MatchValue, &r.Assignee, &r.Role, &r.CreatedAt); err != nil {
+		if err := rows.Scan(&r.ID, &r.RuleType, &r.MatchValue, &r.Assignee, &r.Role, &r.CreatedAt); err != nil {
 			return nil, err
 		}
 		rules = append(rules, r)

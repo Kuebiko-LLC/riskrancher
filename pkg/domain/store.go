@@ -114,7 +114,7 @@ type WorkflowStore interface {
 // RulesStore: the ingest rules (suppression, severity, routing)
 type RulesStore interface {
 	CreateAutoTriageRule(ctx context.Context, rule *AutoTriageRule) error
-	GetAutoTriageRules(ctx context.Context, workspaceID int) ([]AutoTriageRule, error)
+	GetAutoTriageRules(ctx context.Context) ([]AutoTriageRule, error)
 	DeleteAutoTriageRule(ctx context.Context, ruleID int) error
 	CreateSuppressionRule(ctx context.Context, rule *SuppressionRule) error
 	CreateRoutingRule(ctx context.Context, rule *RoutingRule) error

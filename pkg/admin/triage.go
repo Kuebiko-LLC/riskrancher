@@ -16,8 +16,6 @@ func (h *Handler) HandleCreateTriageRule(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	rule.WorkspaceID = 1
-
 	store := h.Store
 
 	if err := store.CreateAutoTriageRule(r.Context(), &rule); err != nil {
@@ -33,7 +31,7 @@ func (h *Handler) HandleCreateTriageRule(w http.ResponseWriter, r *http.Request)
 func (h *Handler) HandleGetTriageRules(w http.ResponseWriter, r *http.Request) {
 	store := h.Store
 
-	rules, err := store.GetAutoTriageRules(r.Context(), 1)
+	rules, err := store.GetAutoTriageRules(r.Context())
 	if err != nil {
 		http.Error(w, "Failed to fetch rules", http.StatusInternalServerError)
 		return

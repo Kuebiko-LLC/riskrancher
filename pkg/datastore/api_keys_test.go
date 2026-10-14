@@ -23,7 +23,6 @@ func TestAPIKeys_BDD(t *testing.T) {
 
 	t.Run("Given an admin wants to create a Service Account", func(t *testing.T) {
 		req := domain.APIKey{
-			WorkspaceID: 1,
 			Name:        "CI/CD Pipeline Key",
 			Permissions: "WriteOnly",
 			CreatedBy:   1, // Will no longer trip the FK constraint

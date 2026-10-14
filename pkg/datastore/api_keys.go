@@ -36,13 +36,13 @@ func (s *SQLiteStore) CreateAPIKey(ctx context.Context, key domain.APIKey) (stri
 	hashedToken := HashToken(rawToken)
 
 	query := `
-		INSERT INTO api_keys (token_hash, workspace_id, name, permissions, created_by, expires_at)
-		VALUES (?, ?, ?, ?, ?, ?)
+		INSERT INTO api_keys (token_hash, name, permissions, created_by, expires_at)
+		VALUES (?, ?, ?, ?, ?)
 		RETURNING id, created_at
 	`
 	err = s.DB.QueryRowContext(
 		ctx, query,
-		hashedToken, key.WorkspaceID, key.Name, key.Permissions, key.CreatedBy, key.ExpiresAt,
+		hashedToken, key.Name, key.Permissions, key.CreatedBy, key.ExpiresAt,
 	).Scan(&key.ID, &key.CreatedAt)
 
 	if err != nil {
@@ -56,14 +56,14 @@ func (s *SQLiteStore) CreateAPIKey(ctx context.Context, key domain.APIKey) (stri
 // GetAPIKeyByHash retrieves an API key using the hashed version of the token provided in the Authorization header.
 func (s *SQLiteStore) GetAPIKeyByHash(ctx context.Context, hash string) (*domain.APIKey, error) {
 	query := `
-		SELECT id, token_hash, workspace_id, name, permissions, created_by, created_at, expires_at, last_used_at
+		SELECT id, token_hash, name, permissions, created_by, created_at, expires_at, last_used_at
 		FROM api_keys
 		WHERE token_hash = ?
 	`
 
 	var k domain.APIKey
 	err := s.DB.QueryRowContext(ctx, query, hash).Scan(
-		&k.ID, &k.TokenHash, &k.WorkspaceID, &k.Name, &k.Permissions,
+		&k.ID, &k.TokenHash, &k.Name, &k.Permissions,
 		&k.CreatedBy, &k.CreatedAt, &k.ExpiresAt, &k.LastUsedAt,
 	)
 

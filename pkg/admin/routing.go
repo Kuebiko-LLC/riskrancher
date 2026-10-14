@@ -16,8 +16,6 @@ func (h *Handler) HandleCreateRoutingRule(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	rule.WorkspaceID = 1
-
 	store := h.Store
 
 	if err := store.CreateRoutingRule(r.Context(), &rule); err != nil {

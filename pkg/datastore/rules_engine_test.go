@@ -11,17 +11,7 @@ import (
 
 func setupTestDB(t *testing.T) *datastore.SQLiteStore {
 	db := datastore.InitDB(":memory:")
-
-	_, err := db.Exec("CREATE TABLE IF NOT EXISTS workspaces (id INTEGER PRIMARY KEY, name TEXT)")
-	if err != nil {
-		t.Fatalf("Failed to mock workspaces table: %v", err)
-	}
-
-	_, err = db.Exec("INSERT OR IGNORE INTO workspaces (id, name) VALUES (1, 'Global')")
-	if err != nil {
-		t.Fatalf("Failed to insert workspace: %v", err)
-	}
-
+	t.Cleanup(func() { db.Close() })
 	return datastore.NewSQLiteStore(db)
 }
 
@@ -71,7 +61,6 @@ func TestRulesEngine_BDD(t *testing.T) {
 
 		// 1. Arrange
 		triageRule := &domain.AutoTriageRule{
-			WorkspaceID: 1,
 			MatchSource: "Trivy",
 			MatchAsset:  "legacy-app",
 			ActionType:  "DowngradeSeverity",
@@ -108,11 +97,10 @@ func TestRulesEngine_BDD(t *testing.T) {
 
 		// 1. Arrange
 		routingRule := &domain.RoutingRule{
-			WorkspaceID: 1,
-			RuleType:    "Asset",
-			MatchValue:  "aws-cloud",
-			Assignee:    "cloud-team@ranch.com",
-			Role:        "Wrangler",
+			RuleType:   "Asset",
+			MatchValue: "aws-cloud",
+			Assignee:   "cloud-team@ranch.com",
+			Role:       "Wrangler",
 		}
 		if err := store.CreateRoutingRule(ctx, routingRule); err != nil {
 			t.Fatalf("Arrange Failed - Could not create routing rule: %v", err)

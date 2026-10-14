@@ -16,19 +16,17 @@ type SuppressionRule struct {
 
 // RoutingRule automatically assigns incoming tickets
 type RoutingRule struct {
-	ID          int       `json:"id"`
-	WorkspaceID int       `json:"workspace_id"` // 🚀 FIX: Added missing WorkspaceID
-	RuleType    string    `json:"rule_type"`
-	MatchValue  string    `json:"match_value"`
-	Assignee    string    `json:"assignee"`
-	Role        string    `json:"role"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID         int       `json:"id"`
+	RuleType   string    `json:"rule_type"`
+	MatchValue string    `json:"match_value"`
+	Assignee   string    `json:"assignee"`
+	Role       string    `json:"role"`
+	CreatedAt  time.Time `json:"created_at"`
 }
 
 // AutoTriageRule mutates ticket severity based on assets/sources
 type AutoTriageRule struct {
 	ID          int       `json:"id"`
-	WorkspaceID int       `json:"workspace_id"`
 	MatchSource string    `json:"match_source"`
 	MatchAsset  string    `json:"match_asset"`
 	MatchCVE    string    `json:"match_cve"`
@@ -54,7 +52,6 @@ type CISAFeed struct {
 type APIKey struct {
 	ID          int        `json:"id"`
 	TokenHash   string     `json:"-"` // Never expose the hash via JSON
-	WorkspaceID int        `json:"workspace_id"`
 	Name        string     `json:"name"`
 	Permissions string     `json:"permissions"` // WriteOnly, ReadOnly, FullAdmin
 	CreatedBy   int        `json:"created_by"`

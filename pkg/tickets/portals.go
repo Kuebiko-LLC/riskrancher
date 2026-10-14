@@ -4,35 +4,10 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-
-	core "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
-type ProHandler struct {
-	Store core.Store
-}
-
-func NewProHandler(store core.Store) *ProHandler {
-	return &ProHandler{Store: store}
-}
-
-type MagistrateReviewRequest struct {
-	Action        string `json:"action"`
-	Actor         string `json:"actor"`
-	Comment       string `json:"comment"`
-	ExtensionDays int    `json:"extension_days"`
-}
-
-type BulkUpdateRequest struct {
-	TicketIDs []int  `json:"ticket_ids"`
-	Status    string `json:"status"`
-	Comment   string `json:"comment"`
-	Assignee  string `json:"assignee"`
-	Actor     string `json:"actor"`
-}
-
 // Bulk assignment and magic-link generation.
-func (h *ProHandler) HandleBulkUpdate(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleBulkUpdate(w http.ResponseWriter, r *http.Request) {
 	var req BulkUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Printf("🚨 API ERROR: Failed to decode JSON body: %v", err)
@@ -59,14 +34,14 @@ func (h *ProHandler) HandleBulkUpdate(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *ProHandler) HandleMagicLink(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleMagicLink(w http.ResponseWriter, r *http.Request) {
 	token := r.PathValue("token")
 
 	// NOTE: Pro DB Hookup coming next!
 	json.NewEncoder(w).Encode(map[string]any{"assignee": "IT Team", "token": token, "tickets": []any{}})
 }
 
-func (h *ProHandler) HandleMagicLinkSubmit(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleMagicLinkSubmit(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		PatchEvidence string `json:"patch_evidence"`
 		Status        string `json:"status"`
@@ -78,7 +53,7 @@ func (h *ProHandler) HandleMagicLinkSubmit(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *ProHandler) HandleSubmitRiskRequest(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleSubmitRiskRequest(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
 		Type      string `json:"type"`
 		Rationale string `json:"rationale"`
@@ -88,7 +63,7 @@ func (h *ProHandler) HandleSubmitRiskRequest(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *ProHandler) HandleMagistrateReview(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleMagistrateReview(w http.ResponseWriter, r *http.Request) {
 	var req MagistrateReviewRequest
 	json.NewDecoder(r.Body).Decode(&req)
 
@@ -100,7 +75,7 @@ func (h *ProHandler) HandleMagistrateReview(w http.ResponseWriter, r *http.Reque
 }
 
 // Extract the ticket IDs from the JSON payload and pass them to the store
-func (h *ProHandler) HandleWranglerReject(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleWranglerReject(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		TicketIDs []int  `json:"ticket_ids"`
 		Reason    string `json:"reason"`
@@ -141,39 +116,3 @@ type RejectRequest struct {
 }
 
 // RejectTicketsHandler allows a Wrangler to kick a ticket back to Security (The "Escape Hatch")
-func (h *ProHandler) RejectTicketsHandler(w http.ResponseWriter, r *http.Request) {
-	// 1. Decode the JSON body
-	var reqBody RejectRequest
-	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	// 2. Validate input
-	if len(reqBody.TicketIDs) == 0 {
-		http.Error(w, "At least one ticket ID is required", http.StatusBadRequest)
-		return
-	}
-	if reqBody.Reason == "" {
-		http.Error(w, "A rejection reason is required", http.StatusBadRequest)
-		return
-	}
-
-	// 3. Cast the store to the Pro Interface
-	proStore := h.Store
-
-	// 4. Execute the rejection via the Pro database method
-	err := proStore.RejectTicketFromWrangler(r.Context(), reqBody.TicketIDs, reqBody.Reason, reqBody.Comment)
-	if err != nil {
-		// In a real app, you might want to log this error
-		http.Error(w, "Failed to reject tickets: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// 5. Return Success
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"status":  "success",
-		"message": "Tickets successfully returned to the holding pen",
-	})
-}

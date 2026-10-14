@@ -16,8 +16,8 @@ import (
 	core "github.com/Kuebiko-LLC/riskrancher/pkg/server"
 	coreUI "github.com/Kuebiko-LLC/riskrancher/ui"
 
+	proTickets "github.com/Kuebiko-LLC/riskrancher/pkg/tickets"
 	proAdmin "github.com/Kuebiko-LLC/riskrancher/pro/admin"
-	proTickets "github.com/Kuebiko-LLC/riskrancher/pro/tickets"
 	proUI "github.com/Kuebiko-LLC/riskrancher/pro/ui"
 )
 
@@ -205,7 +205,7 @@ func RegisterProRoutes(app *core.App) {
 	proUI.InjectProTemplates(proStore)
 
 	authH := auth.NewHandler(app.Store)
-	proTicketH := proTickets.NewProHandler(app.Store)
+	proTicketH := proTickets.NewHandler(app.Store)
 	proAdminH := proAdmin.NewProHandler(app.Store)
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))

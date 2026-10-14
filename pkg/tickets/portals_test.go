@@ -3,39 +3,14 @@ package tickets
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
-	models "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
-
-// setupTestTickets spins up an in-memory database and the ProHandler for testing
-func setupTestTickets(t *testing.T) (*ProHandler, *sql.DB) {
-	db := datastore.InitDB(":memory:")
-
-	// 🚀 FIX: Inject the Pro schema tables required by the Dashboard query
-	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS magic_batches (
-		token TEXT PRIMARY KEY,
-		created_by TEXT NOT NULL,
-		expires_at DATETIME NOT NULL,
-		is_revoked BOOLEAN DEFAULT 0,
-		ticket_ids TEXT NOT NULL, 
-		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-	)`)
-	if err != nil {
-		t.Fatalf("Failed to create magic_batches table: %v", err)
-	}
-
-	// Initialize the store
-	store := datastore.NewSQLiteStore(db)
-
-	return NewProHandler(store), db
-}
 
 func TestWranglerReject_HTTP(t *testing.T) {
 	app, db := setupTestTickets(t)
@@ -44,7 +19,7 @@ func TestWranglerReject_HTTP(t *testing.T) {
 	// 1. Arrange: Create a "Complete" ticket so rows.Scan() doesn't choke on NULLs
 	ctx := context.Background()
 	now := time.Now()
-	ticket := models.Ticket{
+	ticket := domain.Ticket{
 		Source:          "Trivy",
 		AssetIdentifier: "server-99",
 		Title:           "Critical Vulnerability",
@@ -75,7 +50,7 @@ func TestWranglerReject_HTTP(t *testing.T) {
 	req.AddCookie(&http.Cookie{Name: "session_token", Value: "wrangler_mock_token"})
 
 	w := httptest.NewRecorder()
-	app.RejectTicketsHandler(w, req)
+	app.HandleWranglerReject(w, req)
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected 200 OK, got %d. Body: %s", w.Code, w.Body.String())

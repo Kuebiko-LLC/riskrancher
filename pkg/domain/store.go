@@ -10,6 +10,7 @@ import (
 type Store interface {
 	TicketStore
 	WorkflowStore
+	PortalStore
 	RulesStore
 	AuditStore
 	ServiceAccountStore
@@ -195,4 +196,13 @@ type ReportStore interface {
 	FindingsVisibleTo(ctx context.Context, ids []int, userEmail string, isSheriff bool) ([]Ticket, error)
 	GetPentestReport(ctx context.Context, id int) (*PentestReport, error)
 	ListPentestReports(ctx context.Context) ([]PentestReport, error)
+}
+
+// PortalStore: what the owner's and the approver's links can do to a finding
+type PortalStore interface {
+	GetMagicBatch(ctx context.Context, token string) (*MagicBatch, error)
+	TicketsByIDs(ctx context.Context, ids []int) ([]Ticket, error)
+	SubmitPortalFix(ctx context.Context, ids []int, evidence, actor string) error
+	RequestRiskException(ctx context.Context, ids []int, kind, rationale, actor string) error
+	ReviewRiskRequest(ctx context.Context, ids []int, action, actor, comment string, days int) error
 }

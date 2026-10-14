@@ -57,6 +57,8 @@ type Ticket struct {
 	CVSSScore      float64 `json:"cvss_score"`
 	CWE            string  `json:"cwe"`
 	BusinessImpact string  `json:"business_impact"`
+	RiskRationale  string  `json:"risk_rationale,omitempty"`
+	ExtensionCount int     `json:"extension_count,omitempty"`
 }
 
 // TicketAssignment represents the many-to-many relationship
@@ -82,4 +84,13 @@ type FindingDetails struct {
 	CVSSScore      float64
 	CWE            string
 	BusinessImpact string
+}
+
+// MagicBatch is a portal link: a set of findings handed to someone without an
+// account, valid until it expires or is revoked.
+type MagicBatch struct {
+	Token     string
+	CreatedBy string
+	ExpiresAt time.Time
+	TicketIDs []int
 }

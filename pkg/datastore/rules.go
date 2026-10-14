@@ -30,6 +30,9 @@ func (s *SQLiteStore) BulkUpdateStatusAndAssign(ctx context.Context, ticketIDs [
 			}
 		}
 		if assignee != "" {
+			if _, err := tx.ExecContext(ctx, `UPDATE tickets SET assignee = ?, assigned_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, assignee, id); err != nil {
+				return "", err
+			}
 			if _, err := tx.ExecContext(ctx, `DELETE FROM ticket_assignments WHERE ticket_id = ? AND role = 'Wrangler'`, id); err != nil {
 				return "", err
 			}

@@ -41,9 +41,6 @@ func RegisterRoutes(app *App) {
 	adminOnly := func(h http.HandlerFunc) http.Handler {
 		return authH.RequireAuth(auditH(authH.RequireAnyRole("Sheriff", "Wrangler")(http.HandlerFunc(h))))
 	}
-	execOnly := func(h http.HandlerFunc) http.Handler {
-		return authH.RequireAuth(auditH(authH.RequireRole("Magistrate")(http.HandlerFunc(h))))
-	}
 	bountyHunter := func(h http.HandlerFunc) http.Handler {
 		return authH.RequireAuth(auditH(authH.RequireAnyRole("Bounty Hunter", "Sheriff")(http.HandlerFunc(h))))
 	}
@@ -79,12 +76,13 @@ func RegisterRoutes(app *App) {
 	app.Router.Handle("PATCH /api/tickets/bulk", protected(ticketH.HandleBulkUpdate))
 	app.Router.Handle("GET /api/wranglers", protected(adminH.HandleGetWranglers))
 
-	// Portals (owner and risk approver)
-	app.Router.Handle("GET /api/share/{token}", protected(ticketH.HandleMagicLink))
-	app.Router.Handle("PATCH /api/share/{token}", protected(ticketH.HandleMagicLinkSubmit))
-	app.Router.Handle("POST /api/share/{token}/reject", protected(ticketH.HandleWranglerReject))
-	app.Router.Handle("POST /api/share/{token}/risk", protected(ticketH.HandleSubmitRiskRequest))
-	app.Router.Handle("PATCH /api/risk/{token}/review", execOnly(ticketH.HandleMagistrateReview))
+	// Portals (owner and risk approver): the link is the authorization, no account
+	byLink := func(h http.HandlerFunc) http.Handler { return auditH(http.HandlerFunc(h)) }
+	app.Router.Handle("GET /api/share/{token}", byLink(ticketH.HandleMagicLink))
+	app.Router.Handle("PATCH /api/share/{token}", byLink(ticketH.HandleMagicLinkSubmit))
+	app.Router.Handle("POST /api/share/{token}/reject", byLink(ticketH.HandleWranglerReject))
+	app.Router.Handle("POST /api/share/{token}/risk", byLink(ticketH.HandleSubmitRiskRequest))
+	app.Router.Handle("PATCH /api/share/{token}/review", byLink(ticketH.HandleMagistrateReview))
 
 	// Ingest
 	app.Router.Handle("POST /api/ingest", protected(ingestH.HandleIngest))

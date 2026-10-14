@@ -36,6 +36,11 @@ func TestWranglerReject_HTTP(t *testing.T) {
 	if err := app.Store.CreateTicket(ctx, &ticket); err != nil {
 		t.Fatalf("Test Setup Failed: Could not create ticket: %v", err)
 	}
+	// The owner acts through their link, so hand the finding out first
+	token, err := app.Store.BulkUpdateStatusAndAssign(ctx, []int{ticket.ID}, "Assigned Out", "it-wrangler@ranch.com", "", "sheriff@ranch.com")
+	if err != nil || token == "" {
+		t.Fatalf("assigning out should mint a link: %v", err)
+	}
 
 	payload := map[string]interface{}{
 		"ticket_ids": []int{ticket.ID},
@@ -45,9 +50,9 @@ func TestWranglerReject_HTTP(t *testing.T) {
 	body, _ := json.Marshal(payload)
 
 	// 2. Act: Send an HTTP Request to the Handler
-	req := httptest.NewRequest(http.MethodPost, "/api/pro/tickets/reject", bytes.NewBuffer(body))
+	req := httptest.NewRequest(http.MethodPost, "/api/share/"+token+"/reject", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
-	req.AddCookie(&http.Cookie{Name: "session_token", Value: "wrangler_mock_token"})
+	req.SetPathValue("token", token)
 
 	w := httptest.NewRecorder()
 	app.HandleWranglerReject(w, req)

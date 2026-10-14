@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 // GetCanonicalApps retrieves the core logical applications we want to group infrastructure under.
-func (s *ProSQLiteStore) GetCanonicalApps(ctx context.Context) ([]proModels.Application, error) {
+func (s *ProSQLiteStore) GetCanonicalApps(ctx context.Context) ([]domain.Application, error) {
 	query := `SELECT id, name FROM applications`
 	rows, err := s.db.QueryContext(ctx, query)
 	if err != nil {
@@ -16,9 +16,9 @@ func (s *ProSQLiteStore) GetCanonicalApps(ctx context.Context) ([]proModels.Appl
 	}
 	defer rows.Close()
 
-	var apps []proModels.Application
+	var apps []domain.Application
 	for rows.Next() {
-		var app proModels.Application
+		var app domain.Application
 		if err := rows.Scan(&app.ID, &app.Name); err != nil {
 			return nil, err
 		}
@@ -28,7 +28,7 @@ func (s *ProSQLiteStore) GetCanonicalApps(ctx context.Context) ([]proModels.Appl
 }
 
 // GetUnverifiedAliases fetches raw, disjointed infrastructure strings that haven't been mapped yet.
-func (s *ProSQLiteStore) GetUnverifiedAliases(ctx context.Context) ([]proModels.AssetAlias, error) {
+func (s *ProSQLiteStore) GetUnverifiedAliases(ctx context.Context) ([]domain.AssetAlias, error) {
 	query := `
 		SELECT id, alias, layer, discovery_source 
 		FROM asset_aliases 
@@ -39,9 +39,9 @@ func (s *ProSQLiteStore) GetUnverifiedAliases(ctx context.Context) ([]proModels.
 	}
 	defer rows.Close()
 
-	var aliases []proModels.AssetAlias
+	var aliases []domain.AssetAlias
 	for rows.Next() {
-		var alias proModels.AssetAlias
+		var alias domain.AssetAlias
 		if err := rows.Scan(&alias.ID, &alias.Alias, &alias.Layer, &alias.DiscoverySource); err != nil {
 			return nil, err
 		}
@@ -51,7 +51,7 @@ func (s *ProSQLiteStore) GetUnverifiedAliases(ctx context.Context) ([]proModels.
 }
 
 // InsertMatchProposal upserts a high-confidence match from the AI engine for Analyst review.
-func (s *ProSQLiteStore) InsertMatchProposal(ctx context.Context, proposal proModels.MatchmakerProposal) error {
+func (s *ProSQLiteStore) InsertMatchProposal(ctx context.Context, proposal domain.MatchmakerProposal) error {
 	query := `
 		INSERT INTO matchmaker_proposals (source_alias_id, target_application_id, confidence_score, reasoning)
 		VALUES (?, ?, ?, ?)

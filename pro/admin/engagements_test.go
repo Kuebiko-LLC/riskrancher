@@ -14,7 +14,6 @@ import (
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	datastore "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	core "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
 	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
@@ -52,7 +51,7 @@ func TestEngagementHandlersLifecycle(t *testing.T) {
 		if rr.Code != http.StatusCreated {
 			t.Fatalf("expected 201, got %d: %s", rr.Code, rr.Body.String())
 		}
-		var e proModels.Engagement
+		var e core.Engagement
 		json.Unmarshal(rr.Body.Bytes(), &e)
 		if e.ID == 0 || e.Number != "ENG-0001" || e.OwnerEmail != "hunter@ranch.com" || e.Status != "Active" {
 			t.Fatalf("unexpected engagement: %+v", e)
@@ -101,8 +100,8 @@ func TestEngagementHandlersLifecycle(t *testing.T) {
 			t.Fatalf("expected 200, got %d", getRR.Code)
 		}
 		var detail struct {
-			Engagement proModels.Engagement `json:"engagement"`
-			Findings   []core.Ticket        `json:"findings"`
+			Engagement core.Engagement `json:"engagement"`
+			Findings   []core.Ticket   `json:"findings"`
 		}
 		json.Unmarshal(getRR.Body.Bytes(), &detail)
 		if len(detail.Findings) != 2 {

@@ -7,7 +7,6 @@ import (
 
 	core "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	models "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
 	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
@@ -37,7 +36,7 @@ func TestRulesEngine_BDD(t *testing.T) {
 		store := setupTestDB(t)
 
 		// 1. Arrange
-		suppressionRule := &proModels.SuppressionRule{
+		suppressionRule := &models.SuppressionRule{
 			DedupeHash:      "hash-123",
 			AssetIdentifier: "server-01",
 			Rationale:       "Test FP",
@@ -74,7 +73,7 @@ func TestRulesEngine_BDD(t *testing.T) {
 		store := setupTestDB(t)
 
 		// 1. Arrange
-		triageRule := &proModels.AutoTriageRule{
+		triageRule := &models.AutoTriageRule{
 			WorkspaceID: 1,
 			MatchSource: "Trivy",
 			MatchAsset:  "legacy-app",
@@ -111,7 +110,7 @@ func TestRulesEngine_BDD(t *testing.T) {
 		store := setupTestDB(t)
 
 		// 1. Arrange
-		routingRule := &proModels.RoutingRule{
+		routingRule := &models.RoutingRule{
 			WorkspaceID: 1,
 			RuleType:    "Asset",
 			MatchValue:  "aws-cloud",

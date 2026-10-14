@@ -9,8 +9,6 @@ import (
 
 	coreStorage "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	models "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
 )
 
 // ProSQLiteStore wraps the core store and implements ProStoreInterface
@@ -88,7 +86,7 @@ func (s *ProSQLiteStore) BulkUpdateStatusAndAssign(ctx context.Context, ticketID
 }
 
 // --- Auto-triage rules ---
-func (s *ProSQLiteStore) CreateAutoTriageRule(ctx context.Context, rule *proModels.AutoTriageRule) error {
+func (s *ProSQLiteStore) CreateAutoTriageRule(ctx context.Context, rule *models.AutoTriageRule) error {
 	res, err := s.db.ExecContext(ctx,
 		"INSERT INTO auto_triage_rules (workspace_id, match_source, match_asset, match_cve, action_type, action_value) VALUES (?, ?, ?, ?, ?, ?)",
 		rule.WorkspaceID, rule.MatchSource, rule.MatchAsset, rule.MatchCVE, rule.ActionType, rule.ActionValue)
@@ -130,16 +128,16 @@ func (s *ProSQLiteStore) GetGlobalActivityFeed(ctx context.Context, limit int) (
 	return feed, nil
 }
 
-func (s *ProSQLiteStore) GetAutoTriageRules(ctx context.Context, workspaceID int) ([]proModels.AutoTriageRule, error) {
+func (s *ProSQLiteStore) GetAutoTriageRules(ctx context.Context, workspaceID int) ([]models.AutoTriageRule, error) {
 	rows, err := s.db.QueryContext(ctx, "SELECT id, workspace_id, match_source, match_asset, match_cve, action_type, action_value, created_at FROM auto_triage_rules WHERE workspace_id = ?", workspaceID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var rules []proModels.AutoTriageRule
+	var rules []models.AutoTriageRule
 	for rows.Next() {
-		var r proModels.AutoTriageRule
+		var r models.AutoTriageRule
 		if err := rows.Scan(&r.ID, &r.WorkspaceID, &r.MatchSource, &r.MatchAsset, &r.MatchCVE, &r.ActionType, &r.ActionValue, &r.CreatedAt); err != nil {
 			return nil, err
 		}
@@ -209,7 +207,7 @@ func (s *ProSQLiteStore) LogAuditAction(ctx context.Context, actor, action, reso
 // Rules engine CRUD
 // ==========================================
 
-func (s *ProSQLiteStore) CreateSuppressionRule(ctx context.Context, rule *proModels.SuppressionRule) error {
+func (s *ProSQLiteStore) CreateSuppressionRule(ctx context.Context, rule *models.SuppressionRule) error {
 	res, err := s.db.ExecContext(ctx,
 		"INSERT INTO suppression_rules (dedupe_hash, asset_identifier, rationale, actor) VALUES (?, ?, ?, ?)",
 		rule.DedupeHash, rule.AssetIdentifier, rule.Rationale, rule.Actor)
@@ -221,7 +219,7 @@ func (s *ProSQLiteStore) CreateSuppressionRule(ctx context.Context, rule *proMod
 	return nil
 }
 
-func (s *ProSQLiteStore) CreateRoutingRule(ctx context.Context, rule *proModels.RoutingRule) error {
+func (s *ProSQLiteStore) CreateRoutingRule(ctx context.Context, rule *models.RoutingRule) error {
 	res, err := s.db.ExecContext(ctx,
 		"INSERT INTO routing_rules (workspace_id, rule_type, match_value, assignee, role) VALUES (?, ?, ?, ?, ?)",
 		rule.WorkspaceID, rule.RuleType, rule.MatchValue, rule.Assignee, rule.Role)
@@ -237,7 +235,7 @@ func (s *ProSQLiteStore) CreateRoutingRule(ctx context.Context, rule *proModels.
 // CISA KEV catalog
 // ==========================================
 
-func (s *ProSQLiteStore) SyncCISACatalog(ctx context.Context, feed *proModels.CISAFeed) error {
+func (s *ProSQLiteStore) SyncCISACatalog(ctx context.Context, feed *models.CISAFeed) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -282,16 +280,16 @@ func (s *ProSQLiteStore) SyncCISACatalog(ctx context.Context, feed *proModels.CI
 	return tx.Commit()
 }
 
-func (s *ProSQLiteStore) GetRoutingRules(ctx context.Context) ([]proModels.RoutingRule, error) {
+func (s *ProSQLiteStore) GetRoutingRules(ctx context.Context) ([]models.RoutingRule, error) {
 	rows, err := s.db.QueryContext(ctx, "SELECT id, workspace_id, rule_type, match_value, assignee, role, created_at FROM routing_rules WHERE workspace_id = 1 ORDER BY created_at DESC")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var rules []proModels.RoutingRule
+	var rules []models.RoutingRule
 	for rows.Next() {
-		var r proModels.RoutingRule
+		var r models.RoutingRule
 		if err := rows.Scan(&r.ID, &r.WorkspaceID, &r.RuleType, &r.MatchValue, &r.Assignee, &r.Role, &r.CreatedAt); err != nil {
 			return nil, err
 		}

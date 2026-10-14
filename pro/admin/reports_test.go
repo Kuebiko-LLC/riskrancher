@@ -15,7 +15,6 @@ import (
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	datastore "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	core "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
 	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
@@ -66,7 +65,7 @@ func TestGenerateBrandedReportBDD(t *testing.T) {
 			t.Fatalf("expected 201, got %d. Body: %s", rr.Code, rr.Body.String())
 		}
 
-		var got proModels.PentestReport
+		var got core.PentestReport
 		if err := json.Unmarshal(rr.Body.Bytes(), &got); err != nil {
 			t.Fatalf("decode response: %v", err)
 		}
@@ -120,7 +119,7 @@ func TestGenerateBrandedReportBDD(t *testing.T) {
 		}
 		var resp struct {
 			Total   int `json:"total"`
-			Reports []proModels.PentestReport
+			Reports []core.PentestReport
 		}
 		json.Unmarshal(rr.Body.Bytes(), &resp)
 		if resp.Total != 1 {

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 // A report is a live editable document: after it is generated, the author can
@@ -31,7 +31,7 @@ func TestReportIsEditableAndReRenders(t *testing.T) {
 	if genRR.Code != http.StatusCreated {
 		t.Fatalf("generate expected 201, got %d: %s", genRR.Code, genRR.Body.String())
 	}
-	var report proModels.PentestReport
+	var report domain.PentestReport
 	json.Unmarshal(genRR.Body.Bytes(), &report)
 
 	// 2. Edit it: new title, new exec summary, author prose, and drop one finding.

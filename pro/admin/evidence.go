@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 	"github.com/Kuebiko-LLC/riskrancher/pro/evidence"
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
 )
 
 const maxEvidenceBytes = 10 << 20 // 10 MB per upload
@@ -66,7 +66,7 @@ func (h *ProHandler) HandleUploadEvidence(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	ev := &proModels.Evidence{
+	ev := &domain.Evidence{
 		TicketID:    tid,
 		Caption:     r.FormValue("caption"),
 		ContentType: p.ContentType,

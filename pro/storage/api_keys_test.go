@@ -7,7 +7,7 @@ import (
 	"testing"
 	// Add this line below:
 	core "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
-	"github.com/Kuebiko-LLC/riskrancher/pro/models"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
@@ -24,7 +24,7 @@ func TestAPIKeys_BDD(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("Given an admin wants to create a Service Account", func(t *testing.T) {
-		req := models.APIKey{
+		req := domain.APIKey{
 			WorkspaceID: 1,
 			Name:        "CI/CD Pipeline Key",
 			Permissions: "WriteOnly",

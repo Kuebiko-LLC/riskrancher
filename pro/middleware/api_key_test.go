@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	core "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 	"github.com/Kuebiko-LLC/riskrancher/pro/middleware"
-	"github.com/Kuebiko-LLC/riskrancher/pro/models"
 	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
@@ -23,7 +23,7 @@ func TestServiceAccountAuth_BDD(t *testing.T) {
 	store := storage.NewProSQLiteStore(db)
 
 	// 2. Mint a valid API Key for testing
-	validAPIKeyReq := models.APIKey{
+	validAPIKeyReq := domain.APIKey{
 		WorkspaceID: 1,
 		Name:        "CI/CD Pipeline Key",
 		Permissions: "WriteOnly",

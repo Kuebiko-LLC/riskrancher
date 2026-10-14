@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"testing"
 
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 func pngBytes(t *testing.T, w, h int) []byte {
@@ -56,7 +56,7 @@ func TestEvidenceUploadAuthzAndServe(t *testing.T) {
 		if rr.Code != http.StatusCreated {
 			t.Fatalf("expected 201, got %d: %s", rr.Code, rr.Body.String())
 		}
-		var ev proModels.Evidence
+		var ev domain.Evidence
 		json.Unmarshal(rr.Body.Bytes(), &ev)
 		if ev.ID == 0 || ev.ContentType != "image/png" || ev.Caption != "login popup" {
 			t.Fatalf("unexpected evidence: %+v", ev)

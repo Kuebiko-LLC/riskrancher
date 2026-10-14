@@ -14,7 +14,6 @@ import (
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	datastore "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	core "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
 	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
@@ -47,7 +46,7 @@ func setupReportAuthz(t *testing.T) reportAuthzEnv {
 	released := &core.Ticket{Source: "Trivy", AssetIdentifier: "host", Title: "RELEASED-FINDING", Severity: "High", Status: "Waiting to be Triaged"}
 	store.CreateTicket(ctx, released)
 
-	engB := &proModels.Engagement{Name: "Other", OwnerEmail: "other@ranch.com"}
+	engB := &core.Engagement{Name: "Other", OwnerEmail: "other@ranch.com"}
 	store.CreateEngagement(ctx, engB)
 	held := &core.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "HELD-SECRET-FINDING", Severity: "Critical", Status: "Waiting to be Triaged"}
 	store.CreateTicket(ctx, held)
@@ -66,7 +65,7 @@ func (e reportAuthzEnv) makeReport(t *testing.T) int {
 	if rr.Code != http.StatusCreated {
 		t.Fatalf("make report: %d %s", rr.Code, rr.Body.String())
 	}
-	var rep proModels.PentestReport
+	var rep core.PentestReport
 	json.Unmarshal(rr.Body.Bytes(), &rep)
 	return rep.ID
 }
@@ -116,7 +115,7 @@ func TestReportGenerationCannotPullHeldFindings(t *testing.T) {
 	if rr.Code != http.StatusCreated {
 		t.Fatalf("expected 201, got %d: %s", rr.Code, rr.Body.String())
 	}
-	var rep proModels.PentestReport
+	var rep core.PentestReport
 	json.Unmarshal(rr.Body.Bytes(), &rep)
 
 	if !strings.Contains(rep.Markdown, "RELEASED-FINDING") {

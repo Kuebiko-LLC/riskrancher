@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
@@ -17,7 +17,7 @@ func TestPentestReportRoundTrip(t *testing.T) {
 	storage.InjectProSchema(db)
 	store := storage.NewProSQLiteStore(db)
 
-	in := &proModels.PentestReport{
+	in := &domain.PentestReport{
 		Title:            "Q1 Engagement",
 		ClientName:       "Acme",
 		Author:           "t",

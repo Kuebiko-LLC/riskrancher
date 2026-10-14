@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	coredomain "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
 )
 
 func TestEvidenceRoundTrip(t *testing.T) {
@@ -18,7 +17,7 @@ func TestEvidenceRoundTrip(t *testing.T) {
 
 	web := []byte("WEB-IMAGE-BYTES")
 	thumb := []byte("THUMB")
-	ev := &proModels.Evidence{
+	ev := &coredomain.Evidence{
 		TicketID: tk.ID, Caption: "login page popup", ContentType: "image/png",
 		Width: 800, Height: 600, Size: len(web), CreatedBy: "bh@ranch.com",
 	}
@@ -69,7 +68,7 @@ func TestEngagementOwnerForTicket(t *testing.T) {
 	store, done := newEngStore(t)
 	defer done()
 
-	eng := &proModels.Engagement{Name: "P", OwnerEmail: "owner@ranch.com"}
+	eng := &coredomain.Engagement{Name: "P", OwnerEmail: "owner@ranch.com"}
 	store.CreateEngagement(ctx, eng)
 	tk := &coredomain.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "x", Severity: "High", Status: "Waiting to be Triaged"}
 	store.CreateTicket(ctx, tk)

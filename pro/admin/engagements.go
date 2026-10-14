@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 // HandleCreateEngagement lets a Bounty Hunter open a new engagement they own.
@@ -24,7 +24,7 @@ func (h *ProHandler) HandleCreateEngagement(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	e := &proModels.Engagement{Name: req.Name, Client: req.Client, OwnerEmail: h.currentUserEmail(r)}
+	e := &domain.Engagement{Name: req.Name, Client: req.Client, OwnerEmail: h.currentUserEmail(r)}
 	if _, err := h.ProStore.CreateEngagement(r.Context(), e); err != nil {
 		httpServerError(w, "db", err)
 		return
@@ -43,7 +43,7 @@ func (h *ProHandler) HandleListEngagements(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	var (
-		list []proModels.Engagement
+		list []domain.Engagement
 		err  error
 	)
 	if u.GlobalRole == "Sheriff" {

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
@@ -24,7 +24,7 @@ func (h *ProHandler) HandleSyncCISAKEV(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 
 	// Decode the JSON file directly into our struct
-	var feed proModels.CISAFeed
+	var feed domain.CISAFeed
 	if err := json.NewDecoder(file).Decode(&feed); err != nil {
 		http.Error(w, "Invalid CISA JSON format", http.StatusBadRequest)
 		return

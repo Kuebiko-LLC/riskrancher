@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"strconv"
 
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 // File: RiskRancher/pro/internal/admin/pro_handler.go
 
 func (h *ProHandler) HandleCreateRoutingRule(w http.ResponseWriter, r *http.Request) {
-	var rule proModels.RoutingRule
+	var rule domain.RoutingRule
 	if err := json.NewDecoder(r.Body).Decode(&rule); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return

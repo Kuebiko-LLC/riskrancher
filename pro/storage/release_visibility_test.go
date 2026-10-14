@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	coredomain "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
 )
 
 // Findings being worked in an unreleased engagement must not appear in the
@@ -35,7 +34,7 @@ func TestUnreleasedEngagementFindingsHiddenFromQueue(t *testing.T) {
 	}
 
 	// A BH engagement finding is hidden while the engagement is Active.
-	eng := &proModels.Engagement{Name: "Pentest", Client: "Acme", OwnerEmail: "bh@ranch.com"}
+	eng := &coredomain.Engagement{Name: "Pentest", Client: "Acme", OwnerEmail: "bh@ranch.com"}
 	store.CreateEngagement(ctx, eng)
 	finding := &coredomain.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "XSS", Severity: "Critical", Status: "Waiting to be Triaged"}
 	store.CreateTicket(ctx, finding)

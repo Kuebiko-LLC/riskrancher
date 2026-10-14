@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
@@ -38,13 +38,13 @@ func TestCreateSetsTimestamps(t *testing.T) {
 	store, done := newEngStore(t)
 	defer done()
 
-	e := &proModels.Engagement{Name: "x", OwnerEmail: "o@ranch.com"}
+	e := &domain.Engagement{Name: "x", OwnerEmail: "o@ranch.com"}
 	store.CreateEngagement(ctx, e)
 	if e.CreatedAt.IsZero() {
 		t.Errorf("engagement created_at should be populated after create")
 	}
 
-	rep := &proModels.PentestReport{Title: "r"}
+	rep := &domain.PentestReport{Title: "r"}
 	store.CreatePentestReport(ctx, rep)
 	if rep.CreatedAt.IsZero() {
 		t.Errorf("report created_at should be populated after create")

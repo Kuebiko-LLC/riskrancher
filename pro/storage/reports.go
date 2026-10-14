@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 func marshalIDs(ids []int) string {
@@ -18,7 +18,7 @@ func marshalIDs(ids []int) string {
 
 // CreatePentestReport persists a report (its editable fields plus the rendered
 // Markdown and HTML) and returns its new id.
-func (s *ProSQLiteStore) CreatePentestReport(ctx context.Context, report *proModels.PentestReport) (int, error) {
+func (s *ProSQLiteStore) CreatePentestReport(ctx context.Context, report *domain.PentestReport) (int, error) {
 	res, err := s.db.ExecContext(ctx, `
 		INSERT INTO pentest_reports
 			(title, client_name, author, scope, executive_summary, body, engagement_id, ticket_ids, markdown, html, created_by)
@@ -41,7 +41,7 @@ func (s *ProSQLiteStore) CreatePentestReport(ctx context.Context, report *proMod
 
 // UpdateReport persists edits to a report, including the re-rendered Markdown
 // and HTML. The report keeps its id, created_by, and created_at.
-func (s *ProSQLiteStore) UpdateReport(ctx context.Context, report *proModels.PentestReport) error {
+func (s *ProSQLiteStore) UpdateReport(ctx context.Context, report *domain.PentestReport) error {
 	_, err := s.db.ExecContext(ctx, `
 		UPDATE pentest_reports SET
 			title = ?, client_name = ?, author = ?, scope = ?, executive_summary = ?,
@@ -54,8 +54,8 @@ func (s *ProSQLiteStore) UpdateReport(ctx context.Context, report *proModels.Pen
 }
 
 // GetPentestReport returns one stored report, including the rendered bodies.
-func (s *ProSQLiteStore) GetPentestReport(ctx context.Context, id int) (*proModels.PentestReport, error) {
-	var r proModels.PentestReport
+func (s *ProSQLiteStore) GetPentestReport(ctx context.Context, id int) (*domain.PentestReport, error) {
+	var r domain.PentestReport
 	var idsJSON string
 	var body sql.NullString
 	var engagementID sql.NullInt64
@@ -75,16 +75,16 @@ func (s *ProSQLiteStore) GetPentestReport(ctx context.Context, id int) (*proMode
 
 // ListPentestReports returns report metadata newest-first. The heavy rendered
 // bodies are omitted from the list view.
-func (s *ProSQLiteStore) ListPentestReports(ctx context.Context) ([]proModels.PentestReport, error) {
+func (s *ProSQLiteStore) ListPentestReports(ctx context.Context) ([]domain.PentestReport, error) {
 	return s.listReports(ctx, "", nil)
 }
 
 // ListPentestReportsByAuthor returns only the reports created by author.
-func (s *ProSQLiteStore) ListPentestReportsByAuthor(ctx context.Context, author string) ([]proModels.PentestReport, error) {
+func (s *ProSQLiteStore) ListPentestReportsByAuthor(ctx context.Context, author string) ([]domain.PentestReport, error) {
 	return s.listReports(ctx, "WHERE created_by = ?", []any{author})
 }
 
-func (s *ProSQLiteStore) listReports(ctx context.Context, where string, args []any) ([]proModels.PentestReport, error) {
+func (s *ProSQLiteStore) listReports(ctx context.Context, where string, args []any) ([]domain.PentestReport, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT id, title, client_name, author, scope, executive_summary, ticket_ids, created_by, created_at
 		FROM pentest_reports `+where+` ORDER BY created_at DESC, id DESC`, args...)
@@ -93,9 +93,9 @@ func (s *ProSQLiteStore) listReports(ctx context.Context, where string, args []a
 	}
 	defer rows.Close()
 
-	var reports []proModels.PentestReport
+	var reports []domain.PentestReport
 	for rows.Next() {
-		var r proModels.PentestReport
+		var r domain.PentestReport
 		var idsJSON string
 		if err := rows.Scan(&r.ID, &r.Title, &r.ClientName, &r.Author, &r.Scope,
 			&r.ExecutiveSummary, &idsJSON, &r.CreatedBy, &r.CreatedAt); err != nil {

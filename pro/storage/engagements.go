@@ -6,13 +6,12 @@ import (
 	"strings"
 
 	coredomain "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
 )
 
 // CreateEngagement inserts a new engagement, assigns it the next sequential
 // number (ENG-0001, ENG-0002, ...), defaults it to Active, and sets the id and
 // number back on the struct.
-func (s *ProSQLiteStore) CreateEngagement(ctx context.Context, e *proModels.Engagement) (int, error) {
+func (s *ProSQLiteStore) CreateEngagement(ctx context.Context, e *coredomain.Engagement) (int, error) {
 	if e.Status == "" {
 		e.Status = "Active"
 	}
@@ -37,8 +36,8 @@ func (s *ProSQLiteStore) CreateEngagement(ctx context.Context, e *proModels.Enga
 }
 
 // GetEngagement returns one engagement by id.
-func (s *ProSQLiteStore) GetEngagement(ctx context.Context, id int) (*proModels.Engagement, error) {
-	var e proModels.Engagement
+func (s *ProSQLiteStore) GetEngagement(ctx context.Context, id int) (*coredomain.Engagement, error) {
+	var e coredomain.Engagement
 	err := s.db.QueryRowContext(ctx, `
 		SELECT id, number, name, client, owner_email, status, created_at
 		FROM engagements WHERE id = ?`, id,
@@ -50,7 +49,7 @@ func (s *ProSQLiteStore) GetEngagement(ctx context.Context, id int) (*proModels.
 }
 
 // ListEngagements returns engagements newest-first.
-func (s *ProSQLiteStore) ListEngagements(ctx context.Context) ([]proModels.Engagement, error) {
+func (s *ProSQLiteStore) ListEngagements(ctx context.Context) ([]coredomain.Engagement, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT id, number, name, client, owner_email, status, created_at
 		FROM engagements ORDER BY id DESC`)
@@ -59,9 +58,9 @@ func (s *ProSQLiteStore) ListEngagements(ctx context.Context) ([]proModels.Engag
 	}
 	defer rows.Close()
 
-	var out []proModels.Engagement
+	var out []coredomain.Engagement
 	for rows.Next() {
-		var e proModels.Engagement
+		var e coredomain.Engagement
 		if err := rows.Scan(&e.ID, &e.Number, &e.Name, &e.Client, &e.OwnerEmail, &e.Status, &e.CreatedAt); err != nil {
 			return nil, err
 		}
@@ -112,7 +111,7 @@ func (s *ProSQLiteStore) AddFindingsToEngagement(ctx context.Context, engagement
 }
 
 // ListEngagementsByOwner returns the engagements owned by ownerEmail, newest first.
-func (s *ProSQLiteStore) ListEngagementsByOwner(ctx context.Context, ownerEmail string) ([]proModels.Engagement, error) {
+func (s *ProSQLiteStore) ListEngagementsByOwner(ctx context.Context, ownerEmail string) ([]coredomain.Engagement, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT id, number, name, client, owner_email, status, created_at
 		FROM engagements WHERE owner_email = ? ORDER BY id DESC`, ownerEmail)
@@ -121,9 +120,9 @@ func (s *ProSQLiteStore) ListEngagementsByOwner(ctx context.Context, ownerEmail 
 	}
 	defer rows.Close()
 
-	var out []proModels.Engagement
+	var out []coredomain.Engagement
 	for rows.Next() {
-		var e proModels.Engagement
+		var e coredomain.Engagement
 		if err := rows.Scan(&e.ID, &e.Number, &e.Name, &e.Client, &e.OwnerEmail, &e.Status, &e.CreatedAt); err != nil {
 			return nil, err
 		}

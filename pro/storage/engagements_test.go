@@ -7,7 +7,6 @@ import (
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	coredomain "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
 	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
@@ -23,7 +22,7 @@ func TestCreateEngagementAutoNumbers(t *testing.T) {
 	store, done := newEngStore(t)
 	defer done()
 
-	first := &proModels.Engagement{Name: "Acme External", Client: "Acme", OwnerEmail: "hunter@acme.test"}
+	first := &coredomain.Engagement{Name: "Acme External", Client: "Acme", OwnerEmail: "hunter@acme.test"}
 	id1, err := store.CreateEngagement(ctx, first)
 	if err != nil {
 		t.Fatalf("CreateEngagement: %v", err)
@@ -38,7 +37,7 @@ func TestCreateEngagementAutoNumbers(t *testing.T) {
 		t.Errorf("expected a new engagement to default to Active, got %q", first.Status)
 	}
 
-	second := &proModels.Engagement{Name: "Beta Internal", Client: "Beta", OwnerEmail: "hunter@acme.test"}
+	second := &coredomain.Engagement{Name: "Beta Internal", Client: "Beta", OwnerEmail: "hunter@acme.test"}
 	if _, err := store.CreateEngagement(ctx, second); err != nil {
 		t.Fatalf("CreateEngagement 2: %v", err)
 	}
@@ -52,8 +51,8 @@ func TestGetAndListEngagements(t *testing.T) {
 	store, done := newEngStore(t)
 	defer done()
 
-	a := &proModels.Engagement{Name: "A", Client: "ClientA", OwnerEmail: "h1@test"}
-	b := &proModels.Engagement{Name: "B", Client: "ClientB", OwnerEmail: "h2@test"}
+	a := &coredomain.Engagement{Name: "A", Client: "ClientA", OwnerEmail: "h1@test"}
+	b := &coredomain.Engagement{Name: "B", Client: "ClientB", OwnerEmail: "h2@test"}
 	store.CreateEngagement(ctx, a)
 	store.CreateEngagement(ctx, b)
 
@@ -82,7 +81,7 @@ func TestEngagementFindingsLink(t *testing.T) {
 	store, done := newEngStore(t)
 	defer done()
 
-	eng := &proModels.Engagement{Name: "Pentest", Client: "Acme", OwnerEmail: "hunter@acme.test"}
+	eng := &coredomain.Engagement{Name: "Pentest", Client: "Acme", OwnerEmail: "hunter@acme.test"}
 	store.CreateEngagement(ctx, eng)
 
 	// Two findings ingested by the bounty hunter during this engagement.

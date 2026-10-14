@@ -12,7 +12,6 @@ import (
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	datastore "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	core "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
 	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
@@ -32,7 +31,7 @@ func TestProposalAcceptIsOwnerOnlyAndStateChecked(t *testing.T) {
 		}
 	}
 
-	eng := &proModels.Engagement{Name: "P", OwnerEmail: "owner@ranch.com"}
+	eng := &core.Engagement{Name: "P", OwnerEmail: "owner@ranch.com"}
 	store.CreateEngagement(ctx, eng)
 	f := &core.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "XSS", Severity: "Critical", Status: "Waiting to be Triaged"}
 	store.CreateTicket(ctx, f)

@@ -8,7 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/Kuebiko-LLC/riskrancher/pro/models"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 // GenerateSecureToken creates a 32-byte hex-encoded random string
@@ -27,7 +27,7 @@ func HashToken(rawToken string) string {
 }
 
 // CreateAPIKey generates a secure token, hashes it, stores the record, and returns the RAW token.
-func (s *ProSQLiteStore) CreateAPIKey(ctx context.Context, key models.APIKey) (string, error) {
+func (s *ProSQLiteStore) CreateAPIKey(ctx context.Context, key domain.APIKey) (string, error) {
 	rawToken, err := GenerateSecureToken()
 	if err != nil {
 		return "", fmt.Errorf("failed to generate secure token: %w", err)
@@ -54,14 +54,14 @@ func (s *ProSQLiteStore) CreateAPIKey(ctx context.Context, key models.APIKey) (s
 }
 
 // GetAPIKeyByHash retrieves an API key using the hashed version of the token provided in the Authorization header.
-func (s *ProSQLiteStore) GetAPIKeyByHash(ctx context.Context, hash string) (*models.APIKey, error) {
+func (s *ProSQLiteStore) GetAPIKeyByHash(ctx context.Context, hash string) (*domain.APIKey, error) {
 	query := `
 		SELECT id, token_hash, workspace_id, name, permissions, created_by, created_at, expires_at, last_used_at
 		FROM api_keys
 		WHERE token_hash = ?
 	`
 
-	var k models.APIKey
+	var k domain.APIKey
 	err := s.db.QueryRowContext(ctx, query, hash).Scan(
 		&k.ID, &k.TokenHash, &k.WorkspaceID, &k.Name, &k.Permissions,
 		&k.CreatedBy, &k.CreatedAt, &k.ExpiresAt, &k.LastUsedAt,

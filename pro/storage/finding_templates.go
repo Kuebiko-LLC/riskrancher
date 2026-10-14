@@ -5,13 +5,12 @@ import (
 	"database/sql"
 
 	coredomain "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
 )
 
 const findingTemplateCols = `id, name, title, severity, description, remediation, tags, cvss_vector, cvss_score, cwe, business_impact, created_by, created_at, updated_at`
 
-func scanFindingTemplate(row interface{ Scan(...any) error }) (*proModels.FindingTemplate, error) {
-	var t proModels.FindingTemplate
+func scanFindingTemplate(row interface{ Scan(...any) error }) (*coredomain.FindingTemplate, error) {
+	var t coredomain.FindingTemplate
 	var cvssVec, cwe, bi sql.NullString
 	var cvssScore sql.NullFloat64
 	if err := row.Scan(&t.ID, &t.Name, &t.Title, &t.Severity, &t.Description, &t.Remediation, &t.Tags,
@@ -26,7 +25,7 @@ func scanFindingTemplate(row interface{ Scan(...any) error }) (*proModels.Findin
 }
 
 // CreateFindingTemplate inserts a new template and sets its id on the struct.
-func (s *ProSQLiteStore) CreateFindingTemplate(ctx context.Context, t *proModels.FindingTemplate) (int, error) {
+func (s *ProSQLiteStore) CreateFindingTemplate(ctx context.Context, t *coredomain.FindingTemplate) (int, error) {
 	res, err := s.db.ExecContext(ctx, `
 		INSERT INTO finding_templates (name, title, severity, description, remediation, tags, cvss_vector, cvss_score, cwe, business_impact, created_by)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -43,17 +42,17 @@ func (s *ProSQLiteStore) CreateFindingTemplate(ctx context.Context, t *proModels
 	return t.ID, nil
 }
 
-func (s *ProSQLiteStore) GetFindingTemplate(ctx context.Context, id int) (*proModels.FindingTemplate, error) {
+func (s *ProSQLiteStore) GetFindingTemplate(ctx context.Context, id int) (*coredomain.FindingTemplate, error) {
 	return scanFindingTemplate(s.db.QueryRowContext(ctx, `SELECT `+findingTemplateCols+` FROM finding_templates WHERE id = ?`, id))
 }
 
-func (s *ProSQLiteStore) ListFindingTemplates(ctx context.Context) ([]proModels.FindingTemplate, error) {
+func (s *ProSQLiteStore) ListFindingTemplates(ctx context.Context) ([]coredomain.FindingTemplate, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT `+findingTemplateCols+` FROM finding_templates ORDER BY name`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var out []proModels.FindingTemplate
+	var out []coredomain.FindingTemplate
 	for rows.Next() {
 		t, err := scanFindingTemplate(rows)
 		if err != nil {
@@ -64,7 +63,7 @@ func (s *ProSQLiteStore) ListFindingTemplates(ctx context.Context) ([]proModels.
 	return out, rows.Err()
 }
 
-func (s *ProSQLiteStore) UpdateFindingTemplate(ctx context.Context, t *proModels.FindingTemplate) error {
+func (s *ProSQLiteStore) UpdateFindingTemplate(ctx context.Context, t *coredomain.FindingTemplate) error {
 	_, err := s.db.ExecContext(ctx, `
 		UPDATE finding_templates SET name = ?, title = ?, severity = ?, description = ?, remediation = ?, tags = ?,
 			cvss_vector = ?, cvss_score = ?, cwe = ?, business_impact = ?, updated_at = CURRENT_TIMESTAMP

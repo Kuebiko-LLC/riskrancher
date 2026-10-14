@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 func TestFindingTemplateCRUDAndApply(t *testing.T) {
@@ -12,7 +12,7 @@ func TestFindingTemplateCRUDAndApply(t *testing.T) {
 	store, done := newEngStore(t)
 	defer done()
 
-	tpl := &proModels.FindingTemplate{
+	tpl := &domain.FindingTemplate{
 		Name: "Missing security headers", Title: "Missing security headers",
 		Severity: "Low", Description: "The application does not set X / Y headers.",
 		Remediation: "Add the headers at the edge.", Tags: "headers,web", CreatedBy: "bh@ranch.com",
@@ -44,7 +44,7 @@ func TestFindingTemplateCRUDAndApply(t *testing.T) {
 	}
 
 	// apply to an engagement -> creates a held, prefilled finding
-	eng := &proModels.Engagement{Name: "P", OwnerEmail: "bh@ranch.com"}
+	eng := &domain.Engagement{Name: "P", OwnerEmail: "bh@ranch.com"}
 	store.CreateEngagement(ctx, eng)
 	fid, err := store.CreateFindingFromTemplate(ctx, id, eng.ID, "web-app-01", "bh@ranch.com")
 	if err != nil {
@@ -70,7 +70,7 @@ func TestFindingTemplateCRUDAndApply(t *testing.T) {
 	}
 
 	// structured fields carry through a template to the applied finding
-	st := &proModels.FindingTemplate{
+	st := &domain.FindingTemplate{
 		Name: "SQLi", Title: "SQL injection", Severity: "High",
 		CVSSVector: "CVSS:3.1/AV:N/AC:L", CVSSScore: 8.6, CWE: "CWE-89", BusinessImpact: "DB compromise",
 	}

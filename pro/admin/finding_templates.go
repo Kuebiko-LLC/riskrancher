@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 type templateRequest struct {
@@ -21,8 +21,8 @@ type templateRequest struct {
 	BusinessImpact string  `json:"business_impact"`
 }
 
-func (req templateRequest) toModel(id int, createdBy string) *proModels.FindingTemplate {
-	return &proModels.FindingTemplate{
+func (req templateRequest) toModel(id int, createdBy string) *domain.FindingTemplate {
+	return &domain.FindingTemplate{
 		ID: id, Name: req.Name, Title: req.Title, Severity: req.Severity,
 		Description: req.Description, Remediation: req.Remediation, Tags: req.Tags,
 		CVSSVector: req.CVSSVector, CVSSScore: req.CVSSScore, CWE: req.CWE, BusinessImpact: req.BusinessImpact,

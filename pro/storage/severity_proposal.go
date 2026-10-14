@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 // ErrNotBountyHunterFinding is returned when a severity-change proposal is
@@ -55,8 +55,8 @@ func (s *ProSQLiteStore) EngagementOwnerForProposal(ctx context.Context, proposa
 
 const sevProposalCols = `id, ticket_id, from_severity, to_severity, justification, proposed_by, status, resolved_by, resolution_note, created_at, resolved_at`
 
-func scanSevProposal(row interface{ Scan(...any) error }) (*proModels.SeverityProposal, error) {
-	var p proModels.SeverityProposal
+func scanSevProposal(row interface{ Scan(...any) error }) (*domain.SeverityProposal, error) {
+	var p domain.SeverityProposal
 	var from, resolvedBy, resolutionNote sql.NullString
 	var resolvedAt sql.NullTime
 	if err := row.Scan(&p.ID, &p.TicketID, &from, &p.ToSeverity, &p.Justification, &p.ProposedBy, &p.Status, &resolvedBy, &resolutionNote, &p.CreatedAt, &resolvedAt); err != nil {
@@ -81,7 +81,7 @@ func (s *ProSQLiteStore) logActivity(ctx context.Context, ticketID int, actor, a
 // BH-origin finding. It does NOT change the severity; it records a Pending
 // proposal and logs the request. Returns ErrNotBountyHunterFinding if the
 // finding is not tied to an engagement.
-func (s *ProSQLiteStore) ProposeSeverityChange(ctx context.Context, ticketID int, toSeverity, justification, proposedBy string) (*proModels.SeverityProposal, error) {
+func (s *ProSQLiteStore) ProposeSeverityChange(ctx context.Context, ticketID int, toSeverity, justification, proposedBy string) (*domain.SeverityProposal, error) {
 	var engagementID sql.NullInt64
 	var fromSeverity string
 	err := s.db.QueryRowContext(ctx, `SELECT engagement_id, severity FROM tickets WHERE id = ?`, ticketID).Scan(&engagementID, &fromSeverity)
@@ -112,13 +112,13 @@ func (s *ProSQLiteStore) ProposeSeverityChange(ctx context.Context, ticketID int
 }
 
 // GetSeverityProposal returns one proposal by id.
-func (s *ProSQLiteStore) GetSeverityProposal(ctx context.Context, id int) (*proModels.SeverityProposal, error) {
+func (s *ProSQLiteStore) GetSeverityProposal(ctx context.Context, id int) (*domain.SeverityProposal, error) {
 	row := s.db.QueryRowContext(ctx, `SELECT `+sevProposalCols+` FROM severity_proposals WHERE id = ?`, id)
 	return scanSevProposal(row)
 }
 
 // ListProposalsForTicket returns a finding's full proposal history, oldest first.
-func (s *ProSQLiteStore) ListProposalsForTicket(ctx context.Context, ticketID int) ([]proModels.SeverityProposal, error) {
+func (s *ProSQLiteStore) ListProposalsForTicket(ctx context.Context, ticketID int) ([]domain.SeverityProposal, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT `+sevProposalCols+` FROM severity_proposals WHERE ticket_id = ? ORDER BY id`, ticketID)
 	if err != nil {
 		return nil, err
@@ -180,7 +180,7 @@ func (s *ProSQLiteStore) AdjudicateSeverityProposal(ctx context.Context, proposa
 
 // ListPendingProposalsForOwner returns the Pending proposals on findings in
 // engagements owned by ownerEmail: the Bounty Hunter's alert feed.
-func (s *ProSQLiteStore) ListPendingProposalsForOwner(ctx context.Context, ownerEmail string) ([]proModels.SeverityProposal, error) {
+func (s *ProSQLiteStore) ListPendingProposalsForOwner(ctx context.Context, ownerEmail string) ([]domain.SeverityProposal, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT `+prefixedSevCols("sp")+`
 		FROM severity_proposals sp
@@ -197,7 +197,7 @@ func (s *ProSQLiteStore) ListPendingProposalsForOwner(ctx context.Context, owner
 
 // ListContestedProposals returns all contested proposals awaiting a Sheriff's
 // adjudication: the Sheriff's queue.
-func (s *ProSQLiteStore) ListContestedProposals(ctx context.Context) ([]proModels.SeverityProposal, error) {
+func (s *ProSQLiteStore) ListContestedProposals(ctx context.Context) ([]domain.SeverityProposal, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT `+sevProposalCols+` FROM severity_proposals WHERE status = 'Contested' ORDER BY id`)
 	if err != nil {
 		return nil, err
@@ -212,8 +212,8 @@ func prefixedSevCols(alias string) string {
 		alias + ".resolution_note, " + alias + ".created_at, " + alias + ".resolved_at"
 }
 
-func collectSevProposals(rows *sql.Rows) ([]proModels.SeverityProposal, error) {
-	var out []proModels.SeverityProposal
+func collectSevProposals(rows *sql.Rows) ([]domain.SeverityProposal, error) {
+	var out []domain.SeverityProposal
 	for rows.Next() {
 		p, err := scanSevProposal(rows)
 		if err != nil {

@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"testing"
 
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
@@ -28,7 +28,7 @@ func TestAutoTriageRuleLifecycleBDD(t *testing.T) {
 	// =========================================================================
 	t.Run("Given a Sheriff wants to automatically downgrade findings on a legacy asset", func(t *testing.T) {
 		// WHEN they submit a POST request to create a Downgrade rule
-		payload := proModels.AutoTriageRule{
+		payload := domain.AutoTriageRule{
 			MatchSource: "*",
 			MatchAsset:  "legacy-api-server",
 			MatchCVE:    "*",
@@ -52,7 +52,7 @@ func TestAutoTriageRuleLifecycleBDD(t *testing.T) {
 		}
 
 		// AND the database should have assigned an ID
-		var respRule proModels.AutoTriageRule
+		var respRule domain.AutoTriageRule
 		json.NewDecoder(rr.Body).Decode(&respRule)
 		if respRule.ID == 0 {
 			t.Fatalf("Expected a valid Database ID to be returned, got 0")
@@ -80,7 +80,7 @@ func TestAutoTriageRuleLifecycleBDD(t *testing.T) {
 		}
 
 		// AND the payload should contain the exact rule we just created
-		var fetchedRules []proModels.AutoTriageRule
+		var fetchedRules []domain.AutoTriageRule
 		json.NewDecoder(rr.Body).Decode(&fetchedRules)
 
 		if len(fetchedRules) != 1 {

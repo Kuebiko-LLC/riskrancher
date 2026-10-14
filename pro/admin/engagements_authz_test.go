@@ -13,7 +13,6 @@ import (
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	datastore "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	core "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
 	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
@@ -43,7 +42,7 @@ func setupAuthz(t *testing.T) authzEnv {
 		}
 	}
 
-	eng := &proModels.Engagement{Name: "Owner Pentest", Client: "Acme", OwnerEmail: "owner@ranch.com"}
+	eng := &core.Engagement{Name: "Owner Pentest", Client: "Acme", OwnerEmail: "owner@ranch.com"}
 	store.CreateEngagement(ctx, eng)
 	f := &core.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "XSS", Severity: "High", Status: "Waiting to be Triaged"}
 	store.CreateTicket(ctx, f)
@@ -81,7 +80,7 @@ func TestEngagementListIsScoped(t *testing.T) {
 
 	// A second engagement owned by someone else.
 	store := e.h.ProStore
-	store.CreateEngagement(context.Background(), &proModels.Engagement{Name: "Other", OwnerEmail: "other@ranch.com"})
+	store.CreateEngagement(context.Background(), &core.Engagement{Name: "Other", OwnerEmail: "other@ranch.com"})
 
 	total := func(who func(*http.Request) *http.Request) int {
 		req := who(httptest.NewRequest(http.MethodGet, "/api/engagements", nil))

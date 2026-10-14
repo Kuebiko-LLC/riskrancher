@@ -13,7 +13,6 @@ import (
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	datastore "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	core "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
 	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
@@ -44,7 +43,7 @@ func setupProposalsTest(t *testing.T) propTestEnv {
 		}
 	}
 
-	eng := &proModels.Engagement{Name: "Pentest", Client: "Acme", OwnerEmail: "bh@ranch.com"}
+	eng := &core.Engagement{Name: "Pentest", Client: "Acme", OwnerEmail: "bh@ranch.com"}
 	store.CreateEngagement(ctx, eng)
 	bhFinding := &core.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "XSS", Severity: "High", Status: "Waiting to be Triaged"}
 	store.CreateTicket(ctx, bhFinding)

@@ -8,7 +8,6 @@ import (
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	coredomain "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
 	"github.com/Kuebiko-LLC/riskrancher/pro/reporting"
 )
 
@@ -76,7 +75,7 @@ func ticketIDsOf(tickets []coredomain.Ticket) []int {
 
 // canAccessReport reports whether the caller may read/edit a report (its author
 // or a Sheriff).
-func (h *ProHandler) canAccessReport(r *http.Request, rep *proModels.PentestReport) bool {
+func (h *ProHandler) canAccessReport(r *http.Request, rep *coredomain.PentestReport) bool {
 	u := h.currentUser(r)
 	if u == nil || rep == nil {
 		return false
@@ -108,7 +107,7 @@ func (h *ProHandler) HandleGenerateBrandedReport(w http.ResponseWriter, r *http.
 		return
 	}
 
-	report := &proModels.PentestReport{
+	report := &coredomain.PentestReport{
 		Title:            req.Title,
 		ClientName:       req.ClientName,
 		Author:           req.Author,
@@ -164,7 +163,7 @@ func (h *ProHandler) HandleUpdateReport(w http.ResponseWriter, r *http.Request) 
 
 	findings, md, html := h.renderReport(r, req)
 
-	updated := &proModels.PentestReport{
+	updated := &coredomain.PentestReport{
 		ID:               id,
 		Title:            req.Title,
 		ClientName:       req.ClientName,
@@ -231,7 +230,7 @@ func (h *ProHandler) HandleListPentestReports(w http.ResponseWriter, r *http.Req
 		return
 	}
 	var (
-		reports []proModels.PentestReport
+		reports []coredomain.PentestReport
 		err     error
 	)
 	if u.GlobalRole == "Sheriff" {
@@ -270,7 +269,7 @@ func (h *ProHandler) currentUserEmail(r *http.Request) string {
 }
 
 // isOwnerOrSheriff reports whether the caller owns the engagement or is a Sheriff.
-func (h *ProHandler) isOwnerOrSheriff(r *http.Request, eng *proModels.Engagement) bool {
+func (h *ProHandler) isOwnerOrSheriff(r *http.Request, eng *coredomain.Engagement) bool {
 	u := h.currentUser(r)
 	if u == nil || eng == nil {
 		return false

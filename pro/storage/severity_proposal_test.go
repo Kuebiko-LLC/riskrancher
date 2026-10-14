@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	coredomain "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
 	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
@@ -15,7 +14,7 @@ import (
 func seedBHFinding(t *testing.T, store *storage.ProSQLiteStore, ownerEmail, severity string) int {
 	t.Helper()
 	ctx := context.Background()
-	eng := &proModels.Engagement{Name: "Pentest", Client: "Acme", OwnerEmail: ownerEmail}
+	eng := &coredomain.Engagement{Name: "Pentest", Client: "Acme", OwnerEmail: ownerEmail}
 	if _, err := store.CreateEngagement(ctx, eng); err != nil {
 		t.Fatalf("CreateEngagement: %v", err)
 	}

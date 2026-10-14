@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"testing"
 
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 func TestFindingTemplateHandlers(t *testing.T) {
@@ -29,7 +29,7 @@ func TestFindingTemplateHandlers(t *testing.T) {
 		if rr.Code != http.StatusCreated {
 			t.Fatalf("create expected 201, got %d: %s", rr.Code, rr.Body.String())
 		}
-		var tpl proModels.FindingTemplate
+		var tpl domain.FindingTemplate
 		json.Unmarshal(rr.Body.Bytes(), &tpl)
 		if tpl.ID == 0 || tpl.CreatedBy != "owner@ranch.com" {
 			t.Fatalf("unexpected template: %+v", tpl)

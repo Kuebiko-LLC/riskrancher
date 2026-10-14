@@ -5,13 +5,13 @@ import (
 	"net/http"
 	"strconv"
 
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models" // 🚀 FIX: Alias the Pro Models
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 // HandleCreateTriageRule allows the Sheriff to build a new ingestion interceptor rule
 func (h *ProHandler) HandleCreateTriageRule(w http.ResponseWriter, r *http.Request) {
-	var rule proModels.AutoTriageRule // 🚀 FIX: Use the Pro Model
+	var rule domain.AutoTriageRule // 🚀 FIX: Use the Pro Model
 	if err := json.NewDecoder(r.Body).Decode(&rule); err != nil {
 		http.Error(w, "Invalid payload", http.StatusBadRequest)
 		return

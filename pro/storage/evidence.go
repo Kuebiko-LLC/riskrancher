@@ -3,12 +3,12 @@ package storage
 import (
 	"context"
 
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/models"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 // AddEvidence stores a processed image (web + thumbnail blobs) for a finding and
 // sets the new id on the metadata struct.
-func (s *ProSQLiteStore) AddEvidence(ctx context.Context, ev *proModels.Evidence, web, thumb []byte) (int, error) {
+func (s *ProSQLiteStore) AddEvidence(ctx context.Context, ev *domain.Evidence, web, thumb []byte) (int, error) {
 	res, err := s.db.ExecContext(ctx, `
 		INSERT INTO evidence (ticket_id, caption, content_type, width, height, size, image_data, thumb_data, created_by)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -26,7 +26,7 @@ func (s *ProSQLiteStore) AddEvidence(ctx context.Context, ev *proModels.Evidence
 }
 
 // ListEvidenceForTicket returns evidence metadata (no blobs) for a finding.
-func (s *ProSQLiteStore) ListEvidenceForTicket(ctx context.Context, ticketID int) ([]proModels.Evidence, error) {
+func (s *ProSQLiteStore) ListEvidenceForTicket(ctx context.Context, ticketID int) ([]domain.Evidence, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT id, ticket_id, caption, content_type, width, height, size, created_by, created_at
 		FROM evidence WHERE ticket_id = ? ORDER BY id`, ticketID)
@@ -35,9 +35,9 @@ func (s *ProSQLiteStore) ListEvidenceForTicket(ctx context.Context, ticketID int
 	}
 	defer rows.Close()
 
-	var out []proModels.Evidence
+	var out []domain.Evidence
 	for rows.Next() {
-		var e proModels.Evidence
+		var e domain.Evidence
 		if err := rows.Scan(&e.ID, &e.TicketID, &e.Caption, &e.ContentType, &e.Width, &e.Height, &e.Size, &e.CreatedBy, &e.CreatedAt); err != nil {
 			return nil, err
 		}
@@ -48,8 +48,8 @@ func (s *ProSQLiteStore) ListEvidenceForTicket(ctx context.Context, ticketID int
 
 // GetEvidenceMeta returns one evidence row's metadata (no blobs), for auth and
 // display.
-func (s *ProSQLiteStore) GetEvidenceMeta(ctx context.Context, id int) (*proModels.Evidence, error) {
-	var e proModels.Evidence
+func (s *ProSQLiteStore) GetEvidenceMeta(ctx context.Context, id int) (*domain.Evidence, error) {
+	var e domain.Evidence
 	err := s.db.QueryRowContext(ctx, `
 		SELECT id, ticket_id, caption, content_type, width, height, size, created_by, created_at
 		FROM evidence WHERE id = ?`, id,

@@ -249,10 +249,42 @@ func (s *SQLiteStore) ListSuppressionRules(ctx context.Context) ([]domain.Suppre
 	return rules, rows.Err()
 }
 
-// DeleteSuppressionRule un-logs a false positive; the next scan treats the finding as new.
+// DeleteSuppressionRule withdraws a logged false positive: the finding it
+// closed goes back on the queue, and the next scan keeps it open.
 func (s *SQLiteStore) DeleteSuppressionRule(ctx context.Context, id int) error {
-	_, err := s.DB.ExecContext(ctx, `DELETE FROM suppression_rules WHERE id = ?`, id)
-	return err
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	var hash, asset string
+	if err := tx.QueryRowContext(ctx, `SELECT dedupe_hash, asset_identifier FROM suppression_rules WHERE id = ?`, id).Scan(&hash, &asset); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM suppression_rules WHERE id = ?`, id); err != nil {
+		return err
+	}
+	rows, err := tx.QueryContext(ctx, `SELECT id FROM tickets WHERE dedupe_hash = ? AND asset_identifier = ? AND status = 'False Positive'`, hash, asset)
+	if err != nil {
+		return err
+	}
+	var reopened []int
+	for rows.Next() {
+		var tid int
+		if err := rows.Scan(&tid); err == nil {
+			reopened = append(reopened, tid)
+		}
+	}
+	rows.Close()
+	for _, tid := range reopened {
+		if _, err := tx.ExecContext(ctx, `UPDATE tickets SET status = 'Waiting to be Triaged', latest_comment = 'False-positive log withdrawn: back on the queue', updated_at = CURRENT_TIMESTAMP WHERE id = ?`, tid); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `INSERT INTO ticket_activity (ticket_id, actor, activity_type, old_value, new_value) VALUES (?, 'Suppression', 'status_change', 'False Positive', 'Waiting to be Triaged')`, tid); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 func (s *SQLiteStore) CreateRoutingRule(ctx context.Context, rule *domain.RoutingRule) error {

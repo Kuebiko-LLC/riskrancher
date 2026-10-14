@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -73,4 +74,34 @@ func TestApproverPortal_ApproveAndDenyThroughRouter(t *testing.T) {
 	if status, comment, _ := ticketState(t, app, id); status != "Assigned Out" || !strings.Contains(comment, "patch it") {
 		t.Fatalf("denied request: status=%q comment=%q", status, comment)
 	}
+}
+
+// The Sheriff's deny button on the Risk Reviews tab goes through the same
+// portal review route with the action the store understands.
+func TestSheriffDeny_UsesPortalReviewRoute(t *testing.T) {
+	app := routerApp(t)
+	token, id := pendingRequest(t, app)
+	src, err := fsReadUI("static/admin.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The script must name the portal review route and the capitalized action
+	if !strings.Contains(src, "/api/share/${token}/review") || !strings.Contains(src, "action: 'Deny'") {
+		t.Fatalf("admin.js deny must call PATCH /api/share/{token}/review with action Deny")
+	}
+	if !strings.Contains(src, `"/review/" + newBatchToken`) {
+		t.Fatalf("admin.js copy-link must hand out the approver's /review/ page, not the owner's /share/")
+	}
+	body := `{"action":"Deny","comment":"patch it","extension_days":0,"actor":"Sheriff"}`
+	req := httptest.NewRequest(http.MethodPatch, "/api/share/"+token+"/review", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	app.Router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("sheriff deny: %d %s", rec.Code, rec.Body.String())
+	}
+	if status, comment, _ := ticketState(t, app, id); status != "Assigned Out" || !strings.Contains(comment, "patch it") {
+		t.Fatalf("denied: status=%q comment=%q", status, comment)
+	}
+	_ = json.Valid
 }

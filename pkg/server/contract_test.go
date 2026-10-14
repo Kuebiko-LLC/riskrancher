@@ -141,7 +141,6 @@ func TestUIFetchCallsHaveRoutes(t *testing.T) {
 // server does not answer. Each fix deletes its line. The test fails when a
 // new one appears or when a listed one is fixed without being removed here.
 var knownDrift = []string{
-	"admin.js: PATCH /api/risk/1/review",
 	"admin.js: PUT /api/admin/backup-policy",
 }
 

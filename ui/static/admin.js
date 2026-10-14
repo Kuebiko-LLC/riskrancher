@@ -37,7 +37,7 @@ window.prepMagistrateLink = async function(tokenString, idsString, event) {
             const newBatchToken = data.batch_token;
             if (!newBatchToken) return alert("Failed to generate a unified Magistrate link.");
 
-            const url = window.location.origin + "/share/" + newBatchToken;
+            const url = window.location.origin + "/review/" + newBatchToken;
 
             // 3. Copy the NEW URL to the clipboard
             try {
@@ -61,9 +61,9 @@ window.denyRisk = async function(token) {
     const comment = prompt("Enter rationale for denying this request back to IT (Required):");
     if (!comment) return alert("Action cancelled. An audit comment is required.");
     try {
-        const res = await fetch(`/api/risk/${token}/review`, {
+        const res = await fetch(`/api/share/${token}/review`, {
             method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'deny', comment: comment, extension_days: 0, actor: "Sheriff" })
+            body: JSON.stringify({ action: 'Deny', comment: comment, extension_days: 0, actor: "Sheriff" })
         });
         if (res.ok) window.location.reload(); else alert("Failed: " + await res.text());
     } catch (err) { alert("Network error."); }

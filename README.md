@@ -1,76 +1,67 @@
 # RiskRancher
 
-Open-source **vulnerability management** in a single Go binary. Core plus every Pro and Auditor feature, folded into one project and switched on by default. No Postgres, no Redis, no Docker Compose, no Kubernetes, no license key, no telemetry.
+Vulnerability management in a single Go binary. Self-hosted, air-gapped, free.
 
-Apache License 2.0
+Ingest findings from any scanner, map the fields once, and run the whole program out of one tracker: triage, owners, SLAs, exceptions, metrics. Pentesters get the same engine pointed the other way: upload an engagement report, promote its findings into tickets, and generate the client report back out.
 
-## What it is
-
-RiskRancher is a self-hosted, air-gapped vulnerability-management platform for security engineers and pentesters. Ingest findings from any scanner (Qualys, Nessus, Trivy, Semgrep, Prowler, Dependabot, or custom JSON/CSV), map fields in a no-code Adapter Builder, and drive remediation through a ticket workflow with asset grouping, SLAs, risk exceptions, and magic-link portals for the people who do the work.
-
-This repository is the merge of the former `risk-rancher-core` (the free OSS tier) and `risk-rancher-pro` (the commercial tier) into one codebase. The commercial paywall is gone: the binary boots with all Pro and Auditor capabilities active.
-
-## The open edition
-
-The license manager still ships, but it boots already unlocked (`license.NewManager` is active out of the gate) so nothing is gated. The RSA verification code is kept intact but dormant, so a commercial fork could re-enable gating by booting the manager inactive. Day to day you never touch a key. `RR_PRO_LICENSE_KEY`, if set, only labels the company banner.
-
-## Features
-
-### Core platform (always was open)
-- **Single binary + SQLite.** Pure-Go SQLite via `modernc.org/sqlite`, so there is no CGO and no external database.
-- **No-code scanner connectors.** Upload any export, map title / asset / severity / description / remediation in the Adapter Builder, ingest. No custom parsers.
-- **Asset-grouped ticket dashboard.** Severities, SLAs, inline edits, and activity history.
-- **100% air-gapped.** Zero telemetry, zero outbound calls. Findings stay on your machine.
-
-### Pentesting workflow
-- **Engagement report intake.** Pentesters upload a report (`/reports/upload`), parse it, and promote findings into real tickets through a draft queue, instead of leaving them in a Word document.
-- **Findings as tickets.** Every finding lands in the same tracker the rest of the program runs on.
-- **Findings back to a report.** The reverse direction: select findings and generate a branded engagement report as Markdown or a self-contained, print-ready HTML document (`POST /api/reports/branded`, download via `GET /api/reports/branded/{id}?format=md|html`). Print the HTML to PDF for a client-ready deliverable.
-
-### Enterprise features (now open, on by default)
-- **Four-persona RBAC.** A bouncer middleware enforces Sheriff, RangeHand, Wrangler, and Magistrate roles across the app.
-- **Magic-link portals.** IT reviewers get a `/share/{token}` portal to submit fixes or request exceptions; risk approvers get a `/review/{token}` portal to approve or deny. No account needed for the external parties.
-- **Auto-assign rules engine.** Route incoming findings by source, asset, or CVE.
-- **Suppression + global suppression rules.** Filter known-noise at ingest.
-- **Risk-exception pipeline.** End to end request, review, approve/deny, with SLA effects.
-- **CISA KEV catalog.** Air-gapped known-exploited-vulnerability flagging.
-- **Service accounts (API keys)** and an **immutable audit log**.
+No Postgres, no Redis, no Docker Compose, no Kubernetes, no license key, no telemetry. Apache License 2.0.
 
 ## Quick start
 
-Requires **Go 1.26+**.
+Requires Go 1.26 or later.
 
 ```bash
 git clone https://github.com/Kuebiko-LLC/riskrancher.git
 cd riskrancher
 go build -o rr ./cmd/rr
 ./rr
-# open http://localhost:8080, register the first user (admin), then Ingest
 ```
 
-Ingest a sample in five minutes: go to **Ingest**, pick or build the **Trivy Container Scan** adapter, and upload [`examples/trivy-sample.json`](examples/trivy-sample.json).
+Open http://localhost:8080, register the first user (that account is the admin), then go to **Ingest**. Pick the built-in **Trivy Container Scan** adapter and upload [`examples/trivy-sample.json`](examples/trivy-sample.json) to see findings become tickets.
 
-### Seed a demo environment
+To seed a full demo environment instead:
 
 ```bash
-go run ./cmd/mint   # wipes tickets, seeds all dashboard tabs + working magic portals
+go run ./cmd/mint
 ```
 
-It prints the Analyst dashboard, Wrangler (`/share/...`), and Magistrate (`/review/...`) URLs to open.
+It wipes the ticket table, seeds every dashboard tab, and prints working portal links for each role.
 
-## Architecture
+## What it does
 
-- **One Go module** (`github.com/Kuebiko-LLC/riskrancher`). The former two repos are now `pkg/...` (core) and `pro/...` (the folded-in enterprise layer).
-- **Composition, not duplication.** `cmd/rr` boots the core `datastore`, layers the Pro schema over the same SQLite file (`storage.InjectProSchema`), wraps the core store in the Pro store, registers both route sets, and injects the Pro templates over the core UI map.
-- **Server-rendered Go + htmx.** Native `net/http` routing, Go templates, no SPA.
-- **Testing.** BDD-style (`Given / When / Then`) against a real SQLite database. Run `go test ./...`.
+**Ingest.** Upload any export (Qualys, Nessus, Trivy, Semgrep, Prowler, Dependabot, or your own CSV and JSON), map title, asset, severity, description, and remediation in the Adapter Builder, and ingest. No custom parsers. Findings are deduplicated on source, asset, and title, so a re-scan never doubles a ticket. A finding that disappears from the next scan closes as patched; one that comes back reopens.
 
-## Roadmap (honest status)
+**Track.** An asset-grouped ticket dashboard with severities, SLA clocks, inline edits, assignment, and activity history. SLA days per severity are yours to set.
 
-These are scaffolded but not finished. They are off the critical path and do not affect boot:
+**Route.** Rules that match a source, an asset, or a CVE assign incoming findings to the right owner. Suppression rules filter known noise at ingest.
 
-- **Direct PDF export.** The report generator emits Markdown and self-contained HTML today (print the HTML to PDF for now). Rendering a PDF in-process is not wired, to keep the single binary CGO-free.
-- **AI SOC Brain (experimental).** `pro/storage/pro_embeddings.go` and `pro/storage/pro_matchmaker.go` sketch local-embedding triage and ASPM asset matchmaking, but their backing tables (`pro_ticket_embeddings`, `matchmaker_proposals`) are not created by the schema yet and no local-LLM sidecar is wired. Treat this as a design sketch, not a shipped feature.
+**Hand off without accounts.** The people who fix things get a magic-link portal (`/share/{token}`) to submit a fix or request more time. Risk approvers get their own (`/review/{token}`) to approve or deny. Nobody outside the security team needs a login.
+
+**Accept risk on the record.** A request, review, approve or deny pipeline for exceptions, with the SLA effects applied and every step in the audit log.
+
+**Flag what is exploited.** Load the CISA Known Exploited Vulnerabilities catalog yourself and matching findings are flagged. Nothing is fetched; the tool never leaves your network.
+
+**Pentest workflow.** Upload an engagement report at `/reports/upload`, parse it, and promote findings through a draft queue into real tickets, with CVSS vector, CWE, business impact, and screenshots on each. Reusable finding templates stop you retyping the same write-up. Then go the other way: select findings and generate a branded engagement report as Markdown or a self-contained, print-ready HTML document (`POST /api/reports/branded`, fetch with `GET /api/reports/branded/{id}?format=md|html`). Print the HTML to PDF for the client deliverable.
+
+**Roles, keys, audit.** Four roles (Sheriff, RangeHand, Wrangler, Magistrate) enforced by middleware, service accounts with API keys, and an immutable audit log.
+
+## How it is built
+
+- One Go module, `github.com/Kuebiko-LLC/riskrancher`.
+- Pure-Go SQLite (`modernc.org/sqlite`), so no CGO and no external database. One file holds everything.
+- Server-rendered Go templates with htmx on native `net/http`. No SPA, no build step.
+- Tests run against a real SQLite database: `go test ./...`.
+
+## Not finished yet
+
+Scaffolded, off the critical path, and does not affect boot:
+
+- **Direct PDF export.** Reports come out as Markdown and self-contained HTML today. Print the HTML to PDF. In-process PDF rendering is not wired, to keep the binary CGO-free.
+- **Local-embedding triage and asset matchmaking.** `pro/storage/pro_embeddings.go` and `pro/storage/pro_matchmaker.go` sketch the idea; their tables are not created by the schema and no local model is wired. A design sketch, not a feature.
+
+## The book
+
+The method behind the tool is written up, free, as [The Risk Rancher Field Manual](https://t0ul.com/blog/risk-rancher-field-manual-intro/). It works a sample scanner export by hand across the whole program, then runs the same file through this tool.
 
 ## License
 

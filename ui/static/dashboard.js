@@ -1,7 +1,7 @@
 // File: RiskRancher/ui/static/dashboard.js
 
 
-// 🚀 ADDED: Open Modal and Clear Form
+// ADDED: Open Modal and Clear Form
 window.openNewTicketModal = function() {
     document.getElementById('newTicketTitle').value = '';
     document.getElementById('newTicketAsset').value = '';
@@ -11,7 +11,7 @@ window.openNewTicketModal = function() {
     document.getElementById('newTicketModal').style.display = 'flex';
 };
 
-// 🚀 ADDED: Submit the API Request
+// ADDED: Submit the API Request
 window.submitNewTicket = async function() {
     const title = document.getElementById('newTicketTitle').value.trim();
     const asset = document.getElementById('newTicketAsset').value.trim();
@@ -235,7 +235,7 @@ function initializeAssetTree() {
     const rows = Array.from(tbody.querySelectorAll("tr.ticket-row"));
     if (rows.length === 0) {
         document.getElementById("mainTableHeader").style.display = "table-header-group";
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 40px; color: #94a3b8; font-size: 0.95rem;">No tickets found in this queue. The ranch is quiet! 🤠</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 40px; color: #94a3b8; font-size: 0.95rem;">No tickets found in this queue. The ranch is quiet!</td></tr>`;
         return;
     }
 
@@ -280,7 +280,7 @@ function initializeAssetTree() {
         const firstToken = findings[0].getAttribute("data-token");
         let shareButtonHtml = '';
         if (window.CurrentTab === 'chute') {
-            shareButtonHtml = `<button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; background: #8b5cf6; color: white; border: none;" onclick="copyMagicLink('${firstToken}', this, event)">🔗 Share Asset Link</button>`;
+            shareButtonHtml = `<button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; background: #8b5cf6; color: white; border: none;" onclick="copyMagicLink('${firstToken}', this, event)">Share Asset Link</button>`;
         } else if (window.CurrentTab === 'holding_pen') {
             shareButtonHtml = `<span style="font-size: 0.75rem; color: #94a3b8; font-style: italic;">Assign out to share</span>`;
         }
@@ -290,7 +290,7 @@ function initializeAssetTree() {
         headerTr.innerHTML = `
             <td style="padding: 12px 20px; background: #ffffff; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;"><input type="checkbox" class="asset-cb" data-asset="${safeAsset}"></td>
             <td colspan="4" class="badges-cell" style="padding: 12px; background: #ffffff; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; cursor: pointer;" onclick="toggleAssetGroup('${safeAsset}')">
-                <span style="font-family: monospace; font-size: 1.05rem; color: #1e293b; font-weight: bold;">📂 ${asset}</span>
+                <span style="font-family: monospace; font-size: 1.05rem; color: #1e293b; font-weight: bold;">${asset}</span>
                 <span style="color: #64748b; font-size: 0.85rem; font-weight: normal; margin-left: 5px;">(${findings.length})</span> ${badges}
             </td>
             <td colspan="2" style="padding: 12px 20px; text-align: right; background: #ffffff; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">${shareButtonHtml}</td>
@@ -338,7 +338,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 method: 'PATCH', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ticket_ids: [id], status: "False Positive", comment: "[False Positive] " + comment, actor: "Analyst" })
             });
-            if (res.ok) window.location.reload(); else { alert("Failed."); btn.innerText = "🚫 Mark False Positive"; btn.disabled = false; }
+            if (res.ok) window.location.reload(); else { alert("Failed."); btn.innerText = "Mark False Positive"; btn.disabled = false; }
         } catch (err) { alert("Network error."); btn.disabled = false; }
     };
 
@@ -400,8 +400,8 @@ document.addEventListener("DOMContentLoaded", function() {
         const verifyBtn = document.getElementById("bulkVerifyBtn");
         const rejectBtn = document.getElementById("bulkRejectBtn");
         if (verifyBtn && rejectBtn) {
-            verifyBtn.textContent = `✅ Verify (${checkedCount})`;
-            rejectBtn.textContent = `❌ Reject (${checkedCount})`;
+            verifyBtn.textContent = `Verify (${checkedCount})`;
+            rejectBtn.textContent = `Reject (${checkedCount})`;
             if (checkedCount > 0) {
                 verifyBtn.classList.remove("disabled"); rejectBtn.classList.remove("disabled");
             } else {
@@ -461,7 +461,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     if (status === "Assigned Out" && firstToken) {
                         document.getElementById("bulkFormContainer").style.display = "none";
                         document.getElementById("bulkSuccessContainer").style.display = "block";
-                        document.getElementById("bulkSuccessLinkArea").innerHTML = `<button class="btn" style="background: #10b981; color: white; padding: 12px 24px; font-size: 1.1rem; border: none; border-radius: 6px; cursor: pointer;" onclick="copyMagicLink('${firstToken}', this, event)">🔗 Copy IT Magic Link</button>`;
+                        document.getElementById("bulkSuccessLinkArea").innerHTML = `<button class="btn" style="background: #10b981; color: white; padding: 12px 24px; font-size: 1.1rem; border: none; border-radius: 6px; cursor: pointer;" onclick="copyMagicLink('${firstToken}', this, event)">Copy IT Magic Link</button>`;
                     } else {
                         window.location.reload();
                     }
@@ -488,7 +488,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     body: JSON.stringify({ ticket_ids: selectedIds, status: "Patched", comment: "Analyst bulk verified evidence.", actor: "Analyst" })
                 });
                 if (res.ok) window.location.reload();
-                else { alert("Failed."); this.innerText = `✅ Verify (${selectedIds.length})`; this.disabled = false; }
+                else { alert("Failed."); this.innerText = `Verify (${selectedIds.length})`; this.disabled = false; }
             } catch(e) { alert("Network error"); this.disabled = false; }
         });
     }
@@ -509,7 +509,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     body: JSON.stringify({ ticket_ids: selectedIds, status: "Assigned Out", comment: "[Rework Required] " + reason, actor: "Analyst" })
                 });
                 if (res.ok) window.location.reload();
-                else { alert("Failed."); this.innerText = `❌ Reject (${selectedIds.length})`; this.disabled = false; }
+                else { alert("Failed."); this.innerText = `Reject (${selectedIds.length})`; this.disabled = false; }
             } catch(e) { alert("Network error"); this.disabled = false; }
         });
     }

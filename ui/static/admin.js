@@ -78,7 +78,7 @@ document.addEventListener("DOMContentLoaded", function() {
     async function loadLogs() {
         const filter = document.getElementById("logFilter").value;
         const container = document.getElementById("logContainer");
-        container.innerHTML = `<div style="text-align: center; color: #3b82f6; padding: 40px; font-weight: bold;">⏳ Fetching Page ${currentLogPage}...</div>`;
+        container.innerHTML = `<div style="text-align: center; color: #3b82f6; padding: 40px; font-weight: bold;">Fetching Page ${currentLogPage}...</div>`;
         try {
             const res = await fetch(`/api/admin/logs?page=${currentLogPage}&filter=${filter}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -88,14 +88,14 @@ document.addEventListener("DOMContentLoaded", function() {
             else {
                 data.feed.forEach(item => {
                     const badgeStr = item.NewValue ? `<span style="font-family: monospace; background: #f1f5f9; padding: 2px 6px; border-radius: 3px; border: 1px solid #e2e8f0; display: inline-block; margin-top: 4px; font-size: 0.85rem;">${item.NewValue}</span>` : "";
-                    container.innerHTML += `<div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #e2e8f0;"><span style="font-weight: bold; color: #0f172a;">${item.Actor}</span><span style="color: #64748b; font-size: 0.85rem; text-transform: uppercase; margin-left: 5px;">[${item.ActivityType.replace('_', ' ')}]</span><div style="font-size: 0.8rem; color: #94a3b8; float: right;">⏱️ ${item.TimeAgo}</div><br>${badgeStr}</div>`;
+                    container.innerHTML += `<div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #e2e8f0;"><span style="font-weight: bold; color: #0f172a;">${item.Actor}</span><span style="color: #64748b; font-size: 0.85rem; text-transform: uppercase; margin-left: 5px;">[${item.ActivityType.replace('_', ' ')}]</span><div style="font-size: 0.8rem; color: #94a3b8; float: right;">${item.TimeAgo}</div><br>${badgeStr}</div>`;
                 });
             }
             const totalPages = Math.ceil(data.total / data.limit);
             document.getElementById("logPageInfo").innerText = `Showing page ${data.page} of ${totalPages || 1} (Total: ${data.total})`;
             document.getElementById("logPrevBtn").disabled = data.page <= 1;
             document.getElementById("logNextBtn").disabled = data.page >= totalPages;
-        } catch (err) { container.innerHTML = `<p style="color: #dc2626; text-align: center; padding: 40px; font-weight: bold;">🚨 Error: ${err.message}</p>`; }
+        } catch (err) { container.innerHTML = `<p style="color: #dc2626; text-align: center; padding: 40px; font-weight: bold;">Error: ${err.message}</p>`; }
     }
 
     const logFilter = document.getElementById("logFilter");
@@ -118,9 +118,9 @@ document.addEventListener("DOMContentLoaded", function() {
             const groups = {};
             rows.forEach(r => {
                 const asset = r.getAttribute("data-asset") || "Unknown";
-                let typeLabel = "Time Extension"; let typeColor = "#ea580c"; let typeIcon = "⏱️";
+                let typeLabel = "Time Extension"; let typeColor = "#ea580c"; let typeIcon = "";
                 const typeCell = r.querySelector('.risk-type-cell');
-                if (typeCell && typeCell.innerText.includes("ACCEPTANCE")) { typeLabel = "Risk Acceptance"; typeColor = "#dc2626"; typeIcon = "🛑"; }
+                if (typeCell && typeCell.innerText.includes("ACCEPTANCE")) { typeLabel = "Risk Acceptance"; typeColor = "#dc2626"; typeIcon = ""; }
                 const groupKey = `${asset}_${typeLabel}`;
                 if (!groups[groupKey]) groups[groupKey] = { asset: asset, typeLabel: typeLabel, typeColor: typeColor, typeIcon: typeIcon, rows: [] };
                 groups[groupKey].rows.push(r);
@@ -129,17 +129,17 @@ document.addEventListener("DOMContentLoaded", function() {
             for (const key in groups) {
                 const group = groups[key];
                 const safeKey = key.replace(/[^a-zA-Z0-9-_]/g, '-');
-                let unreadCount = group.rows.filter(r => r.innerHTML.includes("✉️ Unread")).length;
+                let unreadCount = group.rows.filter(r => r.innerHTML.includes("Unread")).length;
                 let unreadBadge = unreadCount > 0 ? `<span style="background: #ef4444; color: white; border-radius: 12px; padding: 2px 7px; font-size: 0.75rem; font-weight: bold; margin-left: 10px; animation: pulse 2s infinite;">${unreadCount} Unread</span>` : '';
                 const batchTokens = group.rows.map(r => r.getAttribute("data-token")).join(',');
                 const batchIDs = group.rows.map(r => r.getAttribute("data-id")).join(',');
 
                 const headerTr = document.createElement("tr");
                 headerTr.innerHTML = `<td colspan="5" style="padding: 15px 20px; background: #f8fafc; border-top: 1px solid #cbd5e1; border-bottom: 1px solid #cbd5e1; cursor: pointer;" onclick="toggleRiskGroup('${safeKey}')">
-                    <span style="font-family: monospace; font-size: 1.1rem; color: #0f172a; font-weight: bold;">📂 ${group.asset}</span>
+                    <span style="font-family: monospace; font-size: 1.1rem; color: #0f172a; font-weight: bold;">${group.asset}</span>
                     <span style="background: ${group.typeColor}15; color: ${group.typeColor}; border: 1px solid ${group.typeColor}40; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: 10px;">${group.typeIcon} ${group.typeLabel}</span>
                     <span style="color: #64748b; font-size: 0.9rem; margin-left: 5px;">(${group.rows.length} Requests)</span> ${unreadBadge}
-                    <button class="btn" style="float: right; padding: 6px 12px; font-size: 0.8rem; background: #2563eb; color: white; margin-left: 15px;" onclick="prepMagistrateLink('${batchTokens}', '${batchIDs}', event)">🔗 Copy Batch Link</button>
+                    <button class="btn" style="float: right; padding: 6px 12px; font-size: 0.8rem; background: #2563eb; color: white; margin-left: 15px;" onclick="prepMagistrateLink('${batchTokens}', '${batchIDs}', event)">Copy Batch Link</button>
                 </td>`;
                 tbody.appendChild(headerTr);
 

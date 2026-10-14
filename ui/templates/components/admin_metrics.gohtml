@@ -22,7 +22,7 @@
 
     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 20px;">
         <div class="card" style="display: flex; flex-direction: column; justify-content: center; background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-            <h3 style="margin: 0 0 15px 0;">🔴 Open Risk Profile ({{.Analytics.Severity.Total}})</h3>
+            <h3 style="margin: 0 0 15px 0;">Open Risk Profile ({{.Analytics.Severity.Total}})</h3>
             <div style="display: flex; height: 24px; border-radius: 12px; overflow: hidden; margin-bottom: 20px; background: #f1f5f9;">
                 {{if gt .Analytics.Severity.Total 0}}
                 <div style="width: {{.Analytics.Severity.CritPct}}%; background: #dc2626;" title="Critical: {{.Analytics.Severity.Critical}}"></div>
@@ -43,7 +43,7 @@
         </div>
 
         <div class="card" style="display: flex; flex-direction: column; justify-content: center; background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-            <h3 style="margin: 0 0 15px 0;">🟢 Resolution Profile (Closed) ({{.Analytics.Resolution.Total}})</h3>
+            <h3 style="margin: 0 0 15px 0;">Resolution Profile (Closed) ({{.Analytics.Resolution.Total}})</h3>
             <div style="display: flex; height: 24px; border-radius: 12px; overflow: hidden; margin-bottom: 20px; background: #f1f5f9;">
                 {{if gt .Analytics.Resolution.Total 0}}
                 <div style="width: {{.Analytics.Resolution.PatchedPct}}%; background: #10b981;" title="Patched: {{.Analytics.Resolution.Patched}}"></div>
@@ -61,7 +61,7 @@
         </div>
 
         <div class="card" style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-            <h3 style="margin: 0 0 15px 0;">🎯 Top Vulnerable Assets</h3>
+            <h3 style="margin: 0 0 15px 0;">Top Vulnerable Assets</h3>
             {{range .Analytics.TopAssets}}
             <a href="/dashboard?tab=holding_pen&asset={{.Asset}}" style="display: block; text-decoration: none; color: inherit; margin-bottom: 12px; padding: 4px; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
                 <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px;">

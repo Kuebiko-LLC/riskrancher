@@ -44,7 +44,7 @@ func AuditLogger(store domain.Store, logger *slog.Logger) func(http.Handler) htt
 					rec.statusCode = http.StatusInternalServerError
 					stackTrace := string(debug.Stack())
 
-					// 🚀 THE UPGRADE: Structured SIEM Logging
+					// THE UPGRADE: Structured SIEM Logging
 					logger.Error("FATAL PANIC RECOVERED",
 						slog.Any("error", err),
 						slog.String("path", r.URL.Path),
@@ -60,7 +60,7 @@ func AuditLogger(store domain.Store, logger *slog.Logger) func(http.Handler) htt
 			next.ServeHTTP(rec, r)
 			duration := time.Since(start)
 
-			// 🚀 FIX: Actually extract the User from the context!
+			// FIX: Actually extract the User from the context!
 			actor := "Unknown User"
 			if named, ok := r.Context().Value(ActorKey).(string); ok && named != "" {
 				actor = named

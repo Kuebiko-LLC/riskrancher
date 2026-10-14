@@ -1,6 +1,6 @@
 {{define "content"}}
 <div id="sr-app" data-email="{{.Email}}" data-role="{{.Role}}" style="max-width:1000px;margin:0 auto;padding:20px;">
-  <h1 style="margin:0;color:#0f172a;">⚖️ Severity Reviews</h1>
+  <h1 style="margin:0;color:#0f172a;">Severity Reviews</h1>
   <p style="margin:2px 0 16px;color:#64748b;font-size:.9rem;">Propose severity changes on Bounty-Hunter findings; the owning hunter accepts or contests, and contested cases come here for the Sheriff to settle.</p>
 
   <!-- Propose (RangeHand or Sheriff) -->
@@ -19,7 +19,7 @@
 
   <!-- Sheriff adjudication queue -->
   <div id="sheriffBox" style="display:none;border:1px solid #e2e8f0;border-radius:8px;padding:16px;background:#fff;">
-    <h3 style="margin:0 0 10px;">🛡️ Contested — awaiting your ruling</h3>
+    <h3 style="margin:0 0 10px;">Contested — awaiting your ruling</h3>
     <div id="queue"><p style="color:#94a3b8;">Loading…</p></div>
   </div>
 </div>
@@ -41,7 +41,7 @@
     if(!id||!justification){ msg.style.color='#b4232c'; msg.textContent='Finding id and justification are required.'; return; }
     try {
       await api('POST','/api/findings/'+id+'/severity-proposal',{to_severity,justification});
-      msg.style.color='#2f6f4f'; msg.textContent='Proposal sent to the Bounty Hunter ✓';
+      msg.style.color='#2f6f4f'; msg.textContent='Proposal sent to the Bounty Hunter';
       document.getElementById('pFinding').value=''; document.getElementById('pWhy').value='';
     } catch(err){
       msg.style.color='#b4232c';

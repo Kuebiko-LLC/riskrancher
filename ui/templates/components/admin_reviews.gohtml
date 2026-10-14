@@ -2,7 +2,7 @@
     <div id="tab-reviews" class="tab-pane">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <div>
-                <h3 style="margin: 0;">🛡️ Risk Request Adjudication</h3>
+                <h3 style="margin: 0;">Risk Request Adjudication</h3>
                 <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Review exception and acceptance requests from IT. Grouped by affected asset for holistic risk evaluation.</p>
             </div>
         </div>
@@ -26,11 +26,11 @@
                     </td>
                     <td class="risk-type-cell" style="padding: 15px 10px; vertical-align: top; text-align: center; border-bottom: 1px solid #f1f5f9;">
                         {{if eq .RequestKind "Risk Acceptance"}}
-                            <span style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">🛑 Risk Acceptance</span>
+                            <span style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">Risk Acceptance</span>
                         {{else if eq .RequestKind "Time Extension"}}
-                            <span style="background: #ffedd5; color: #ea580c; border: 1px solid #fdba74; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">⏱️ Time Extension</span>
+                            <span style="background: #ffedd5; color: #ea580c; border: 1px solid #fdba74; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">Time Extension</span>
                         {{else}}
-                            <span style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">📋 Review</span>
+                            <span style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">Review</span>
                         {{end}}
                     </td>
                     <td style="padding: 15px 10px; vertical-align: top; border-bottom: 1px solid #f1f5f9;">
@@ -43,7 +43,7 @@
                         <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px; font-weight: normal;">clock keeps running{{if gt .ExtensionCount 0}} · extended {{.ExtensionCount}}x{{end}}</div>
                     </td>
                     <td style="text-align: right; vertical-align: top; padding: 15px 0; border-bottom: 1px solid #f1f5f9;">
-                        <button class="btn" style="padding: 6px 10px; font-size: 0.75rem; background: #3b82f6; margin-bottom: 5px; width: 100%; color: white;" onclick="prepMagistrateLink('{{.MagicToken}}', '{{ .ID }}', event)">🔗 Copy Link</button><br>
+                        <button class="btn" style="padding: 6px 10px; font-size: 0.75rem; background: #3b82f6; margin-bottom: 5px; width: 100%; color: white;" onclick="prepMagistrateLink('{{.MagicToken}}', '{{ .ID }}', event)">Copy Link</button><br>
                         <button class="btn btn-secondary" style="padding: 6px 10px; font-size: 0.75rem; color: #dc2626; border-color: #fca5a5; width: 100%;" onclick="denyRisk({{.ID}})">Deny Request</button>
                     </td>
                 </tr>

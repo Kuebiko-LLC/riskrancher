@@ -17,7 +17,7 @@ async function processFile(file) {
     try {
         let response;
 
-        // 🚀 JSON API ROUTE
+        // JSON API ROUTE
         if (file.name.toLowerCase().endsWith('.json')) {
             // If no adapter is selected, redirect to Builder instead of throwing an error!
             if (!adapterName) {
@@ -35,7 +35,7 @@ async function processFile(file) {
                 body: rawText
             });
         }
-        // 🚀 CSV API ROUTE
+        // CSV API ROUTE
         else {
             let formData = new FormData();
             formData.append('file', file);

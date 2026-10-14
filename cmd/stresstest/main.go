@@ -30,7 +30,7 @@ func main() {
 	db := datastore.InitDB("./data/RiskRancher.db")
 	defer db.Close()
 
-	log.Printf("🧹 Sweeping the ranch (Deleting old test data)...")
+	log.Printf("Sweeping the ranch (Deleting old test data)...")
 
 	db.Exec("DELETE FROM ticket_assignments")
 	db.Exec("DELETE FROM tickets")
@@ -40,7 +40,7 @@ func main() {
 	// Reset the auto-increment counters so Ticket IDs reliably start at 1
 	db.Exec("DELETE FROM sqlite_sequence")
 
-	log.Println("⚙️ Seeding global config, adapters, and SLA matrix...")
+	log.Println("Seeding global config, adapters, and SLA matrix...")
 
 	db.Exec("INSERT OR IGNORE INTO app_config (id, timezone, business_start, business_end, default_extension_days) VALUES (1, 'America/New_York', 9, 17, 30)")
 	db.Exec("INSERT OR IGNORE INTO domains (name) VALUES ('Vulnerability'), ('Privacy'), ('Compliance'), ('Incident')")
@@ -66,17 +66,17 @@ func main() {
 
 	_, err := db.Exec("INSERT OR REPLACE INTO users (id, email, full_name, password_hash, global_role, is_active) VALUES (999, 'stress@ranch.com', 'Stress Tester', ?, 'Sheriff', 1)", validHash)
 	if err != nil {
-		log.Fatalf("🚨 Failed to seed Stress User (Database locked?): %v", err)
+		log.Fatalf("Failed to seed Stress User (Database locked?): %v", err)
 	}
 
 	_, err = db.Exec("INSERT OR REPLACE INTO sessions (session_token, user_id, expires_at) VALUES ('stress_token_123', 999, datetime('now', '+1 hour'))")
 	if err != nil {
-		log.Fatalf("🚨 Failed to seed Stress Session: %v", err)
+		log.Fatalf("Failed to seed Stress Session: %v", err)
 	}
 
 	log.Println("==========================================================================")
-	log.Printf("🚀 COMMENCING %d TICKET API LOAD TEST (%s mode)", totalTickets, *sizeFlag)
-	log.Println("⚠️  CRITICAL: Ensure your RiskRancher server is running in another terminal!")
+	log.Printf("COMMENCING %d TICKET API LOAD TEST (%s mode)", totalTickets, *sizeFlag)
+	log.Println(" CRITICAL: Ensure your RiskRancher server is running in another terminal!")
 	log.Println("==========================================================================")
 	time.Sleep(1 * time.Second)
 
@@ -86,7 +86,7 @@ func main() {
 
 	ticketCounter := 1
 
-	log.Printf("📥 PHASE 1: Ingesting via API in batches of %d...", batchSize)
+	log.Printf("PHASE 1: Ingesting via API in batches of %d...", batchSize)
 	for b := 0; b < totalTickets/batchSize; b++ {
 		var payload []map[string]string
 
@@ -126,16 +126,16 @@ func main() {
 
 		resp, err := client.Do(req)
 		if err != nil {
-			log.Fatalf("🚨 API Request failed: %v", err)
+			log.Fatalf("API Request failed: %v", err)
 		}
 		if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-			log.Fatalf("🚨 API returned unexpected status: %d", resp.StatusCode)
+			log.Fatalf("API returned unexpected status: %d", resp.StatusCode)
 		}
 		resp.Body.Close()
-		fmt.Printf("✅ Ingested batch %d/%d (%d tickets)\n", b+1, totalTickets/batchSize, len(payload))
+		fmt.Printf("Ingested batch %d/%d (%d tickets)\n", b+1, totalTickets/batchSize, len(payload))
 	}
 
-	log.Println("\n🔀 PHASE 2: Distributing tickets across the workflow states...")
+	log.Println("\nPHASE 2: Distributing tickets across the workflow states...")
 
 	unassignedEnd := int(float64(totalTickets) * 0.60) // 60% stay in Holding Pen
 	assignedEnd := int(float64(totalTickets) * 0.75)   // 15% go to Chute
@@ -143,16 +143,16 @@ func main() {
 	falsePosEnd := int(float64(totalTickets) * 0.90)   // 5% False Positive
 	patchedEnd := totalTickets                         // 10% Patched
 
-	log.Printf("⏳ Keeping Tickets 1 - %d in the Holding Pen (Unassigned)...", unassignedEnd)
+	log.Printf("Keeping Tickets 1 - %d in the Holding Pen (Unassigned)...", unassignedEnd)
 	bulkUpdateDB(db, unassignedEnd+1, assignedEnd, "Assigned Out", "it-network@ranch.com")
 	bulkUpdateDB(db, assignedEnd+1, returnedEnd, "Returned to Security", "it-endpoint@ranch.com")
 	bulkUpdateDB(db, returnedEnd+1, falsePosEnd, "False Positive", "security@ranch.com")
 	bulkUpdateDB(db, falsePosEnd+1, patchedEnd, "Patched", "it-network@ranch.com")
 
-	log.Println("\n🎉 STRESS TEST COMPLETE!")
+	log.Println("\nSTRESS TEST COMPLETE!")
 	log.Println("==========================================================================")
-	log.Println("🤠 The ranch is fully loaded. Go check the Dashboard!")
-	log.Println("🔑 Login -> Email: stress@ranch.com | Password: the RR_STRESS_PASSWORD you set")
+	log.Println("The ranch is fully loaded. Go check the Dashboard!")
+	log.Println("Login -> Email: stress@ranch.com | Password: the RR_STRESS_PASSWORD you set")
 	log.Println("==========================================================================")
 }
 
@@ -167,6 +167,6 @@ func bulkUpdateDB(db *sql.DB, startID, endID int, status, assignee string) {
 
 	_, err := db.Exec(query, status, assignee, startID, endID)
 	if err != nil {
-		log.Fatalf("🚨 DB update failed: %v", err)
+		log.Fatalf("DB update failed: %v", err)
 	}
 }

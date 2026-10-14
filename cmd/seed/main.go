@@ -40,7 +40,7 @@ func main() {
 		{"SonarQube", "legacy-crm-repo", "Code Smell: Cognitive Complexity", "Function exceeds complexity threshold.", "Low"},
 	}
 
-	log.Printf("🌱 Seeding the database with %d standard tickets...", TotalTickets)
+	log.Printf("Seeding the database with %d standard tickets...", TotalTickets)
 	start := time.Now()
 	successCount := 0
 
@@ -78,7 +78,7 @@ func main() {
 		{"False Positive", "auth-api-repo", "Misidentified Secret", "The 'secret' found by Semgrep is actually a public test key used for unit tests. Requesting permanent suppression.", "Critical"},
 	}
 
-	log.Printf("⚖️ Seeding %d Risk Review Requests...", TotalRiskRequests)
+	log.Printf("Seeding %d Risk Review Requests...", TotalRiskRequests)
 	riskSuccessCount := 0
 
 	for i := 1; i <= TotalRiskRequests; i++ {
@@ -102,5 +102,5 @@ func main() {
 	}
 
 	duration := time.Since(start)
-	log.Printf("✅ Seeding complete! Inserted %d standard tickets and %d risk requests in %v", successCount, riskSuccessCount, duration)
+	log.Printf("Seeding complete! Inserted %d standard tickets and %d risk requests in %v", successCount, riskSuccessCount, duration)
 }

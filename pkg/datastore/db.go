@@ -103,7 +103,7 @@ func SeedAdapters(db *sql.DB) {
 		if err != nil {
 			log.Printf("Failed to seed adapter %s to DB: %v", adapter.Name, err)
 		} else {
-			log.Printf("🔌 Successfully loaded adapter: %s", adapter.Name)
+			log.Printf("Successfully loaded adapter: %s", adapter.Name)
 		}
 	}
 }

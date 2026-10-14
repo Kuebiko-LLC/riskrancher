@@ -66,7 +66,7 @@ viewer.addEventListener('click', async function(e) {
                 updateDraftField(draftId);
 
             } else {
-                if (confirm("📸 Extract this screenshot into a BRAND NEW finding?\n\n(Tip: To add it to an existing finding, just click inside its Description box first!)")) {
+                if (confirm("Extract this screenshot into a BRAND NEW finding?\n\n(Tip: To add it to an existing finding, just click inside its Description box first!)")) {
                     await saveNewDraft(markdownImage);
                 }
             }
@@ -179,8 +179,8 @@ async function loadDrafts() {
                     <textarea class="draft-remediation" onchange="updateDraftField(${d.id})" placeholder="Recommended Remediation..." style="width: 100%; height: 60px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 0.85rem; font-family: inherit; resize: vertical; color: #334155;">${d.recommended_remediation || ''}</textarea>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #e2e8f0; padding-top: 10px;">
-                    <button class="btn" style="padding: 4px 10px; font-size: 0.75rem; color: #0284c7; background: #e0f2fe; border: 1px solid #7dd3fc;" data-text="${encodeURIComponent(d.description || '')}" onclick="smartSnap(this)">📍 Snap to Text</button>
-                    <button class="btn" style="padding: 4px 10px; font-size: 0.75rem; color: #dc2626; background: #fee2e2; border: 1px solid #fca5a5;" onclick="deleteDraft(${d.id})">🗑️ Discard</button>
+                    <button class="btn" style="padding: 4px 10px; font-size: 0.75rem; color: #0284c7; background: #e0f2fe; border: 1px solid #7dd3fc;" data-text="${encodeURIComponent(d.description || '')}" onclick="smartSnap(this)">Snap to Text</button>
+                    <button class="btn" style="padding: 4px 10px; font-size: 0.75rem; color: #dc2626; background: #fee2e2; border: 1px solid #fca5a5;" onclick="deleteDraft(${d.id})">Discard</button>
                 </div>
             </div>`;
         });
@@ -227,7 +227,7 @@ window.promoteAllDrafts = async function() {
         payload.push({ id, title, asset_identifier: asset, severity, description, recommended_remediation: remediation });
     });
 
-    if (hasError) return alert("🚨 Title and Asset Identifier are required.");
+    if (hasError) return alert("Title and Asset Identifier are required.");
 
     try {
         const res = await fetch(`/api/reports/promote/${reportID}`, {
@@ -237,7 +237,7 @@ window.promoteAllDrafts = async function() {
         });
 
         if (res.ok) {
-            alert("🤠 Yeehaw! Findings promoted to your Holding Pen.");
+            alert("Yeehaw! Findings promoted to your Holding Pen.");
             window.location.href = "/dashboard";
         } else {
             alert("Failed to promote: " + await res.text());
@@ -272,7 +272,7 @@ window.smartSnap = function(btnElement) {
         setTimeout(() => foundElement.style.backgroundColor = originalBg, 1200);
 
         const originalText = btnElement.innerText;
-        btnElement.innerText = "🎯 Snapped!";
+        btnElement.innerText = "Snapped!";
         setTimeout(() => btnElement.innerText = originalText, 1500);
     } else {
         alert("Could not locate the exact paragraph body in the document.");

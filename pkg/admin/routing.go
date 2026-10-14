@@ -19,8 +19,8 @@ func (h *Handler) HandleCreateRoutingRule(w http.ResponseWriter, r *http.Request
 	store := h.Store
 
 	if err := store.CreateRoutingRule(r.Context(), &rule); err != nil {
-		// 🚀 FIX: Log the actual SQLite error so we aren't flying blind!
-		fmt.Println("🚨 SQLITE ERROR:", err)
+		// FIX: Log the actual SQLite error so we aren't flying blind!
+		fmt.Println("SQLITE ERROR:", err)
 		httpServerError(w, "db", err)
 		return
 	}
@@ -36,7 +36,7 @@ func (h *Handler) HandleGetRoutingRules(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Failed to fetch rules", http.StatusInternalServerError)
 		return
 	}
-	// 🚀 FIX: Actually return the rules to the HTMX/JS frontend
+	// FIX: Actually return the rules to the HTMX/JS frontend
 	json.NewEncoder(w).Encode(rules)
 }
 
@@ -44,7 +44,7 @@ func (h *Handler) HandleDeleteRoutingRule(w http.ResponseWriter, r *http.Request
 	id, _ := strconv.Atoi(r.PathValue("id"))
 	store := h.Store
 
-	// 🚀 FIX: Wire up the delete
+	// FIX: Wire up the delete
 	if err := store.DeleteRoutingRule(r.Context(), id); err != nil {
 		http.Error(w, "Failed to delete rule", http.StatusInternalServerError)
 		return

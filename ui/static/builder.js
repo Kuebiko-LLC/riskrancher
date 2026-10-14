@@ -76,7 +76,7 @@ function processPreview() {
 
                 document.getElementById('preview-table-container').innerHTML =
                     `<div style="padding: 15px; background: #1e293b; border-radius: 6px; font-family: monospace; overflow-x: auto; text-align: left; font-size: 0.85rem;">
-                        <p style="color: #fca5a5; margin-top: 0; font-weight: bold;">⚠️ Path "${pathInput.value}" is not an array.</p>
+                        <p style="color: #fca5a5; margin-top: 0; font-weight: bold;">Path "${pathInput.value}" is not an array.</p>
                         <p style="color: #cbd5e1; margin-bottom: 10px;">Here is the structure of your file to help you find the correct path:</p>
                         <pre style="margin: 0; color: #a6e22e;">${rawPreview}</pre>
                     </div>`;

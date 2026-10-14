@@ -2,7 +2,7 @@
 <div id="bh-app" data-email="{{.Email}}" data-role="{{.Role}}" style="max-width:1200px;margin:0 auto;padding:20px;">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
     <div>
-      <h1 style="margin:0;color:#0f172a;">🕵️ Bounty Hunter Workspace</h1>
+      <h1 style="margin:0;color:#0f172a;">Bounty Hunter Workspace</h1>
       <p style="margin:2px 0 0;color:#64748b;font-size:.9rem;">Run engagements, build reports, and release findings to the range. <a href="/ingest">Ingest findings →</a></p>
     </div>
     <span id="whoami" style="color:#475569;font-size:.85rem;"></span>
@@ -10,7 +10,7 @@
 
   <!-- Alert feed: severity proposals awaiting this BH -->
   <div id="alerts" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:12px 16px;margin:12px 0;">
-    <strong style="color:#9a3412;">⚠️ Severity change proposals on your findings</strong>
+    <strong style="color:#9a3412;">Severity change proposals on your findings</strong>
     <div id="alertList" style="margin-top:8px;"></div>
   </div>
 
@@ -29,7 +29,7 @@
         <div id="engList"><p style="color:#94a3b8;">Loading…</p></div>
       </div>
       <div style="border:1px solid #e2e8f0;border-radius:8px;padding:16px;background:#fff;">
-        <h3 style="margin:0 0 6px;">📚 Finding templates</h3>
+        <h3 style="margin:0 0 6px;">Finding templates</h3>
         <p style="margin:0 0 10px;color:#64748b;font-size:.8rem;">Write a finding once, reuse it on any engagement.</p>
         <div id="tplList" style="margin-bottom:10px;"><p style="color:#94a3b8;">Loading…</p></div>
         <details>
@@ -131,7 +131,7 @@
         <td style="padding:6px;font-size:.8rem;color:#475569;">${esc(f.status)}</td>
         <td style="padding:6px;">
           <div id="evthumbs-${f.id}" style="display:inline-block;"></div>
-          <button onclick="pickEvidence(${f.id})" title="Attach a screenshot" style="padding:2px 8px;font-size:.78rem;cursor:pointer;">📷 Add</button>
+          <button onclick="pickEvidence(${f.id})" title="Attach a screenshot" style="padding:2px 8px;font-size:.78rem;cursor:pointer;">Add</button>
           <input type="file" id="file-${f.id}" accept="image/png,image/jpeg,image/gif" style="display:none;" onchange="onEvidenceFile(${f.id})">
         </td>
       </tr>`).join('') : '<tr><td colspan="5" style="padding:10px;color:#94a3b8;text-align:center;">No findings yet.</td></tr>';
@@ -146,12 +146,12 @@
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
         <input id="addIds" placeholder="finding ids e.g. 12,13" style="padding:7px;flex:1;" ${released?'disabled':''}>
         <button onclick="addFindings()" class="btn" style="padding:7px 12px;" ${released?'disabled':''}>Add findings</button>
-        ${released ? '' : `<button onclick="releaseEngagement()" class="btn" style="padding:7px 12px;background:#2f6f4f;color:#fff;border:none;border-radius:6px;cursor:pointer;">🏷️ Release to range</button>`}
+        ${released ? '' : `<button onclick="releaseEngagement()" class="btn" style="padding:7px 12px;background:#2f6f4f;color:#fff;border:none;border-radius:6px;cursor:pointer;">Release to range</button>`}
       </div>
       ${released ? '' : `<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
         <select id="applyTpl" style="padding:7px;flex:1;"></select>
         <input id="applyAsset" placeholder="asset (e.g. web-app-01)" style="padding:7px;width:190px;">
-        <button onclick="applyTemplate()" class="btn" style="padding:7px 12px;">📚 Apply template</button>
+        <button onclick="applyTemplate()" class="btn" style="padding:7px 12px;">Apply template</button>
       </div>`}
 
       <table style="width:100%;border-collapse:collapse;border:1px solid #eef2f7;">
@@ -164,7 +164,7 @@
       </table>
 
       <hr style="margin:18px 0;border:none;border-top:1px solid #eef2f7;">
-      <h3 style="margin:0 0 8px;">📝 Report</h3>
+      <h3 style="margin:0 0 8px;">Report</h3>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
         <input id="rTitle" placeholder="Report title" style="padding:7px;" value="${esc(e.name)} - Pentest Report">
         <input id="rClient" placeholder="Client" style="padding:7px;" value="${esc(e.client||'')}">
@@ -254,7 +254,7 @@
       let rep;
       if (currentReportId){ rep = await api('PUT','/api/reports/branded/'+currentReportId, body); }
       else { rep = await api('POST','/api/reports/branded', body); currentReportId = rep.id; }
-      document.getElementById('repMsg').textContent = 'Saved ✓';
+      document.getElementById('repMsg').textContent = 'Saved';
       setTimeout(()=>document.getElementById('repMsg').textContent='', 2000);
       showReportLinks(rep.id);
     } catch(err){ alert('Report save failed ('+(err.status||'')+')'); }

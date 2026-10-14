@@ -28,7 +28,7 @@ func RunMigrations(db *sql.DB, migrations []string) error {
 		migrationVersion := i + 1
 
 		if migrationVersion > currentVersion {
-			log.Printf("🚀 Applying database migration v%d...", migrationVersion)
+			log.Printf("Applying database migration v%d...", migrationVersion)
 
 			// Start a transaction so if the ALTER TABLE fails, it rolls back cleanly
 			tx, err := db.Begin()
@@ -50,7 +50,7 @@ func RunMigrations(db *sql.DB, migrations []string) error {
 				return err
 			}
 
-			log.Printf("✅ Migration v%d applied successfully.", migrationVersion)
+			log.Printf("Migration v%d applied successfully.", migrationVersion)
 		}
 	}
 

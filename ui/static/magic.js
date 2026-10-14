@@ -4,7 +4,7 @@
     const pathParts = window.location.pathname.split('/');
     const currentToken = pathParts[pathParts.length - 1];
 // ==========================================
-    // ⚖️ MAGISTRATE (LEGAL/COMPLIANCE) LOGIC
+    // MAGISTRATE (LEGAL/COMPLIANCE) LOGIC
     // ==========================================
     window.renderMagistrate = function(data) {
         // Filter for ONLY tickets pending risk approval
@@ -54,7 +54,7 @@
             });
 
             if (res.ok) {
-                alert(`✅ Exception ${action}ed successfully.`);
+                alert(`Exception ${action}ed successfully.`);
                 window.location.reload();
             } else {
                 alert("Failed to submit review: " + await res.text());
@@ -91,12 +91,12 @@
             if (err.message === "InboxZero") {
                 document.body.innerHTML = `
                     <div style="text-align:center; padding: 100px; max-width: 600px; margin: 0 auto;">
-                        <h1 style="font-size: 4rem; margin-bottom: 10px;">🤠</h1>
+                        <h1 style="font-size: 4rem; margin-bottom: 10px;"></h1>
                         <h2 style="color: #0f172a;">All Done Here!</h2>
                         <p style="color: #64748b; font-size: 1.1rem;">This assignment has been fully completed, returned, or routed to Legal. You can safely close this window.</p>
                     </div>`;
             } else {
-                document.body.innerHTML = `<div style="text-align:center; padding: 100px;"><h2>🚨 Token Error</h2><p>${err.message}</p></div>`;
+                document.body.innerHTML = `<div style="text-align:center; padding: 100px;"><h2>Token Error</h2><p>${err.message}</p></div>`;
             }
         }
     }
@@ -122,7 +122,7 @@
             hRow.innerHTML = `
                 <td style="padding: 15px 20px; width: 40px;"><input type="checkbox" class="asset-cb" data-target="${safeId}"></td>
                 <td colspan="4" style="padding: 15px; cursor: pointer; font-weight: bold;" onclick="toggleFolder('${safeId}')">
-                    📂 ${assetName} <span style="color: #64748b; font-weight: normal; margin-left: 10px;">(${findings.length} findings)</span>
+                    ${assetName} <span style="color: #64748b; font-weight: normal; margin-left: 10px;">(${findings.length} findings)</span>
                 </td>
             `;
             tbody.appendChild(hRow);
@@ -194,9 +194,9 @@
             if (!isNaN(parsed)) ids.push(parsed);
         });
 
-        // 🚨 THE TRAP: If the array is empty, freeze and display the evidence!
+        // THE TRAP: If the array is empty, freeze and display the evidence!
         if (ids.length === 0) {
-            alert(`🚨 FRONTEND TRAP TRIGGERED!\n\nCheckboxes Found: ${selected.length}\nRaw Checkbox Values: ${JSON.stringify(rawValues)}\n\nIf Checkboxes = 0, the DOM is losing your clicks. If Raw Values are empty or "undefined", the HTML rendering is broken!`);
+            alert(`FRONTEND TRAP TRIGGERED!\n\nCheckboxes Found: ${selected.length}\nRaw Checkbox Values: ${JSON.stringify(rawValues)}\n\nIf Checkboxes = 0, the DOM is losing your clicks. If Raw Values are empty or "undefined", the HTML rendering is broken!`);
             return; // Stop the script from hitting the Go backend
         }
 
@@ -239,9 +239,9 @@
             if (!isNaN(parsed)) ids.push(parsed);
         });
 
-        // 🚨 THE TRAP
+        // THE TRAP
         if (ids.length === 0) {
-            alert(`🚨 FRONTEND TRAP TRIGGERED!\n\nCheckboxes Found: ${checked.length}\nRaw Checkbox Values: ${JSON.stringify(rawValues)}`);
+            alert(`FRONTEND TRAP TRIGGERED!\n\nCheckboxes Found: ${checked.length}\nRaw Checkbox Values: ${JSON.stringify(rawValues)}`);
             return;
         }
 
@@ -256,7 +256,7 @@
             });
 
             if (res.ok) {
-                alert("✅ Fix submitted successfully! The Security Team will verify it.");
+                alert("Fix submitted successfully! The Security Team will verify it.");
                 window.location.reload();
             } else {
                 alert("Failed to submit fix: " + await res.text());
@@ -291,15 +291,15 @@
             });
 
             if (res.ok) {
-                alert("⚖️ Request sent. It is now waiting for the risk approver.");
+                alert("Request sent. It is now waiting for the risk approver.");
                 window.location.reload();
             } else {
                 alert("Failed to request exception: " + await res.text());
-                this.disabled = false; this.innerText = "⚖️ Request Exception";
+                this.disabled = false; this.innerText = "Request Exception";
             }
         } catch (e) {
             alert("Network error: " + e.message);
-            this.disabled = false; this.innerText = "⚖️ Request Exception";
+            this.disabled = false; this.innerText = "Request Exception";
         }
     });
     init();

@@ -59,7 +59,7 @@ func (h *Handler) HandleIngest(w http.ResponseWriter, r *http.Request) {
 	for key, batch := range groupedTickets {
 		err := h.Store.ProcessIngestionBatch(r.Context(), key.Source, key.Asset, batch)
 		if err != nil {
-			log.Printf("🔥 Ingestion DB Error for Asset %s: %v", key.Asset, err)
+			log.Printf("Ingestion DB Error for Asset %s: %v", key.Asset, err)
 			h.Store.LogSync(r.Context(), key.Source, "Failed", len(batch), err.Error())
 			http.Error(w, "Database error processing batch", http.StatusInternalServerError)
 			return
@@ -166,7 +166,7 @@ func (h *Handler) HandleCSVIngest(w http.ResponseWriter, r *http.Request) {
 	for key, batch := range groupedTickets {
 		err := h.Store.ProcessIngestionBatch(r.Context(), key.Source, key.Asset, batch)
 		if err != nil {
-			log.Printf("🔥 CSV Ingestion Error for Asset %s: %v", key.Asset, err)
+			log.Printf("CSV Ingestion Error for Asset %s: %v", key.Asset, err)
 			h.Store.LogSync(r.Context(), key.Source, "Failed", len(batch), err.Error())
 			http.Error(w, "Database error processing CSV batch", http.StatusInternalServerError)
 			return

@@ -27,7 +27,7 @@ func TestWranglerReject_HTTP(t *testing.T) {
 		DedupeHash:      "hash-http-99",
 		Status:          "Assigned Out",
 		Assignee:        "it-wrangler@ranch.com",
-		// 🚀 FIX: Prevent NULL scan errors in GetDashboardTickets
+		// FIX: Prevent NULL scan errors in GetDashboardTickets
 		TriageDueDate:      now.Add(24 * time.Hour),
 		RemediationDueDate: now.Add(7 * 24 * time.Hour),
 		UpdatedAt:          now,

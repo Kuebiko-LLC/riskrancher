@@ -17,7 +17,7 @@ import (
 func (h *Handler) HandleBulkUpdate(w http.ResponseWriter, r *http.Request) {
 	var req BulkUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Printf("🚨 API ERROR: Failed to decode JSON body: %v", err)
+		log.Printf("API ERROR: Failed to decode JSON body: %v", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -28,8 +28,8 @@ func (h *Handler) HandleBulkUpdate(w http.ResponseWriter, r *http.Request) {
 	// 2. Execute the transaction
 	batchToken, err := store.BulkUpdateStatusAndAssign(r.Context(), req.TicketIDs, req.Status, req.Assignee, req.Comment, h.actor(r, req.Actor))
 	if err != nil {
-		// 🚀 If it fails here, SQLite is rejecting our query!
-		log.Printf("🚨 DATABASE TRANSACTION ERROR in BulkUpdate: %v", err)
+		// If it fails here, SQLite is rejecting our query!
+		log.Printf("DATABASE TRANSACTION ERROR in BulkUpdate: %v", err)
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
@@ -311,16 +311,16 @@ func (h *Handler) HandleWranglerReject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Printf("🚨 API ERROR: Failed to decode JSON: %v", err)
+		log.Printf("API ERROR: Failed to decode JSON: %v", err)
 		http.Error(w, "Invalid payload", http.StatusBadRequest)
 		return
 	}
 
-	log.Printf("🚨 INCOMING REJECT REQUEST: Received %d ticket IDs. Reason: %s", len(req.TicketIDs), req.Reason)
+	log.Printf("INCOMING REJECT REQUEST: Received %d ticket IDs. Reason: %s", len(req.TicketIDs), req.Reason)
 
 	// If the array is empty, block the request so we don't silently fail!
 	if len(req.TicketIDs) == 0 {
-		log.Println("⚠️ WARNING: The frontend sent ZERO tickets! (You need to hard-refresh your browser cache)")
+		log.Println("WARNING: The frontend sent ZERO tickets! (You need to hard-refresh your browser cache)")
 		http.Error(w, "No tickets selected", http.StatusBadRequest)
 		return
 	}

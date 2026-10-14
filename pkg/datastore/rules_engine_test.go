@@ -40,7 +40,7 @@ func TestRulesEngine_BDD(t *testing.T) {
 			Severity:           "High",
 			DedupeHash:         "hash-123",
 			Title:              "Test Vuln",
-			Status:             "Waiting to be Triaged", // 🚀 FIX: Valid DB Status
+			Status:             "Waiting to be Triaged", // FIX: Valid DB Status
 			TriageDueDate:      now.Add(24 * time.Hour),
 			RemediationDueDate: now.Add(7 * 24 * time.Hour),
 		}
@@ -76,7 +76,7 @@ func TestRulesEngine_BDD(t *testing.T) {
 			Severity:           "Critical",
 			DedupeHash:         "hash-456",
 			Title:              "Test Vuln",
-			Status:             "Waiting to be Triaged", // 🚀 FIX: Valid DB Status
+			Status:             "Waiting to be Triaged", // FIX: Valid DB Status
 			TriageDueDate:      now.Add(24 * time.Hour),
 			RemediationDueDate: now.Add(7 * 24 * time.Hour),
 		}
@@ -112,7 +112,7 @@ func TestRulesEngine_BDD(t *testing.T) {
 			Severity:           "High",
 			DedupeHash:         "hash-789",
 			Title:              "Test Vuln",
-			Status:             "Waiting to be Triaged", // 🚀 FIX: Valid DB Status
+			Status:             "Waiting to be Triaged", // FIX: Valid DB Status
 			TriageDueDate:      now.Add(24 * time.Hour),
 			RemediationDueDate: now.Add(7 * 24 * time.Hour),
 		}

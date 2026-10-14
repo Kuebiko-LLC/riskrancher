@@ -142,13 +142,13 @@ func (h *Handler) HandleAdapterIngest(w http.ResponseWriter, r *http.Request) {
 	for key, batch := range groupedTickets {
 		err := h.Store.ProcessIngestionBatch(r.Context(), key.Source, key.Asset, batch)
 		if err != nil {
-			log.Printf("🔥 JSON Ingestion Error for Asset %s: %v", key.Asset, err)
-			// 🚀 LOG THE BATCH FAILURE
+			log.Printf("JSON Ingestion Error for Asset %s: %v", key.Asset, err)
+			// LOG THE BATCH FAILURE
 			h.Store.LogSync(r.Context(), key.Source, "Failed", len(batch), err.Error())
 			http.Error(w, "Database error processing JSON batch", http.StatusInternalServerError)
 			return
 		} else {
-			// 🚀 LOG THE SUCCESS
+			// LOG THE SUCCESS
 			h.Store.LogSync(r.Context(), key.Source, "Success", len(batch), "")
 		}
 	}

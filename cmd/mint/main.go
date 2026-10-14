@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	log.Println("🤠 Saddle up! Preparing the RiskRancher QA Environment...")
+	log.Println("Saddle up! Preparing the RiskRancher QA Environment...")
 
 	db := datastore.InitDB("./data/riskrancher.db")
 	defer db.Close()
@@ -36,7 +36,7 @@ func main() {
 	// ==========================================
 	// 1. THE HOLDING PEN (Analyst View)
 	// ==========================================
-	log.Println("📩 Seeding Holding Pen (Unassigned Tickets)...")
+	log.Println("Seeding Holding Pen (Unassigned Tickets)...")
 	for i := 1; i <= 15; i++ {
 		store.CreateTicket(ctx, &domain.Ticket{
 			Source:             "Trivy",
@@ -53,7 +53,7 @@ func main() {
 	// ==========================================
 	// 2. THE CHUTE / RANGEHAND (Wrangler/IT View)
 	// ==========================================
-	log.Println("🤠 Seeding The Chute (Wrangler/IT Inbox)...")
+	log.Println("Seeding The Chute (Wrangler/IT Inbox)...")
 	wranglerToken := "qa-wrangler-magic-token-777"
 	var wranglerIDs []int
 	for i := 1; i <= 10; i++ {
@@ -76,7 +76,7 @@ func main() {
 	// ==========================================
 	// 3. PENDING VERIFICATION (Analyst Review)
 	// ==========================================
-	log.Println("👀 Seeding Pending Verification (IT claims it's fixed)...")
+	log.Println("Seeding Pending Verification (IT claims it's fixed)...")
 	for i := 1; i <= 5; i++ {
 		store.CreateTicket(ctx, &domain.Ticket{
 			Source:             "Prowler",
@@ -94,7 +94,7 @@ func main() {
 	// ==========================================
 	// 4. MAGISTRATE / RISK REVIEWS (Legal/Exec View)
 	// ==========================================
-	log.Println("⚖️ Seeding Risk Reviews (Magistrate Exceptions)...")
+	log.Println("Seeding Risk Reviews (Magistrate Exceptions)...")
 	magistrateToken := "qa-magistrate-magic-token-999"
 	var magistrateIDs []int
 	for i := 1; i <= 8; i++ {
@@ -117,7 +117,7 @@ func main() {
 	// ==========================================
 	// 5. THE ARCHIVES (Patched / False Positives)
 	// ==========================================
-	log.Println("🗄️ Seeding The Archives...")
+	log.Println("Seeding The Archives...")
 	for i := 1; i <= 10; i++ {
 		status := "Patched"
 		if i%3 == 0 {
@@ -140,24 +140,24 @@ func main() {
 	}
 
 	// ==========================================
-	// 🤠 QA SUMMARY OUTPUT
+	// QA SUMMARY OUTPUT
 	// ==========================================
 	fmt.Println("\n================================================================")
-	fmt.Println("✅ QA ENVIRONMENT SUCCESSFULLY SEEDED!")
+	fmt.Println("QA ENVIRONMENT SUCCESSFULLY SEEDED!")
 	fmt.Println("================================================================")
 	fmt.Println("You can now test all 3 major portals immediately:")
 	fmt.Println()
-	fmt.Println("🛡️  1. ANALYST PORTAL (The Dashboard)")
+	fmt.Println(" 1. ANALYST PORTAL (The Dashboard)")
 	fmt.Println("   URL: http://localhost:8080/dashboard")
 	fmt.Println("   - Check the 'Holding Pen' for raw tickets.")
 	fmt.Println("   - Check 'Pending Verification' to accept/reject IT's fixes.")
 	fmt.Println()
-	fmt.Println("🤠 2. WRANGLER PORTAL (The IT/Developer View)")
+	fmt.Println("2. WRANGLER PORTAL (The IT/Developer View)")
 	fmt.Println("   URL: http://localhost:8080/share/" + wranglerToken)
 	fmt.Println("   - This is what IT sees when you assign them tickets.")
 	fmt.Println("   - Try submitting a fix, or requesting a risk exception.")
 	fmt.Println()
-	fmt.Println("⚖️  3. MAGISTRATE PORTAL (The Executive/Risk View)")
+	fmt.Println(" 3. MAGISTRATE PORTAL (The Executive/Risk View)")
 	fmt.Println("   URL: http://localhost:8080/review/" + magistrateToken)
 	fmt.Println("   - This is what Legal/Execs see when IT asks for an exception.")
 	fmt.Println("   - Try Approving or Denying the risk requests.")
@@ -177,6 +177,6 @@ func seedMagicBatch(ctx context.Context, db *sql.DB, token, createdBy string, ti
 		VALUES (?, ?, DATETIME('now', '+90 days'), ?)`,
 		token, createdBy, string(idsJSON))
 	if err != nil {
-		log.Printf("⚠️ could not seed magic batch %q: %v", token, err)
+		log.Printf("could not seed magic batch %q: %v", token, err)
 	}
 }

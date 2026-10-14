@@ -175,7 +175,7 @@ func (s *SQLiteStore) GetAllUsers(ctx context.Context) ([]*domain.User, error) {
 	for rows.Next() {
 		var u domain.User
 		if err := rows.Scan(&u.ID, &u.Email, &u.FullName, &u.GlobalRole); err == nil {
-			users = append(users, &u) // 🚀 Appending the memory address!
+			users = append(users, &u) // Appending the memory address!
 		}
 	}
 	return users, nil

@@ -67,21 +67,21 @@ func (s *SQLiteStore) GetSheriffAnalytics(ctx context.Context) (domain2.SheriffA
 			}
 
 			if sm.PatchOverdue > 0 {
-				sm.StrategicNote = "🚨 SLA Breach (Escalate to IT Managers)"
+				sm.StrategicNote = "SLA Breach (Escalate to IT Managers)"
 			} else if sm.Untriaged > 0 {
-				sm.StrategicNote = "⚠️ Triage Bottleneck (Check Analysts)"
+				sm.StrategicNote = "Triage Bottleneck (Check Analysts)"
 			} else if sm.PendingRisk > 0 {
-				sm.StrategicNote = "⚖️ Blocked by Exec Adjudication"
+				sm.StrategicNote = "Blocked by Exec Adjudication"
 			} else if sm.Criticals > 0 {
-				sm.StrategicNote = "🔥 High Risk (Monitor closely)"
+				sm.StrategicNote = "High Risk (Monitor closely)"
 			} else if sm.RiskAccepted > sm.Patched && sm.TotalClosed > 0 {
-				sm.StrategicNote = "👀 High Risk Acceptance Rate (Audit Required)"
+				sm.StrategicNote = "High Risk Acceptance Rate (Audit Required)"
 			} else if sm.FalsePositive > sm.Patched && sm.TotalClosed > 0 {
-				sm.StrategicNote = "🔧 Noisy Source (Scanner needs tuning)"
+				sm.StrategicNote = "Noisy Source (Scanner needs tuning)"
 			} else if sm.TotalClosed > 0 {
-				sm.StrategicNote = "✅ Healthy Resolution Velocity"
+				sm.StrategicNote = "Healthy Resolution Velocity"
 			} else {
-				sm.StrategicNote = "✅ Routine Processing"
+				sm.StrategicNote = "Routine Processing"
 			}
 
 			metrics.SourceHealth = append(metrics.SourceHealth, sm)

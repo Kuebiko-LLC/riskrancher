@@ -48,7 +48,7 @@ func main() {
 		defer cancel()
 		srv.Shutdown(ctx)
 	}
-	log.Printf("🤠 RiskRancher running on http://localhost%s", addr)
+	log.Printf("RiskRancher running on http://localhost%s", addr)
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}

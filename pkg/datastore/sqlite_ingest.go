@@ -174,18 +174,18 @@ func (s *SQLiteStore) ingestBatch(ctx context.Context, source, asset string, inc
 }
 
 func (s *SQLiteStore) calculateDiffState(ctx context.Context, tx *sql.Tx, source, asset string, incoming []domain2.Ticket) (inserts, reopens, descUpdates []domain2.Ticket, autocloses []string, err error) {
-	rows, err := tx.QueryContext(ctx, `SELECT dedupe_hash, status, COALESCE(description, '') FROM tickets WHERE source = ? AND asset_identifier = ?`, source, asset)
+	rows, err := tx.QueryContext(ctx, `SELECT dedupe_hash, status, COALESCE(description, ''), COALESCE(recommended_remediation, '') FROM tickets WHERE source = ? AND asset_identifier = ?`, source, asset)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
 	defer rows.Close()
 
-	type existingRecord struct{ status, description string }
+	type existingRecord struct{ status, description, remediation string }
 	existingMap := make(map[string]existingRecord)
 	for rows.Next() {
-		var hash, status, desc string
-		if err := rows.Scan(&hash, &status, &desc); err == nil {
-			existingMap[hash] = existingRecord{status: status, description: desc}
+		var hash, status, desc, fix string
+		if err := rows.Scan(&hash, &status, &desc, &fix); err == nil {
+			existingMap[hash] = existingRecord{status: status, description: desc, remediation: fix}
 		}
 	}
 
@@ -199,7 +199,9 @@ func (s *SQLiteStore) calculateDiffState(ctx context.Context, tx *sql.Tx, source
 			if existing.status == "Patched" {
 				reopens = append(reopens, ticket)
 			}
-			if ticket.Description != "" && ticket.Description != existing.description && existing.status != "Patched" && existing.status != "Risk Accepted" && existing.status != "False Positive" {
+			textChanged := (ticket.Description != "" && ticket.Description != existing.description) ||
+				(ticket.RecommendedRemediation != "" && ticket.RecommendedRemediation != existing.remediation)
+			if textChanged && existing.status != "Patched" && existing.status != "Risk Accepted" && existing.status != "False Positive" {
 				descUpdates = append(descUpdates, ticket)
 			}
 		}
@@ -218,7 +220,7 @@ func (s *SQLiteStore) executeBatchMutations(ctx context.Context, tx *sql.Tx, sou
 
 	// A. Inserts
 	if len(inserts) > 0 {
-		insertStmt, err := tx.PrepareContext(ctx, `INSERT INTO tickets (source, asset_identifier, title, severity, description, status, dedupe_hash, domain, triage_due_date, remediation_due_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+		insertStmt, err := tx.PrepareContext(ctx, `INSERT INTO tickets (source, asset_identifier, title, severity, description, recommended_remediation, status, dedupe_hash, domain, triage_due_date, remediation_due_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 		if err != nil {
 			return err
 		}
@@ -231,7 +233,7 @@ func (s *SQLiteStore) executeBatchMutations(ctx context.Context, tx *sql.Tx, sou
 					daysToTriage, daysToRemediate = policy.DaysToTriage, policy.DaysToRemediate
 				}
 			}
-			_, err := insertStmt.ExecContext(ctx, source, asset, t.Title, t.Severity, t.Description, t.Status, t.DedupeHash, t.Domain, now.AddDate(0, 0, daysToTriage), now.AddDate(0, 0, daysToRemediate))
+			_, err := insertStmt.ExecContext(ctx, source, asset, t.Title, t.Severity, t.Description, t.RecommendedRemediation, t.Status, t.DedupeHash, t.Domain, now.AddDate(0, 0, daysToTriage), now.AddDate(0, 0, daysToRemediate))
 			if err != nil {
 				return err
 			}
@@ -247,10 +249,10 @@ func (s *SQLiteStore) executeBatchMutations(ctx context.Context, tx *sql.Tx, sou
 	}
 
 	if len(descUpdates) > 0 {
-		descStmt, _ := tx.PrepareContext(ctx, `UPDATE tickets SET description = ? WHERE dedupe_hash = ?`)
+		descStmt, _ := tx.PrepareContext(ctx, `UPDATE tickets SET description = CASE WHEN ? != '' THEN ? ELSE description END, recommended_remediation = CASE WHEN ? != '' THEN ? ELSE recommended_remediation END, updated_at = CURRENT_TIMESTAMP WHERE dedupe_hash = ?`)
 		defer descStmt.Close()
 		for _, t := range descUpdates {
-			descStmt.ExecContext(ctx, t.Description, t.DedupeHash)
+			descStmt.ExecContext(ctx, t.Description, t.Description, t.RecommendedRemediation, t.RecommendedRemediation, t.DedupeHash)
 		}
 	}
 

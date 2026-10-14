@@ -13,9 +13,11 @@ import (
 // and scanner batch ingest. A decision made once applies to every row, every scan.
 //
 // Before the insert: a logged false positive (by finding hash on an asset, or a
-// global rule by source/asset/title) lands as False Positive; a severity rule
-// rewrites the severity. After the insert: a routing rule hands the new,
-// unassigned findings to their owner.
+// global rule by source/asset/title) lands as False Positive; then the
+// severity is decided once, in decideSeverity: the rubric when the asset is in
+// the inventory, an explicit severity rule over that, and KEV over everything.
+// After the insert: a routing rule hands the new, unassigned findings to their
+// owner.
 
 type triageRule struct {
 	source, asset, action, value string
@@ -26,6 +28,8 @@ type ingestRules struct {
 	global           []GlobalSuppressionRule
 	triage           []triageRule
 	kev              map[string]bool // the loaded KEV catalog, by CVE id
+	asset            *domain.Asset   // the inventory row, nil when the asset is not in it
+	rubric           *domain.Rubric  // nil when the stored weights are incomplete
 }
 
 // loadIngestRules reads the rules once for a batch on one asset.
@@ -56,18 +60,44 @@ func (s *SQLiteStore) loadIngestRules(ctx context.Context, asset string) (*inges
 	}
 	rows.Close()
 
-	rows, err = s.DB.QueryContext(ctx, `SELECT COALESCE(match_source,''), COALESCE(match_asset,''), action_type, action_value FROM auto_triage_rules`)
+	if r.triage, err = loadTriageRules(ctx, s.DB); err != nil {
+		return nil, err
+	}
+	if r.asset, err = s.assetByID(ctx, asset); err != nil {
+		return nil, err
+	}
+	r.rubric = loadRubric(ctx, s.DB)
+	return r, nil
+}
+
+// loadTriageRules reads the severity rules.
+func loadTriageRules(ctx context.Context, q queryer) ([]triageRule, error) {
+	rows, err := q.QueryContext(ctx, `SELECT COALESCE(match_source,''), COALESCE(match_asset,''), action_type, action_value FROM auto_triage_rules`)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
+	var out []triageRule
 	for rows.Next() {
 		var t triageRule
 		if err := rows.Scan(&t.source, &t.asset, &t.action, &t.value); err == nil {
-			r.triage = append(r.triage, t)
+			out = append(out, t)
 		}
 	}
-	rows.Close()
-	return r, nil
+	return out, rows.Err()
+}
+
+// loadRubric reads the weights; nil when they do not make a whole rubric.
+func loadRubric(ctx context.Context, q queryer) *domain.Rubric {
+	weights, err := readRubric(ctx, q)
+	if err != nil {
+		return nil
+	}
+	r, ok := domain.NewRubric(weights)
+	if !ok {
+		return nil
+	}
+	return r
 }
 
 func dedupeHash(source, asset, title string) string {
@@ -91,14 +121,8 @@ func (g GlobalSuppressionRule) matches(t *domain.Ticket) bool {
 // apply runs the pre-insert rules on one finding.
 func (r *ingestRules) apply(t *domain.Ticket) {
 	t.Severity = domain.NormalizeSeverity(t.Severity)
-	if len(r.kev) > 0 {
-		for _, m := range cveToken.FindAllString(t.Title+" "+t.Description, -1) {
-			if r.kev[strings.ToUpper(m)] {
-				t.IsCISAKEV = true
-				break
-			}
-		}
-	}
+	t.ScannerSeverity = t.Severity
+	t.IsCISAKEV = r.namesKEV(t.Title + " " + t.Description)
 	if t.DedupeHash == "" {
 		t.DedupeHash = dedupeHash(t.Source, t.AssetIdentifier, t.Title)
 	}
@@ -112,17 +136,49 @@ func (r *ingestRules) apply(t *domain.Ticket) {
 			return
 		}
 	}
-	for _, rule := range r.triage {
-		if rule.source != "" && rule.source != t.Source {
+	t.Severity, t.RubricScore = decideSeverity(r.rubric, r.asset, r.triage, t.Source, t.AssetIdentifier, t.ScannerSeverity, t.IsCISAKEV)
+}
+
+// namesKEV reports whether the text names a CVE in the loaded catalog.
+func (r *ingestRules) namesKEV(text string) bool {
+	if len(r.kev) == 0 {
+		return false
+	}
+	for _, m := range cveToken.FindAllString(text, -1) {
+		if r.kev[strings.ToUpper(m)] {
+			return true
+		}
+	}
+	return false
+}
+
+// decideSeverity is the only place a scanner's word becomes a priority: the
+// rubric when the asset is in the inventory (the score is recorded either
+// way), then an explicit severity rule, then KEV, which is Critical whatever
+// the math or a rule says. An asset the tool does not know keeps the
+// scanner's word.
+func decideSeverity(rb *domain.Rubric, asset *domain.Asset, triage []triageRule, source, assetID, scannerSeverity string, isKEV bool) (severity string, score *float64) {
+	severity = scannerSeverity
+	if rb != nil && asset != nil {
+		if s, band, ok := rb.Score(scannerSeverity, asset.Exposure, asset.Criticality); ok {
+			severity, score = band, &s
+		}
+	}
+	for _, rule := range triage {
+		if rule.source != "" && rule.source != source {
 			continue
 		}
-		if rule.asset != "" && rule.asset != t.AssetIdentifier {
+		if rule.asset != "" && rule.asset != assetID {
 			continue
 		}
 		if rule.action == "DowngradeSeverity" {
-			t.Severity = domain.NormalizeSeverity(rule.value)
+			severity = domain.NormalizeSeverity(rule.value)
 		}
 	}
+	if isKEV {
+		severity = "Critical"
+	}
+	return severity, score
 }
 
 // routingTarget returns the owner a routing rule names for this asset or source.

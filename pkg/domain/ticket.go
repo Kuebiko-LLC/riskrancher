@@ -37,6 +37,12 @@ type Ticket struct {
 	RecommendedRemediation string `json:"recommended_remediation"`
 	Severity               string `json:"severity"`
 	Status                 string `json:"status"`
+	// ScannerSeverity is what the scanner said, normalized, before the rubric,
+	// the rules and KEV decided the severity above.
+	ScannerSeverity string `json:"scanner_severity"`
+	// RubricScore is base x exposure x criticality; nil when the asset is not
+	// in the inventory.
+	RubricScore *float64 `json:"rubric_score,omitempty"`
 
 	DedupeHash string `json:"dedupe_hash"`
 

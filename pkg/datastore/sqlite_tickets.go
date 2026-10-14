@@ -62,15 +62,15 @@ func (s *SQLiteStore) insertTicket(ctx context.Context, t *domain.Ticket) error 
 		INSERT INTO tickets (
 			domain, source, asset_identifier, title, description, recommended_remediation,
 			severity, status, dedupe_hash, cvss_vector, cvss_score, cwe, business_impact,
-			is_cisa_kev, triage_due_date, remediation_due_date, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+			is_cisa_kev, triage_due_date, remediation_due_date, scanner_severity, rubric_score, created_at, updated_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 	`
 
 	triageDue, remediationDue := s.dueDates(ctx, t.Domain, t.Severity)
 	res, err := s.DB.ExecContext(ctx, query,
 		t.Domain, t.Source, t.AssetIdentifier, t.Title, t.Description, t.RecommendedRemediation,
 		t.Severity, t.Status, t.DedupeHash, t.CVSSVector, t.CVSSScore, t.CWE, t.BusinessImpact,
-		t.IsCISAKEV, triageDue, remediationDue,
+		t.IsCISAKEV, triageDue, remediationDue, t.ScannerSeverity, t.RubricScore,
 	)
 
 	if err != nil {
@@ -156,14 +156,19 @@ func (s *SQLiteStore) GetTicketByID(ctx context.Context, id int) (domain.Ticket,
 	var extensions sql.NullInt64
 	var kev sql.NullBool
 	var expires sql.NullTime
+	var score sql.NullFloat64
 
-	query := `SELECT id, domain, source, asset_identifier, title, description, recommended_remediation, severity, status, dedupe_hash, triage_due_date, remediation_due_date, created_at, updated_at, patched_at, assignee, latest_comment, cvss_vector, cvss_score, cwe, business_impact, risk_rationale, extension_count, is_cisa_kev, exception_expires_at FROM tickets WHERE id = ?`
+	query := `SELECT id, domain, source, asset_identifier, title, description, recommended_remediation, severity, status, dedupe_hash, triage_due_date, remediation_due_date, created_at, updated_at, patched_at, assignee, latest_comment, cvss_vector, cvss_score, cwe, business_impact, risk_rationale, extension_count, is_cisa_kev, exception_expires_at, COALESCE(scanner_severity, ''), rubric_score FROM tickets WHERE id = ?`
 
 	err := s.DB.QueryRowContext(ctx, query, id).Scan(
-		&t.ID, &t.Domain, &t.Source, &t.AssetIdentifier, &t.Title, &t.Description, &t.RecommendedRemediation, &t.Severity, &t.Status, &t.DedupeHash, &triageDue, &remDue, &created, &updated, &patchedAt, &t.Assignee, &t.LatestComment, &cvssVec, &cvssScore, &cwe, &bizImpact, &rationale, &extensions, &kev, &expires,
+		&t.ID, &t.Domain, &t.Source, &t.AssetIdentifier, &t.Title, &t.Description, &t.RecommendedRemediation, &t.Severity, &t.Status, &t.DedupeHash, &triageDue, &remDue, &created, &updated, &patchedAt, &t.Assignee, &t.LatestComment, &cvssVec, &cvssScore, &cwe, &bizImpact, &rationale, &extensions, &kev, &expires, &t.ScannerSeverity, &score,
 	)
 	if err != nil {
 		return t, err
+	}
+	if score.Valid {
+		v := score.Float64
+		t.RubricScore = &v
 	}
 	t.RiskRationale = rationale.String
 	t.ExtensionCount = int(extensions.Int64)

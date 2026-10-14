@@ -154,7 +154,7 @@ func (s *SQLiteStore) executeBatchMutations(ctx context.Context, tx *sql.Tx, sou
 
 	// A. Inserts
 	if len(inserts) > 0 {
-		insertStmt, err := tx.PrepareContext(ctx, `INSERT INTO tickets (source, asset_identifier, title, severity, description, recommended_remediation, status, dedupe_hash, domain, is_cisa_kev, triage_due_date, remediation_due_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+		insertStmt, err := tx.PrepareContext(ctx, `INSERT INTO tickets (source, asset_identifier, title, severity, description, recommended_remediation, status, dedupe_hash, domain, is_cisa_kev, triage_due_date, remediation_due_date, scanner_severity, rubric_score) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 		if err != nil {
 			return err
 		}
@@ -167,7 +167,7 @@ func (s *SQLiteStore) executeBatchMutations(ctx context.Context, tx *sql.Tx, sou
 					daysToTriage, daysToRemediate = policy.DaysToTriage, policy.DaysToRemediate
 				}
 			}
-			_, err := insertStmt.ExecContext(ctx, source, asset, t.Title, t.Severity, t.Description, t.RecommendedRemediation, t.Status, t.DedupeHash, t.Domain, t.IsCISAKEV, now.AddDate(0, 0, daysToTriage), now.AddDate(0, 0, daysToRemediate))
+			_, err := insertStmt.ExecContext(ctx, source, asset, t.Title, t.Severity, t.Description, t.RecommendedRemediation, t.Status, t.DedupeHash, t.Domain, t.IsCISAKEV, now.AddDate(0, 0, daysToTriage), now.AddDate(0, 0, daysToRemediate), t.ScannerSeverity, t.RubricScore)
 			if err != nil {
 				return err
 			}
@@ -175,17 +175,18 @@ func (s *SQLiteStore) executeBatchMutations(ctx context.Context, tx *sql.Tx, sou
 	}
 
 	if len(reopens) > 0 {
-		updateStmt, _ := tx.PrepareContext(ctx, `UPDATE tickets SET status = 'Waiting to be Triaged', patched_at = NULL, triage_due_date = ?, remediation_due_date = ?, updated_at = CURRENT_TIMESTAMP WHERE dedupe_hash = ?`)
+		updateStmt, _ := tx.PrepareContext(ctx, `UPDATE tickets SET status = 'Waiting to be Triaged', patched_at = NULL, severity = ?, scanner_severity = ?, rubric_score = ?, is_cisa_kev = ?, triage_due_date = ?, remediation_due_date = ?, updated_at = CURRENT_TIMESTAMP WHERE dedupe_hash = ?`)
 		defer updateStmt.Close()
 		for _, t := range reopens {
-			// A finding that came back starts a fresh clock from the matrix
+			// A finding that came back takes the severity it came back with and
+			// starts a fresh clock from the matrix
 			daysToTriage, daysToRemediate := 3, 30
 			if dMap, ok := slaMap[t.Domain]; ok {
 				if policy, ok := dMap[t.Severity]; ok {
 					daysToTriage, daysToRemediate = policy.DaysToTriage, policy.DaysToRemediate
 				}
 			}
-			updateStmt.ExecContext(ctx, now.AddDate(0, 0, daysToTriage), now.AddDate(0, 0, daysToRemediate), t.DedupeHash)
+			updateStmt.ExecContext(ctx, t.Severity, t.ScannerSeverity, t.RubricScore, t.IsCISAKEV, now.AddDate(0, 0, daysToTriage), now.AddDate(0, 0, daysToRemediate), t.DedupeHash)
 			tx.ExecContext(ctx, `INSERT INTO ticket_activity (ticket_id, actor, activity_type, old_value, new_value) SELECT id, 'Scan', 'scan_reopened', 'Patched', 'Waiting to be Triaged' FROM tickets WHERE dedupe_hash = ?`, t.DedupeHash)
 		}
 	}

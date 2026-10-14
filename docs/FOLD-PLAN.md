@@ -1,7 +1,7 @@
 # One RiskRancher: folding the `pro/` layer into the product
 
-Status: plan. Stages land as separate commits, suite green between each, so any
-stage can be bisected or reverted on its own.
+Status: Stage 1 landed 2026-10-14 (d0d61a1, caa7f03, a0034cb, da50183). Stages land as
+separate commits, suite green between each, so any stage can be bisected or reverted on its own.
 
 ## Goal
 
@@ -53,7 +53,7 @@ Deleted outright: `pro/license`, `pro/middleware/license.go`, `pro/admin/license
 
 ## Stages
 
-### Stage 1: remove the tier (no package moves)
+### Stage 1: remove the tier (no package moves) -- DONE
 
 1. Delete the license manager and everything that references it. `cmd/rr` boots
    `server.NewApp(store)`, registers routes, serves. No interceptor, no gate.
@@ -109,3 +109,10 @@ Deleted outright: `pro/license`, `pro/middleware/license.go`, `pro/admin/license
   commit with its own test, before or after, never inside the move.
 - The million-row database in the lab is the performance ruler: pen page under a
   second, ingest under two minutes, before and after.
+
+## Found and fixed on the way (own commits, not inside the moves)
+
+- The `/static/pro/` mount served the whole embedded UI filesystem, exposing template source over HTTP; it now serves scripts only (caa7f03).
+- The ingest page's script pointed at a path that 404'd (caa7f03).
+- Adapter findings paths could not index arrays, so the shipped Trivy adapter never ingested the shipped sample (fixed with a test, after Stage 1).
+- Verified no performance change: pen page on the million-row lab DB 0.5-0.7 s warm before and after.

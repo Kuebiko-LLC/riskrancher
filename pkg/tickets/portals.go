@@ -23,7 +23,7 @@ func (h *Handler) HandleBulkUpdate(w http.ResponseWriter, r *http.Request) {
 	store := h.Store
 
 	// 2. Execute the transaction
-	batchToken, err := store.BulkUpdateStatusAndAssign(r.Context(), req.TicketIDs, req.Status, req.Assignee, req.Comment, req.Actor)
+	batchToken, err := store.BulkUpdateStatusAndAssign(r.Context(), req.TicketIDs, req.Status, req.Assignee, req.Comment, h.actor(r, req.Actor))
 	if err != nil {
 		// 🚀 If it fails here, SQLite is rejecting our query!
 		log.Printf("🚨 DATABASE TRANSACTION ERROR in BulkUpdate: %v", err)

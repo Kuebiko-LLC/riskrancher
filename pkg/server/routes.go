@@ -91,8 +91,8 @@ func RegisterRoutes(app *App) {
 
 	// Adapters and configuration
 	app.Router.Handle("GET /api/adapters", protected(adapterH.HandleGetAdapters))
-	app.Router.Handle("POST /api/adapters", protected(adapterH.HandleCreateAdapter))
-	app.Router.Handle("DELETE /api/adapters/{id}", protected(adapterH.HandleDeleteAdapter))
+	app.Router.Handle("POST /api/adapters", rangeHand(adapterH.HandleCreateAdapter))
+	app.Router.Handle("DELETE /api/adapters/{id}", rangeHand(adapterH.HandleDeleteAdapter))
 	app.Router.Handle("GET /api/config", protected(adminH.HandleGetConfig))
 	app.Router.Handle("PUT /api/config", sheriffOnly(func(w http.ResponseWriter, r *http.Request) {
 		var payload struct {

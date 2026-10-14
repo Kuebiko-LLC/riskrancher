@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
@@ -33,12 +34,26 @@ type MagistrateReviewRequest struct {
 	ExtensionDays int    `json:"extension_days"`
 }
 
+// actor names the signed-in user for the audit trail. A body may carry an
+// actor field for callers without a session (tests, scripts); a session wins.
+func (h *Handler) actor(r *http.Request, fromBody string) string {
+	if uid, ok := r.Context().Value(auth.UserIDKey).(int); ok {
+		if u, err := h.Store.GetUserByID(r.Context(), uid); err == nil && u.Email != "" {
+			return u.Email
+		}
+	}
+	if fromBody == "" {
+		return "Unknown"
+	}
+	return fromBody
+}
+
 func (h *Handler) HandleUpdateTicket(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(r.PathValue("id"))
 	var req InlineUpdateRequest
 	json.NewDecoder(r.Body).Decode(&req)
 
-	if err := h.Store.UpdateTicketInline(r.Context(), id, req.Severity, req.Description, req.RecommendedRemediation, req.Comment, req.Actor, req.Status, req.Assignee); err != nil {
+	if err := h.Store.UpdateTicketInline(r.Context(), id, req.Severity, req.Description, req.RecommendedRemediation, req.Comment, h.actor(r, req.Actor), req.Status, req.Assignee); err != nil {
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}

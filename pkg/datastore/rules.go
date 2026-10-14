@@ -186,11 +186,27 @@ func (s *SQLiteStore) LogAuditAction(ctx context.Context, actor, action, resourc
 // Rules engine CRUD
 // ==========================================
 
+// CreateSuppressionRule logs a false positive: the finding closes now if it is
+// open, and the rules engine keeps it closed on every scan after.
 func (s *SQLiteStore) CreateSuppressionRule(ctx context.Context, rule *domain.SuppressionRule) error {
-	res, err := s.DB.ExecContext(ctx,
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	res, err := tx.ExecContext(ctx,
 		"INSERT INTO suppression_rules (dedupe_hash, asset_identifier, rationale, actor) VALUES (?, ?, ?, ?)",
 		rule.DedupeHash, rule.AssetIdentifier, rule.Rationale, rule.Actor)
 	if err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx,
+		`UPDATE tickets SET status = 'False Positive', latest_comment = ?, updated_at = CURRENT_TIMESTAMP
+		 WHERE dedupe_hash = ? AND asset_identifier = ? AND status NOT IN ('Patched', 'Risk Accepted', 'False Positive')`,
+		"False positive: "+rule.Rationale, rule.DedupeHash, rule.AssetIdentifier); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
 		return err
 	}
 	id, _ := res.LastInsertId()

@@ -152,3 +152,32 @@ func TestRejectFromWrangler_ResetsTheOwnerAndKeepsTheReason(t *testing.T) {
 		t.Fatalf("reject must return the ticket, clear the owner, and keep the reason: status=%q assignee=%q comment=%q", status, assignee, comment)
 	}
 }
+
+// Logging a false positive for a finding already in the queue closes it now and
+// keeps it closed on the next scan.
+func TestSuppressionRule_ClosesAnOpenFindingAndKeepsItClosed(t *testing.T) {
+	s := newRulesStore(t)
+	ctx := context.Background()
+	hash := hashOf("Semgrep", "jenkins-ci", "Hardcoded AWS secret")
+	batch := []domain.Ticket{{Source: "Semgrep", AssetIdentifier: "jenkins-ci", Title: "Hardcoded AWS secret", Severity: "Critical", DedupeHash: hash, Status: "Waiting to be Triaged"}}
+	if err := s.ProcessIngestionBatch(ctx, "Semgrep", "jenkins-ci", batch); err != nil {
+		t.Fatal(err)
+	}
+	if st, _, _ := ticketStatus(t, s, hash); st != "Waiting to be Triaged" {
+		t.Fatalf("precondition: open finding, got %q", st)
+	}
+	// Then the analyst logs it as a false positive
+	if err := s.CreateSuppressionRule(ctx, &domain.SuppressionRule{DedupeHash: hash, AssetIdentifier: "jenkins-ci", Rationale: "documented example key", Actor: "sheriff"}); err != nil {
+		t.Fatal(err)
+	}
+	if st, _, _ := ticketStatus(t, s, hash); st != "False Positive" {
+		t.Fatalf("logging a false positive must close the open finding, got %q", st)
+	}
+	// And the next scan does not bring it back
+	if err := s.ProcessIngestionBatch(ctx, "Semgrep", "jenkins-ci", batch); err != nil {
+		t.Fatal(err)
+	}
+	if st, _, _ := ticketStatus(t, s, hash); st != "False Positive" {
+		t.Fatalf("a logged false positive must stay closed on re-scan, got %q", st)
+	}
+}

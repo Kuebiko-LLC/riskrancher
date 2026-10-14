@@ -160,7 +160,7 @@ func (s *SQLiteStore) GetDashboardTicketsWithPortals(ctx context.Context, tabSta
 
 	// 3. Fetch the portal tokens for the returned tickets
 	for _, t := range coreTickets {
-		pt := domain.DashboardTicket{Ticket: t}
+		pt := domain.DashboardTicket{Ticket: t, RequestKind: requestKind(t.RiskRationale)}
 		var token string
 		err := s.DB.QueryRowContext(ctx, `
           SELECT m.token 
@@ -175,6 +175,17 @@ func (s *SQLiteStore) GetDashboardTicketsWithPortals(ctx context.Context, tabSta
 	}
 
 	return proTickets, total, metrics, nil
+}
+
+// requestKind reads what the owner asked for from the stored rationale,
+// which the portal writes as "<kind>: <reason>".
+func requestKind(rationale string) string {
+	for _, kind := range []string{"Time Extension", "Risk Acceptance"} {
+		if strings.HasPrefix(rationale, kind+":") {
+			return kind
+		}
+	}
+	return ""
 }
 
 // Immutable audit logging

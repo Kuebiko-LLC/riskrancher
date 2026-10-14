@@ -24,22 +24,23 @@
                         <span class="badge {{.Severity | lower}}" style="margin-top: 4px; display: inline-block;">{{.Severity}}</span><br>
                         <span style="font-size: 0.8rem; color: #64748b; font-family: monospace; margin-top: 4px; display: inline-block;">{{.AssetIdentifier}}</span>
                     </td>
-                    <td class="risk-type-cell" style="padding: 15px 10px; vertical-align: top; text-align: center; border-bottom: 1px solid #f1f5f9;"></td>
+                    <td class="risk-type-cell" style="padding: 15px 10px; vertical-align: top; text-align: center; border-bottom: 1px solid #f1f5f9;">
+                        {{if eq .RequestKind "Risk Acceptance"}}
+                            <span style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">🛑 Risk Acceptance</span>
+                        {{else if eq .RequestKind "Time Extension"}}
+                            <span style="background: #ffedd5; color: #ea580c; border: 1px solid #fdba74; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">⏱️ Time Extension</span>
+                        {{else}}
+                            <span style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">📋 Review</span>
+                        {{end}}
+                    </td>
                     <td style="padding: 15px 10px; vertical-align: top; border-bottom: 1px solid #f1f5f9;">
-                        <div class="risk-rationale-cell" style="background: #f8fafc; padding: 10px; border-left: 3px solid #cbd5e1; border-radius: 4px; font-size: 0.85rem; color: #334155; line-height: 1.4;">
-                            {{.Description}}
+                        <div class="risk-rationale-cell" style="background: #f8fafc; padding: 10px; border-left: 3px solid {{if eq .RequestKind "Risk Acceptance"}}#dc2626{{else}}#ea580c{{end}}; border-radius: 4px; font-size: 0.85rem; color: #334155; line-height: 1.4;">
+                            {{if .RiskRationale}}{{.RiskRationale}}{{else}}No rationale given.{{end}}
                         </div>
                     </td>
                     <td style="color: #0f172a; font-weight: bold; padding: 15px 10px; vertical-align: top; border-bottom: 1px solid #f1f5f9;">
                         {{.RemediationDueDate.Format "Jan 02, 2006"}}
-                        <div style="font-size: 0.75rem; color: #dc2626; margin-top: 4px; font-weight: normal;">SLA Paused</div>
-                        <div style="margin-top: 10px;">
-                            {{if .OwnerViewedAt}}
-                                <span style="background: #dcfce7; color: #166534; padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; border: 1px solid #bbf7d0;">👀 Viewed</span>
-                            {{else}}
-                                <span style="background: #f1f5f9; color: #94a3b8; padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; border: 1px solid #e2e8f0;">✉️ Unread</span>
-                            {{end}}
-                        </div>
+                        <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px; font-weight: normal;">clock keeps running{{if gt .ExtensionCount 0}} · extended {{.ExtensionCount}}x{{end}}</div>
                     </td>
                     <td style="text-align: right; vertical-align: top; padding: 15px 0; border-bottom: 1px solid #f1f5f9;">
                         <button class="btn" style="padding: 6px 10px; font-size: 0.75rem; background: #3b82f6; margin-bottom: 5px; width: 100%; color: white;" onclick="prepMagistrateLink('{{.MagicToken}}', '{{ .ID }}', event)">🔗 Copy Link</button><br>

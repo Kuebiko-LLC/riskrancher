@@ -169,12 +169,6 @@ func HandleAdminDashboard(store domain.Store) http.HandlerFunc {
 		syncLogs, _ := store.GetRecentSyncLogs(r.Context(), 10)
 		rules, _ := store.GetRoutingRules(r.Context())
 		riskTickets, _, _, _ := store.GetDashboardTicketsWithPortals(r.Context(), "Pending Risk Approval", "", "", "", "Sheriff", 50, 0)
-		unread := 0
-		for _, t := range riskTickets {
-			if t.OwnerViewedAt == nil {
-				unread++
-			}
-		}
 		render(w, "admin", map[string]any{
 			"Users":            users,
 			"Config":           config,
@@ -184,7 +178,7 @@ func HandleAdminDashboard(store domain.Store) http.HandlerFunc {
 			"Feed":             activityFeed,
 			"SyncLogs":         syncLogs,
 			"RiskRequests":     riskTickets,
-			"PendingRiskCount": unread,
+			"PendingRiskCount": len(riskTickets),
 			"Rules":            rules,
 			"Version":          AppVersion,
 			"Commit":           AppCommit,

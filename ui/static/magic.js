@@ -27,6 +27,10 @@
             list.appendChild(div);
         });
 
+        // The days field starts from the configured default
+        const daysInput = document.getElementById('extensionDays');
+        if (daysInput && data.default_extension_days) daysInput.value = data.default_extension_days;
+
         // Populate the context boxes
         document.getElementById('magITReason').innerText = first.RiskRationale || first.risk_rationale || "No rationale provided by IT.";
         document.getElementById('magSheriffReason').innerText = first.LatestComment || first.latest_comment || "No context provided by Security.";

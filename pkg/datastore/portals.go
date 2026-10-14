@@ -91,14 +91,16 @@ func (s *SQLiteStore) RequestRiskException(ctx context.Context, ids []int, kind,
 // policy's cap; Approve on anything else accepts the risk until an expiry days
 // out. Deny hands the finding back to its owner with the reason.
 func (s *SQLiteStore) ReviewRiskRequest(ctx context.Context, ids []int, action, actor, comment string, days int) error {
-	if days <= 0 {
-		days = 30
-	}
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
+	if days <= 0 {
+		if err := tx.QueryRowContext(ctx, `SELECT default_extension_days FROM app_config WHERE id = 1`).Scan(&days); err != nil || days <= 0 {
+			days = 30
+		}
+	}
 	for _, id := range ids {
 		var status, domainName, severity string
 		var rationale sql.NullString

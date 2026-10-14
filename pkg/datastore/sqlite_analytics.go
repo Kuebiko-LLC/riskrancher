@@ -264,7 +264,10 @@ func (s *SQLiteStore) GetDashboardTickets(ctx context.Context, tabStatus, filter
 		t.owner_viewed_at,
 		t.updated_at, 
 		CAST(julianday(COALESCE(t.patched_at, t.updated_at)) - julianday(t.created_at) AS INTEGER) as days_to_resolve,
-		COALESCE(t.latest_comment, '') as latest_comment
+		COALESCE(t.latest_comment, '') as latest_comment,
+		COALESCE(t.risk_rationale, '') as risk_rationale,
+		COALESCE(t.extension_count, 0) as extension_count,
+		t.exception_expires_at
 	FROM tickets t
 	JOIN PagedAssets p ON p.asset_identifier = t.asset_identifier` + whereQ + `
 	` + orderClause
@@ -282,7 +285,7 @@ func (s *SQLiteStore) GetDashboardTickets(ctx context.Context, tabStatus, filter
 	for rows.Next() {
 		var t domain2.Ticket
 		var assignee string
-		var triageDue, remediationDue sql.NullTime
+		var triageDue, remediationDue, exceptionExpires sql.NullTime
 
 		err := rows.Scan(
 			&t.ID, &t.Source, &t.AssetIdentifier, &t.Title, &t.Description,
@@ -293,10 +296,17 @@ func (s *SQLiteStore) GetDashboardTickets(ctx context.Context, tabStatus, filter
 			&t.UpdatedAt,
 			&t.DaysToResolve,
 			&t.LatestComment,
+			&t.RiskRationale,
+			&t.ExtensionCount,
+			&exceptionExpires,
 		)
 
 		if err == nil {
 			t.Assignee = assignee
+			if exceptionExpires.Valid {
+				exp := exceptionExpires.Time
+				t.ExceptionExpiresAt = &exp
+			}
 			t.TriageDueDate, t.RemediationDueDate = triageDue.Time, remediationDue.Time
 			t.IsOverdue = !t.RemediationDueDate.IsZero() && t.RemediationDueDate.Before(time.Now()) && t.Status != "Patched" && t.Status != "Risk Accepted"
 

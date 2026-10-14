@@ -59,6 +59,8 @@ type Ticket struct {
 	BusinessImpact string  `json:"business_impact"`
 	RiskRationale  string  `json:"risk_rationale,omitempty"`
 	ExtensionCount int     `json:"extension_count,omitempty"`
+	// ExceptionExpiresAt is set when the risk was accepted: the date it comes back.
+	ExceptionExpiresAt *time.Time `json:"exception_expires_at,omitempty"`
 }
 
 // TicketAssignment represents the many-to-many relationship
@@ -73,6 +75,9 @@ type TicketAssignment struct {
 type DashboardTicket struct {
 	Ticket
 	MagicToken string `json:"magic_token,omitempty"`
+	// RequestKind is what the owner asked for on a finding waiting for review:
+	// Time Extension or Risk Acceptance.
+	RequestKind string `json:"request_kind,omitempty"`
 }
 
 // FindingDetails are the structured fields a pentester fills on a finding.

@@ -116,25 +116,6 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     // --- UI INITIALIZERS ---
-    document.querySelectorAll('.risk-row').forEach(row => {
-        const rationaleDiv = row.querySelector('.risk-rationale-cell');
-        const typeCell = row.querySelector('.risk-type-cell');
-        if (!rationaleDiv || !typeCell) return;
-        let text = rationaleDiv.innerText.trim();
-        if (text.includes('[EXTENSION]')) {
-            typeCell.innerHTML = '<span style="background: #ffedd5; color: #ea580c; border: 1px solid #fdba74; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">⏱️ TIME EXTENSION</span>';
-            rationaleDiv.innerText = text.replace('[EXTENSION]', '').trim();
-            rationaleDiv.style.borderLeft = "3px solid #ea580c";
-        } else if (text.includes('[RISK ACCEPTANCE]')) {
-            typeCell.innerHTML = '<span style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">🛑 RISK ACCEPTANCE</span>';
-            rationaleDiv.innerText = text.replace('[RISK ACCEPTANCE]', '').trim();
-            rationaleDiv.style.borderLeft = "3px solid #dc2626";
-            row.style.backgroundColor = "#fff5f5";
-        } else {
-            typeCell.innerHTML = '<span style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">📋 STANDARD</span>';
-        }
-    });
-
     // Render the Sheriff Risk Tree
     const tbody = document.getElementById("riskTableBody");
     if (tbody) {

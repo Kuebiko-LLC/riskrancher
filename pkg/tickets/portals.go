@@ -81,8 +81,12 @@ func (h *Handler) HandleMagicLink(w http.ResponseWriter, r *http.Request) {
 	if len(tickets) > 0 {
 		assignee = tickets[0].Assignee
 	}
+	defaultDays := 30
+	if cfg, err := h.Store.GetAppConfig(r.Context()); err == nil && cfg.DefaultExtensionDays > 0 {
+		defaultDays = cfg.DefaultExtensionDays
+	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{"token": batch.Token, "assignee": assignee, "tickets": tickets})
+	json.NewEncoder(w).Encode(map[string]any{"token": batch.Token, "assignee": assignee, "tickets": tickets, "default_extension_days": defaultDays})
 }
 
 // HandleMagicLinkSubmit is the owner saying a finding is fixed, with evidence.

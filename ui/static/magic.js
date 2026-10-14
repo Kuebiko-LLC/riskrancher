@@ -267,8 +267,12 @@
     document.getElementById("openRiskModalBtn")?.addEventListener("click", async function() {
         const checked = document.querySelectorAll(".ticket-cb:checked");
         if (checked.length === 0) return alert("Select at least one finding to request an exception for.");
+        const ids = Array.from(checked).map(cb => parseInt(cb.value, 10));
+        const kind = document.getElementById("riskKind")?.value || "Time Extension";
 
-        const rationale = prompt("Enter the business rationale for this exception (Required for Exec Review):");
+        const rationale = prompt(kind === "Risk Acceptance"
+            ? "Why should this risk be accepted, and what compensating control is in place? (Required for review)"
+            : "Why is more time needed, and when will the fix land? (Required for review)");
         if (!rationale) return alert("Action cancelled. A rationale is strictly required.");
 
         this.disabled = true;
@@ -278,11 +282,11 @@
             const res = await fetch(`/api/share/${currentToken}/risk`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type: "Time Extension", rationale: rationale })
+                body: JSON.stringify({ ticket_ids: ids, type: kind, rationale: rationale })
             });
 
             if (res.ok) {
-                alert("⚖️ Exception requested. It is now pending Exec/Magistrate review.");
+                alert("⚖️ Request sent. It is now waiting for the risk approver.");
                 window.location.reload();
             } else {
                 alert("Failed to request exception: " + await res.text());

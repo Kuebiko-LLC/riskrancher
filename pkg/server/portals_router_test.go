@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -105,3 +106,57 @@ func TestSheriffDeny_UsesPortalReviewRoute(t *testing.T) {
 	}
 	_ = json.Valid
 }
+
+// The owner asks for an extension or for the risk to be accepted, for the
+// findings they ticked, and the page sends exactly that.
+func TestOwnerPortal_RequestKindAndSelectionAreHonored(t *testing.T) {
+	app := routerApp(t)
+	ctx := context.Background()
+	var ids []int
+	for _, title := range []string{"CVE-0000-0001 kind", "CVE-0000-0002 kind"} {
+		tk := domain.Ticket{Source: "Nessus", AssetIdentifier: "payments-api", Title: title, Severity: "High", Domain: "Vulnerability",
+			TriageDueDate: time.Now().Add(72 * time.Hour), RemediationDueDate: time.Now().Add(720 * time.Hour)}
+		if err := app.Store.CreateTicket(ctx, &tk); err != nil {
+			t.Fatal(err)
+		}
+		ids = append(ids, tk.ID)
+	}
+	token, err := app.Store.BulkUpdateStatusAndAssign(ctx, ids, "Assigned Out", "dana@rr.test", "", "sheriff@rr.test")
+	if err != nil || token == "" {
+		t.Fatalf("assigning out should mint a link: %v", err)
+	}
+
+	src, err := fsReadUI("static/magic.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(src, `riskKind`) || !strings.Contains(src, `ticket_ids: ids, type: kind`) {
+		t.Fatalf("magic.js must send the chosen kind and the ticked ticket_ids on the risk request")
+	}
+	page, err := fsReadUI("templates/magic/wrangler.gohtml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(page, `id="riskKind"`) || !strings.Contains(page, `Risk Acceptance`) {
+		t.Fatalf("the owner page must offer Time Extension and Risk Acceptance")
+	}
+
+	body := `{"ticket_ids":[` + itoa(ids[0]) + `],"type":"Risk Acceptance","rationale":"compensating control in place"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/share/"+token+"/risk", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	app.Router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("risk request: %d %s", rec.Code, rec.Body.String())
+	}
+	first, _ := app.Store.GetTicketByID(ctx, ids[0])
+	second, _ := app.Store.GetTicketByID(ctx, ids[1])
+	if first.Status != "Pending Risk Approval" || !strings.HasPrefix(first.RiskRationale, "Risk Acceptance:") {
+		t.Fatalf("ticked finding: status=%q rationale=%q", first.Status, first.RiskRationale)
+	}
+	if second.Status != "Assigned Out" {
+		t.Fatalf("the finding not ticked must be untouched, got %q", second.Status)
+	}
+}
+
+func itoa(i int) string { return strconv.Itoa(i) }

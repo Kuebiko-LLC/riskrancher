@@ -37,7 +37,7 @@ It wipes the ticket table, seeds every dashboard tab, and prints working portal 
 
 **Hand off without accounts.** The people who fix things get a magic-link portal (`/share/{token}`) to submit a fix or request more time. Risk approvers get their own (`/review/{token}`) to approve or deny. Nobody outside the security team needs a login.
 
-**Accept risk on the record.** A request, review, approve or deny pipeline for exceptions, with the SLA effects applied and every step in the audit log.
+**Accept risk on the record.** Owners ask for more time or for the risk to be accepted from their link. The approver's decision either pushes the due date, counted against the SLA policy's extension cap, or holds the finding as Risk Accepted with the approver and an expiry recorded. Every step is in the audit log.
 
 **Flag what is exploited.** Load the CISA Known Exploited Vulnerabilities catalog yourself and matching findings are flagged. Nothing is fetched; the tool never leaves your network.
 

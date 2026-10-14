@@ -89,6 +89,7 @@ func (g GlobalSuppressionRule) matches(t *domain.Ticket) bool {
 
 // apply runs the pre-insert rules on one finding.
 func (r *ingestRules) apply(t *domain.Ticket) {
+	t.Severity = domain.NormalizeSeverity(t.Severity)
 	if t.DedupeHash == "" {
 		t.DedupeHash = dedupeHash(t.Source, t.AssetIdentifier, t.Title)
 	}
@@ -110,7 +111,7 @@ func (r *ingestRules) apply(t *domain.Ticket) {
 			continue
 		}
 		if rule.action == "DowngradeSeverity" {
-			t.Severity = rule.value
+			t.Severity = domain.NormalizeSeverity(rule.value)
 		}
 	}
 }

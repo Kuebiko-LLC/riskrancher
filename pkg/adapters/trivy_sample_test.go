@@ -2,6 +2,7 @@ package adapters
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -33,6 +34,16 @@ func TestShippedTrivyAdapterIngestsShippedSample(t *testing.T) {
 	db.QueryRow(`SELECT COUNT(*) FROM tickets`).Scan(&n)
 	if n == 0 {
 		t.Fatalf("expected tickets from the sample, got 0")
+	}
+	// Trivy spells it CRITICAL; the store, the matrix and the counts say Critical
+	var criticals int
+	db.QueryRow(`SELECT COUNT(*) FROM tickets WHERE severity = 'Critical'`).Scan(&criticals)
+	if criticals != 1 {
+		t.Fatalf("the sample has one CRITICAL; stored as Critical: %d", criticals)
+	}
+	analytics, err := datastore.NewSQLiteStore(db).GetSheriffAnalytics(context.Background())
+	if err != nil || analytics.OpenCriticals != 1 {
+		t.Fatalf("the metrics page must count it: open criticals=%d err=%v", analytics.OpenCriticals, err)
 	}
 	t.Logf("ingested %d findings from the sample", n)
 }

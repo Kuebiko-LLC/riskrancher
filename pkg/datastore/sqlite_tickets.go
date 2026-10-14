@@ -88,6 +88,9 @@ func (s *SQLiteStore) UpdateTicketInline(ctx context.Context, ticketID int, seve
 	if comment != "" {
 		formattedComment = "[" + actor + "] " + comment
 	}
+	if severity != "" {
+		severity = domain.NormalizeSeverity(severity)
+	}
 
 	_, err := s.DB.ExecContext(ctx, query,
 		severity, severity, description, description, remediation, remediation,

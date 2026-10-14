@@ -29,7 +29,7 @@ func (s *SQLiteStore) txResolve(ctx context.Context, ticketID int, newSeverity s
 		return err
 	}
 	defer tx.Rollback()
-	if _, err := tx.ExecContext(ctx, `UPDATE tickets SET severity = ? WHERE id = ?`, newSeverity, ticketID); err != nil {
+	if _, err := tx.ExecContext(ctx, `UPDATE tickets SET severity = ? WHERE id = ?`, domain.NormalizeSeverity(newSeverity), ticketID); err != nil {
 		return err
 	}
 	if _, err := tx.ExecContext(ctx,

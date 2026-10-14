@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"strings"
 	"time"
 )
 
@@ -98,4 +99,22 @@ type MagicBatch struct {
 	CreatedBy string
 	ExpiresAt time.Time
 	TicketIDs []int
+}
+
+// NormalizeSeverity maps a scanner's spelling of a severity onto the one the
+// SLA matrix and the counts use. Unknown values pass through unchanged.
+func NormalizeSeverity(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "critical":
+		return "Critical"
+	case "high":
+		return "High"
+	case "medium", "moderate":
+		return "Medium"
+	case "low":
+		return "Low"
+	case "info", "informational", "information", "negligible", "unknown", "none":
+		return "Info"
+	}
+	return strings.TrimSpace(raw)
 }

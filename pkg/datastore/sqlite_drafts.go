@@ -75,6 +75,7 @@ func (s *SQLiteStore) PromotePentestDrafts(ctx context.Context, reportID string,
 	for _, t := range tickets {
 		hash := fmt.Sprintf("manual-pentest-%s-%s", t.AssetIdentifier, t.Title)
 
+		t.Severity = domain2.NormalizeSeverity(t.Severity)
 		promoteTriageDue, promoteRemediationDue := s.dueDates(ctx, "", t.Severity)
 		res, err := tx.ExecContext(ctx, `
 			INSERT INTO tickets (

@@ -32,6 +32,11 @@ func (h *Handler) RequireAuth(next http.Handler) http.Handler {
 				http.Error(w, "Forbidden: read-only API key", http.StatusForbidden)
 				return
 			}
+			// A key is only as alive as the person it acts for
+			if owner, err := h.Store.GetUserByID(r.Context(), key.CreatedBy); err != nil || !owner.IsActive {
+				http.Error(w, "Unauthorized: API key owner is not active", http.StatusUnauthorized)
+				return
+			}
 			ctx := context.WithValue(r.Context(), UserIDKey, key.CreatedBy)
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return

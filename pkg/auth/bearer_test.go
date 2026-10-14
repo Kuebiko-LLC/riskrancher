@@ -58,3 +58,33 @@ func TestBearerKeyActsAsItsOwner(t *testing.T) {
 		t.Fatalf("no credentials must be refused, got %d", c)
 	}
 }
+
+// Deactivating a user ends their keys too.
+func TestBearerKey_DeactivatedOwnerIsRejected(t *testing.T) {
+	store := datastore.NewSQLiteStore(datastore.InitDB(":memory:"))
+	defer store.DB.Close()
+	ctx := context.Background()
+	u, err := store.CreateUser(ctx, "leaver@rr.test", "Leaver", "hash", "Sheriff")
+	if err != nil {
+		t.Fatal(err)
+	}
+	key, _ := store.CreateAPIKey(ctx, domain.APIKey{Name: "ci", Permissions: "FullAdmin", CreatedBy: u.ID})
+	h := auth.NewHandler(store)
+	guarded := h.RequireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) }))
+	try := func() int {
+		req := httptest.NewRequest(http.MethodGet, "/api/tickets", nil)
+		req.Header.Set("Authorization", "Bearer "+key)
+		rec := httptest.NewRecorder()
+		guarded.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	if c := try(); c != http.StatusOK {
+		t.Fatalf("an active owner's key works, got %d", c)
+	}
+	if err := store.DeactivateUserAndReassign(ctx, u.ID); err != nil {
+		t.Fatal(err)
+	}
+	if c := try(); c != http.StatusUnauthorized {
+		t.Fatalf("a deactivated owner's key must stop, got %d", c)
+	}
+}

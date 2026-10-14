@@ -84,7 +84,7 @@ func (s *SQLiteStore) GetSession(ctx context.Context, token string) (*domain.Ses
 
 // GetUserByID fetches a user's full record, including their role
 func (s *SQLiteStore) GetUserByID(ctx context.Context, id int) (*domain.User, error) {
-	query := `SELECT id, email, full_name, password_hash, global_role FROM users WHERE id = ?`
+	query := `SELECT id, email, full_name, password_hash, global_role, COALESCE(is_active, 1) FROM users WHERE id = ?`
 
 	var user domain.User
 	err := s.DB.QueryRowContext(ctx, query, id).Scan(
@@ -93,6 +93,7 @@ func (s *SQLiteStore) GetUserByID(ctx context.Context, id int) (*domain.User, er
 		&user.FullName,
 		&user.PasswordHash,
 		&user.GlobalRole,
+		&user.IsActive,
 	)
 
 	if err != nil {

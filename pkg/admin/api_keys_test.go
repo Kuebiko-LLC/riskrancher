@@ -14,7 +14,7 @@ func TestAPIKeyLifecycle(t *testing.T) {
 	defer db.Close()
 	cookie := GetVIPCookie(h.Store)
 
-	req := httptest.NewRequest(http.MethodPost, "/api/admin/apikeys", strings.NewReader(`{"name":"ci-scanner","permissions":"WriteOnly"}`))
+	req := httptest.NewRequest(http.MethodPost, "/api/admin/apikeys", strings.NewReader(`{"name":"ci-scanner","permissions":"FullAdmin"}`))
 	req.AddCookie(cookie)
 	req = req.WithContext(ctxWithUser(t, h, req))
 	rec := httptest.NewRecorder()

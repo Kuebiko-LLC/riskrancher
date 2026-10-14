@@ -43,6 +43,10 @@ func (h *Handler) HandleCreateAPIKey(w http.ResponseWriter, r *http.Request) {
 	if req.Permissions == "" {
 		req.Permissions = "FullAdmin"
 	}
+	if req.Permissions != "FullAdmin" && req.Permissions != "ReadOnly" {
+		http.Error(w, "permissions must be FullAdmin or ReadOnly", http.StatusBadRequest)
+		return
+	}
 	key := domain.APIKey{Name: req.Name, Permissions: req.Permissions, CreatedBy: userID}
 	if req.ExpiresAt != "" {
 		t, err := time.Parse(time.RFC3339, req.ExpiresAt)

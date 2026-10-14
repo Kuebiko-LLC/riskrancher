@@ -241,10 +241,17 @@ func (s *SQLiteStore) executeBatchMutations(ctx context.Context, tx *sql.Tx, sou
 	}
 
 	if len(reopens) > 0 {
-		updateStmt, _ := tx.PrepareContext(ctx, `UPDATE tickets SET status = 'Waiting to be Triaged', patched_at = NULL, triage_due_date = ?, remediation_due_date = ? WHERE dedupe_hash = ?`)
+		updateStmt, _ := tx.PrepareContext(ctx, `UPDATE tickets SET status = 'Waiting to be Triaged', patched_at = NULL, triage_due_date = ?, remediation_due_date = ?, updated_at = CURRENT_TIMESTAMP WHERE dedupe_hash = ?`)
 		defer updateStmt.Close()
 		for _, t := range reopens {
-			updateStmt.ExecContext(ctx, now.AddDate(0, 0, 3), now.AddDate(0, 0, 30), t.DedupeHash) // Using default SLAs for fallback
+			// A finding that came back starts a fresh clock from the matrix
+			daysToTriage, daysToRemediate := 3, 30
+			if dMap, ok := slaMap[t.Domain]; ok {
+				if policy, ok := dMap[t.Severity]; ok {
+					daysToTriage, daysToRemediate = policy.DaysToTriage, policy.DaysToRemediate
+				}
+			}
+			updateStmt.ExecContext(ctx, now.AddDate(0, 0, daysToTriage), now.AddDate(0, 0, daysToRemediate), t.DedupeHash)
 		}
 	}
 

@@ -144,23 +144,7 @@ var knownDrift = []string{}
 
 // knownOrphans is the same burn-down for routes nothing reaches: each is
 // either wired to a page, documented in the README, or removed.
-var knownOrphans = []string{
-	"DELETE /api/adapters/{id}",
-	"DELETE /api/admin/triage/{id}",
-	"GET /api/adapters",
-	"GET /api/admin/routing",
-	"GET /api/admin/triage",
-	"GET /api/admin/users",
-	"GET /api/config",
-	"GET /api/finding-templates/{id}",
-	"GET /api/reports/view/{id}",
-	"GET /api/tickets",
-	"GET /api/wranglers",
-	"POST /api/admin/shutdown",
-	"POST /api/admin/triage",
-	"PUT /api/finding-templates/{id}",
-	"PUT /api/findings/{id}",
-}
+var knownOrphans = []string{}
 
 var routePatternRe = regexp.MustCompile(`"(GET|POST|PUT|PATCH|DELETE) (/api/[^"]+)"`)
 var segmentRe = regexp.MustCompile(`\{[^}]+\}`)

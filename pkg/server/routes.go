@@ -80,7 +80,6 @@ func RegisterRoutes(app *App) {
 	app.Router.Handle("PATCH /api/tickets/{id}", protected(ticketH.HandleUpdateTicket))
 	app.Router.Handle("GET /api/tickets/{id}/activity", protected(ticketH.HandleTicketActivity))
 	app.Router.Handle("PATCH /api/tickets/bulk", protected(ticketH.HandleBulkUpdate))
-	app.Router.Handle("GET /api/wranglers", protected(adminH.HandleGetWranglers))
 
 	// Portals (owner and risk approver): the link is the authorization, no account
 	byLink := func(h http.HandlerFunc) http.Handler { return auditH(http.HandlerFunc(h)) }

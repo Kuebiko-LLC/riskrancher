@@ -85,7 +85,7 @@ func (h *Handler) HandleUpdateUserRole(w http.ResponseWriter, r *http.Request) {
 	}
 
 	validRoles := map[string]bool{
-		"Sheriff": true, "Wrangler": true, "RangeHand": true, "CircuitRider": true, "Magistrate": true, "Bounty Hunter": true,
+		"Sheriff": true, "Wrangler": true, "RangeHand": true, "Magistrate": true, "Bounty Hunter": true,
 	}
 	if !validRoles[req.GlobalRole] {
 		http.Error(w, "Invalid role provided", http.StatusBadRequest)
@@ -147,7 +147,7 @@ func (h *Handler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	validRoles := map[string]bool{
-		"Sheriff": true, "Wrangler": true, "RangeHand": true, "CircuitRider": true, "Magistrate": true, "Bounty Hunter": true,
+		"Sheriff": true, "Wrangler": true, "RangeHand": true, "Magistrate": true, "Bounty Hunter": true,
 	}
 	if !validRoles[req.GlobalRole] {
 		http.Error(w, "Invalid role provided", http.StatusBadRequest)
@@ -193,14 +193,3 @@ func (h *Handler) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(users)
 }
 
-// HandleGetWranglers returns a clean list of IT users for assignment dropdowns
-func (h *Handler) HandleGetWranglers(w http.ResponseWriter, r *http.Request) {
-	wranglers, err := h.Store.GetWranglers(r.Context())
-	if err != nil {
-		http.Error(w, "Failed to fetch wranglers", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(wranglers)
-}

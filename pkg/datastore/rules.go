@@ -3,8 +3,11 @@ package datastore
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"regexp"
+	"strings"
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
@@ -257,7 +260,44 @@ func (s *SQLiteStore) CreateRoutingRule(ctx context.Context, rule *domain.Routin
 // CISA KEV catalog
 // ==========================================
 
+// cveToken finds CVE ids in free text, in any letter case.
+var cveToken = regexp.MustCompile(`(?i)CVE-\d{4}-\d{4,}`)
+
+// SyncCISACatalog replaces the stored KEV catalog and re-flags findings.
+// It reads every finding that mentions a CVE once and matches the ids in Go,
+// so the cost is one pass over the table, not one scan per catalog entry.
 func (s *SQLiteStore) SyncCISACatalog(ctx context.Context, feed *domain.CISAFeed) error {
+	known := make(map[string]bool, len(feed.Vulnerabilities))
+	for _, v := range feed.Vulnerabilities {
+		known[strings.ToUpper(v.CVEID)] = true
+	}
+
+	// One pass: which findings name a catalog CVE
+	rows, err := s.DB.QueryContext(ctx, `SELECT id, title, description FROM tickets WHERE title LIKE '%CVE-%' OR description LIKE '%CVE-%'`)
+	if err != nil {
+		return err
+	}
+	var hits []int
+	for rows.Next() {
+		var id int
+		var title string
+		var desc sql.NullString
+		if err := rows.Scan(&id, &title, &desc); err != nil {
+			rows.Close()
+			return err
+		}
+		for _, m := range cveToken.FindAllString(title+" "+desc.String, -1) {
+			if known[strings.ToUpper(m)] {
+				hits = append(hits, id)
+				break
+			}
+		}
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -267,38 +307,36 @@ func (s *SQLiteStore) SyncCISACatalog(ctx context.Context, feed *domain.CISAFeed
 	if _, err := tx.ExecContext(ctx, "DELETE FROM cisa_catalog"); err != nil {
 		return err
 	}
-
-	stmt, err := tx.PrepareContext(ctx, `
-       INSERT INTO cisa_catalog (cve_id, date_added)
-       VALUES (?, ?)
-    `)
+	stmt, err := tx.PrepareContext(ctx, `INSERT INTO cisa_catalog (cve_id, date_added) VALUES (?, ?)`)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
-
 	for _, v := range feed.Vulnerabilities {
 		if _, err := stmt.ExecContext(ctx, v.CVEID, v.DateAdded); err != nil {
 			return err
 		}
 	}
 
-	if _, err := tx.ExecContext(ctx, "UPDATE tickets SET is_cisa_kev = 0"); err != nil {
+	if _, err := tx.ExecContext(ctx, "UPDATE tickets SET is_cisa_kev = 0 WHERE is_cisa_kev = 1"); err != nil {
 		return err
 	}
-
-	_, err = tx.ExecContext(ctx, `
-       UPDATE tickets 
-       SET is_cisa_kev = 1 
-       WHERE id IN (
-          SELECT t.id FROM tickets t
-          JOIN cisa_catalog c ON t.title LIKE '%' || c.cve_id || '%' OR t.description LIKE '%' || c.cve_id || '%'
-       )
-    `)
-	if err != nil {
-		return err
+	const chunk = 500
+	for i := 0; i < len(hits); i += chunk {
+		end := i + chunk
+		if end > len(hits) {
+			end = len(hits)
+		}
+		args := make([]any, 0, end-i)
+		marks := make([]string, 0, end-i)
+		for _, id := range hits[i:end] {
+			args = append(args, id)
+			marks = append(marks, "?")
+		}
+		if _, err := tx.ExecContext(ctx, "UPDATE tickets SET is_cisa_kev = 1 WHERE id IN ("+strings.Join(marks, ",")+")", args...); err != nil {
+			return err
+		}
 	}
-
 	return tx.Commit()
 }
 

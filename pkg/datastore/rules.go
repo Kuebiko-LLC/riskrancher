@@ -278,7 +278,12 @@ func (s *SQLiteStore) DeleteSuppressionRule(ctx context.Context, id int) error {
 	}
 	rows.Close()
 	for _, tid := range reopened {
-		if _, err := tx.ExecContext(ctx, `UPDATE tickets SET status = 'Waiting to be Triaged', latest_comment = 'False-positive log withdrawn: back on the queue', updated_at = CURRENT_TIMESTAMP WHERE id = ?`, tid); err != nil {
+		var domainName, severity string
+		if err := tx.QueryRowContext(ctx, `SELECT domain, severity FROM tickets WHERE id = ?`, tid).Scan(&domainName, &severity); err != nil {
+			return err
+		}
+		triageDue, remediationDue := s.dueDates(ctx, domainName, severity)
+		if _, err := tx.ExecContext(ctx, `UPDATE tickets SET status = 'Waiting to be Triaged', triage_due_date = ?, remediation_due_date = ?, latest_comment = 'False-positive log withdrawn: back on the queue', updated_at = CURRENT_TIMESTAMP WHERE id = ?`, triageDue, remediationDue, tid); err != nil {
 			return err
 		}
 		if _, err := tx.ExecContext(ctx, `INSERT INTO ticket_activity (ticket_id, actor, activity_type, old_value, new_value) VALUES (?, 'Suppression', 'status_change', 'False Positive', 'Waiting to be Triaged')`, tid); err != nil {

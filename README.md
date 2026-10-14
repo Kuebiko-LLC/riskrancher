@@ -43,6 +43,10 @@ It wipes the ticket table, seeds every dashboard tab, and prints working portal 
 
 **Pentest workflow.** Upload an engagement report at `/reports/upload`, parse it, and promote findings through a draft queue into real tickets, with CVSS vector, CWE, business impact, and screenshots on each. Reusable finding templates stop you retyping the same write-up. Then go the other way: select findings and generate a branded engagement report as Markdown or a self-contained, print-ready HTML document (`POST /api/reports/branded`, fetch with `GET /api/reports/branded/{id}?format=md|html`). Print the HTML to PDF for the client deliverable.
 
+**API keys.** A Sheriff mints a key (`POST /api/admin/apikeys`, shown once) and a scanner or pipeline sends it as `Authorization: Bearer <key>` on any API route. A key acts as the user who created it; a ReadOnly key can only GET. List and revoke under `/api/admin/apikeys`.
+
+**Log a false positive.** `POST /api/admin/suppression` with the finding's source, asset and title (or its dedupe hash) and a rationale. That finding lands closed as False Positive on every scan after, on that asset, until the rule is deleted.
+
 **Roles, keys, audit.** Four roles (Sheriff, RangeHand, Wrangler, Magistrate) enforced by middleware, service accounts with API keys, and an immutable audit log.
 
 ## Schema changes

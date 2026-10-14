@@ -117,6 +117,8 @@ type RulesStore interface {
 	GetAutoTriageRules(ctx context.Context) ([]AutoTriageRule, error)
 	DeleteAutoTriageRule(ctx context.Context, ruleID int) error
 	CreateSuppressionRule(ctx context.Context, rule *SuppressionRule) error
+	ListSuppressionRules(ctx context.Context) ([]SuppressionRule, error)
+	DeleteSuppressionRule(ctx context.Context, id int) error
 	CreateRoutingRule(ctx context.Context, rule *RoutingRule) error
 	GetRoutingRules(ctx context.Context) ([]RoutingRule, error)
 	DeleteRoutingRule(ctx context.Context, id int) error
@@ -131,6 +133,8 @@ type AuditStore interface {
 type ServiceAccountStore interface {
 	CreateAPIKey(ctx context.Context, key APIKey) (string, error)
 	GetAPIKeyByHash(ctx context.Context, hash string) (*APIKey, error)
+	ListAPIKeys(ctx context.Context) ([]APIKey, error)
+	DeleteAPIKey(ctx context.Context, id int) error
 }
 
 // KEVStore: the CISA known-exploited catalog you load yourself

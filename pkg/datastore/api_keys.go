@@ -79,3 +79,27 @@ func (s *SQLiteStore) GetAPIKeyByHash(ctx context.Context, hash string) (*domain
 
 	return &k, nil
 }
+
+// ListAPIKeys returns every key without its hash.
+func (s *SQLiteStore) ListAPIKeys(ctx context.Context) ([]domain.APIKey, error) {
+	rows, err := s.DB.QueryContext(ctx, `SELECT id, name, permissions, created_by, created_at, expires_at, last_used_at FROM api_keys ORDER BY created_at DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	keys := []domain.APIKey{}
+	for rows.Next() {
+		var k domain.APIKey
+		if err := rows.Scan(&k.ID, &k.Name, &k.Permissions, &k.CreatedBy, &k.CreatedAt, &k.ExpiresAt, &k.LastUsedAt); err != nil {
+			return nil, err
+		}
+		keys = append(keys, k)
+	}
+	return keys, rows.Err()
+}
+
+// DeleteAPIKey revokes a key for good.
+func (s *SQLiteStore) DeleteAPIKey(ctx context.Context, id int) error {
+	_, err := s.DB.ExecContext(ctx, `DELETE FROM api_keys WHERE id = ?`, id)
+	return err
+}

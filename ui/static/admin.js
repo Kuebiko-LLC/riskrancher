@@ -65,10 +65,45 @@ window.loadKEVCatalog = async function() {
     out.innerText = "Loading and flagging...";
     const res = await fetch("/api/integrations/cisa/sync", { method: "POST", body: fd });
     if (!res.ok) { out.innerText = "Load failed: " + await res.text(); return; }
+    const sync = await res.json();
     const st = await fetch("/api/integrations/cisa").then(r => r.json());
-    out.innerText = `${st.loaded} CVEs loaded, newest ${st.last_added}, flagging ${st.flagged_open} open findings.`;
+    out.innerText = `${st.loaded} CVEs loaded, newest ${st.last_added}, flagging ${st.flagged_open} open findings; ${sync.raised} raised to Critical.`;
     const card = document.getElementById("kevCatalogState");
     if (card) card.innerText = `${st.loaded} CVEs loaded, newest ${st.last_added}`;
+};
+
+window.loadAssetInventory = async function() {
+    const input = document.getElementById("assetCsvFile");
+    const out = document.getElementById("assetLoadResult");
+    if (!input || !input.files.length) return alert("Pick the inventory CSV first.");
+    const fd = new FormData();
+    fd.append("file", input.files[0]);
+    out.innerText = "Loading and rescoring...";
+    const res = await fetch("/api/admin/assets/csv", { method: "POST", body: fd });
+    if (!res.ok) { out.innerText = "Load failed: " + await res.text(); return; }
+    const r = await res.json();
+    out.innerText = `${r.loaded} assets loaded, ${r.rescored} findings rescored.`;
+    setTimeout(() => window.location.reload(), 800);
+};
+window.deleteAsset = async function(id) {
+    if (!confirm(`Forget ${id}? Its open findings go back to the scanner's severity.`)) return;
+    const res = await fetch(`/api/admin/assets/${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (res.ok) window.location.reload(); else alert("Failed: " + await res.text());
+};
+window.saveRubric = async function() {
+    const btn = document.getElementById("saveRubricBtn");
+    const out = document.getElementById("rubricSaveResult");
+    const weights = Array.from(document.querySelectorAll(".rubric-row")).map(row => ({
+        kind: row.getAttribute("data-kind"),
+        key: row.getAttribute("data-key"),
+        weight: parseFloat(row.querySelector(".rubric-weight").value)
+    }));
+    btn.disabled = true; out.innerText = "Saving and rescoring...";
+    const res = await fetch("/api/admin/rubric", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(weights) });
+    btn.disabled = false;
+    if (!res.ok) { out.innerText = "Not saved: " + await res.text(); return; }
+    const r = await res.json();
+    out.innerText = `Saved. ${r.rescored} findings rescored.`;
 };
 
 document.addEventListener("DOMContentLoaded", function() {

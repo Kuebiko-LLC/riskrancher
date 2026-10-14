@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -40,5 +41,23 @@ func TestExportSystemState(t *testing.T) {
 
 	if len(state.Tickets) == 0 || state.Tickets[0].Title != "Export Test Vuln" {
 		t.Errorf("Export did not contain the expected ticket data")
+	}
+}
+
+// The export carries the inventory and the rubric, so a state file restores
+// the way findings were scored, not only the findings.
+func TestExportSystemState_CarriesInventoryAndRubric(t *testing.T) {
+	app, db := setupTestAdmin(t)
+	defer db.Close()
+	app.Store.UpsertAssets(context.Background(), []domain.Asset{{AssetIdentifier: "payments-api", Exposure: "internet", Criticality: "crown-jewel"}})
+	req := httptest.NewRequest(http.MethodGet, "/api/admin/export", nil)
+	rr := httptest.NewRecorder()
+	app.HandleExportState(rr, req)
+	var state domain.ExportState
+	if err := json.NewDecoder(rr.Body).Decode(&state); err != nil {
+		t.Fatal(err)
+	}
+	if state.Version != "1.2" || len(state.Rubric) != 14 || len(state.Assets) != 1 || state.Assets[0].AssetIdentifier != "payments-api" {
+		t.Fatalf("export 1.2 carries the inventory and the rubric: version=%s rubric=%d assets=%d", state.Version, len(state.Rubric), len(state.Assets))
 	}
 }

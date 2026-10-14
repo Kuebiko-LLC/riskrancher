@@ -170,7 +170,12 @@ func HandleAdminDashboard(store domain.Store) http.HandlerFunc {
 		rules, _ := store.GetRoutingRules(r.Context())
 		riskTickets, _, _, _ := store.GetDashboardTicketsWithPortals(r.Context(), "Pending Risk Approval", "", "", "", "Sheriff", 50, 0)
 		kev, _ := store.KEVCatalogStatus(r.Context())
+		assets, _ := store.ListAssets(r.Context())
+		rubric, _ := store.GetRubric(r.Context())
 		render(w, "admin", map[string]any{
+			"Assets":           assets,
+			"AssetCount":       len(assets),
+			"Rubric":           rubric,
 			"Users":            users,
 			"Config":           config,
 			"SLAs":             slas,

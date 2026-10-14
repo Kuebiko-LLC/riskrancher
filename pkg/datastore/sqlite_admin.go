@@ -2,6 +2,7 @@ package datastore
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	domain2 "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
@@ -77,7 +78,7 @@ func (s *SQLiteStore) dueDates(ctx context.Context, domain, severity string) (ti
 
 func (s *SQLiteStore) ExportSystemState(ctx context.Context) (domain2.ExportState, error) {
 	var state domain2.ExportState
-	state.Version = "1.1"
+	state.Version = "1.2"
 	state.ExportedAt = time.Now().UTC().Format(time.RFC3339)
 
 	config, err := s.GetAppConfig(ctx)
@@ -103,7 +104,14 @@ func (s *SQLiteStore) ExportSystemState(ctx context.Context) (domain2.ExportStat
 		state.Adapters = adapters
 	}
 
-	query := `SELECT id, domain, source, asset_identifier, title, COALESCE(description, ''), severity, status, dedupe_hash, created_at FROM tickets`
+	if assets, err := s.ListAssets(ctx); err == nil {
+		state.Assets = assets
+	}
+	if rubric, err := s.GetRubric(ctx); err == nil {
+		state.Rubric = rubric
+	}
+
+	query := `SELECT id, domain, source, asset_identifier, title, COALESCE(description, ''), severity, status, dedupe_hash, created_at, COALESCE(scanner_severity, ''), rubric_score FROM tickets`
 	rows, err := s.DB.QueryContext(ctx, query)
 	if err != nil {
 		return state, err
@@ -112,7 +120,12 @@ func (s *SQLiteStore) ExportSystemState(ctx context.Context) (domain2.ExportStat
 
 	for rows.Next() {
 		var t domain2.Ticket
-		if err := rows.Scan(&t.ID, &t.Domain, &t.Source, &t.AssetIdentifier, &t.Title, &t.Description, &t.Severity, &t.Status, &t.DedupeHash, &t.CreatedAt); err == nil {
+		var score sql.NullFloat64
+		if err := rows.Scan(&t.ID, &t.Domain, &t.Source, &t.AssetIdentifier, &t.Title, &t.Description, &t.Severity, &t.Status, &t.DedupeHash, &t.CreatedAt, &t.ScannerSeverity, &score); err == nil {
+			if score.Valid {
+				v := score.Float64
+				t.RubricScore = &v
+			}
 			state.Tickets = append(state.Tickets, t)
 		}
 	}

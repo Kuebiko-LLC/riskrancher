@@ -37,7 +37,7 @@ func TestGetCISACatalog_ReportsRealState(t *testing.T) {
 	}
 	var feed domain.CISAFeed
 	json.Unmarshal([]byte(`{"vulnerabilities":[{"cveID":"CVE-2021-44228","dateAdded":"2021-12-10"},{"cveID":"CVE-2014-0160","dateAdded":"2022-05-04"}]}`), &feed)
-	if err := a.Store.SyncCISACatalog(ctx, &feed); err != nil {
+	if _, err := a.Store.SyncCISACatalog(ctx, &feed); err != nil {
 		t.Fatal(err)
 	}
 	m := read()

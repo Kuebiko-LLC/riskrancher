@@ -357,7 +357,9 @@ var cveToken = regexp.MustCompile(`(?i)CVE-\d{4}-\d{4,}`)
 // SyncCISACatalog replaces the stored KEV catalog and re-flags findings.
 // It reads every finding that mentions a CVE once and matches the ids in Go,
 // so the cost is one pass over the table, not one scan per catalog entry.
-func (s *SQLiteStore) SyncCISACatalog(ctx context.Context, feed *domain.CISAFeed) error {
+// Every open finding it flags is then raised to Critical, with a fresh clock
+// and a history line; raised is how many severities that changed.
+func (s *SQLiteStore) SyncCISACatalog(ctx context.Context, feed *domain.CISAFeed) (raised int, err error) {
 	defer s.forgetKEV()
 	known := make(map[string]bool, len(feed.Vulnerabilities))
 	for _, v := range feed.Vulnerabilities {
@@ -367,7 +369,7 @@ func (s *SQLiteStore) SyncCISACatalog(ctx context.Context, feed *domain.CISAFeed
 	// One pass: which findings name a catalog CVE
 	rows, err := s.DB.QueryContext(ctx, `SELECT id, title, description FROM tickets WHERE title LIKE '%CVE-%' OR description LIKE '%CVE-%'`)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	var hits []int
 	for rows.Next() {
@@ -376,7 +378,7 @@ func (s *SQLiteStore) SyncCISACatalog(ctx context.Context, feed *domain.CISAFeed
 		var desc sql.NullString
 		if err := rows.Scan(&id, &title, &desc); err != nil {
 			rows.Close()
-			return err
+			return 0, err
 		}
 		for _, m := range cveToken.FindAllString(title+" "+desc.String, -1) {
 			if known[strings.ToUpper(m)] {
@@ -387,31 +389,31 @@ func (s *SQLiteStore) SyncCISACatalog(ctx context.Context, feed *domain.CISAFeed
 	}
 	rows.Close()
 	if err := rows.Err(); err != nil {
-		return err
+		return 0, err
 	}
 
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer tx.Rollback()
 
 	if _, err := tx.ExecContext(ctx, "DELETE FROM cisa_catalog"); err != nil {
-		return err
+		return 0, err
 	}
 	stmt, err := tx.PrepareContext(ctx, `INSERT INTO cisa_catalog (cve_id, date_added) VALUES (?, ?)`)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer stmt.Close()
 	for _, v := range feed.Vulnerabilities {
 		if _, err := stmt.ExecContext(ctx, v.CVEID, v.DateAdded); err != nil {
-			return err
+			return 0, err
 		}
 	}
 
 	if _, err := tx.ExecContext(ctx, "UPDATE tickets SET is_cisa_kev = 0 WHERE is_cisa_kev = 1"); err != nil {
-		return err
+		return 0, err
 	}
 	const chunk = 500
 	for i := 0; i < len(hits); i += chunk {
@@ -426,10 +428,13 @@ func (s *SQLiteStore) SyncCISACatalog(ctx context.Context, feed *domain.CISAFeed
 			marks = append(marks, "?")
 		}
 		if _, err := tx.ExecContext(ctx, "UPDATE tickets SET is_cisa_kev = 1 WHERE id IN ("+strings.Join(marks, ",")+")", args...); err != nil {
-			return err
+			return 0, err
 		}
 	}
-	return tx.Commit()
+	if raised, err = s.rescoreOpen(ctx, tx, hits, "KEV sync"); err != nil {
+		return 0, err
+	}
+	return raised, tx.Commit()
 }
 
 // KEVCatalogStatus reports the loaded catalog: how many CVEs, the newest

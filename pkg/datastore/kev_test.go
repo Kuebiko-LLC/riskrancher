@@ -46,7 +46,7 @@ func TestSyncCISACatalog_FlagsByCVEInTitleOrDescription(t *testing.T) {
 		return v
 	}
 
-	if err := s.SyncCISACatalog(ctx, feed("CVE-2021-44228")); err != nil {
+	if _, err := s.SyncCISACatalog(ctx, feed("CVE-2021-44228")); err != nil {
 		t.Fatal(err)
 	}
 	if !flagged(inTitle) || !flagged(inDesc) || flagged(other) || flagged(none) {
@@ -54,7 +54,7 @@ func TestSyncCISACatalog_FlagsByCVEInTitleOrDescription(t *testing.T) {
 	}
 
 	// The catalog moves on: a new CVE lands, the old one is dropped
-	if err := s.SyncCISACatalog(ctx, feed("CVE-2016-2107")); err != nil {
+	if _, err := s.SyncCISACatalog(ctx, feed("CVE-2016-2107")); err != nil {
 		t.Fatal(err)
 	}
 	if flagged(inTitle) || flagged(inDesc) || !flagged(other) || flagged(none) {

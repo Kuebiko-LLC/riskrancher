@@ -38,7 +38,7 @@ func TestAdminMetricsShowCatalogState(t *testing.T) {
 	}
 	var feed domain.CISAFeed
 	json.Unmarshal([]byte(`{"vulnerabilities":[{"cveID":"CVE-2021-44228","dateAdded":"2021-12-10"}]}`), &feed)
-	if err := app.Store.SyncCISACatalog(context.Background(), &feed); err != nil {
+	if _, err := app.Store.SyncCISACatalog(context.Background(), &feed); err != nil {
 		t.Fatal(err)
 	}
 	if page = get(); !strings.Contains(page, "1 CVEs loaded") && !strings.Contains(page, "1 CVE loaded") {

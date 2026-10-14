@@ -97,7 +97,7 @@ func TestBatchIngest_KEVWinsOverRubricAndRules(t *testing.T) {
 	ctx := context.Background()
 	var feed domain.CISAFeed
 	json.Unmarshal([]byte(`{"vulnerabilities":[{"cveID":"CVE-2021-44228","dateAdded":"2021-12-10"}]}`), &feed)
-	if err := s.SyncCISACatalog(ctx, &feed); err != nil {
+	if _, err := s.SyncCISACatalog(ctx, &feed); err != nil {
 		t.Fatal(err)
 	}
 	if err := s.UpsertAssets(ctx, []domain.Asset{{AssetIdentifier: "dev-sandbox", Exposure: "isolated", Criticality: "dev"}}); err != nil {

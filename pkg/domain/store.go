@@ -125,6 +125,12 @@ type AssetStore interface {
 	// GetRubric is the fourteen weights of the priority rubric, in display order.
 	GetRubric(ctx context.Context) ([]RubricWeight, error)
 	UpdateRubric(ctx context.Context, weights []RubricWeight) error
+	// DeleteAsset forgets an asset; its open findings go back to the scanner's
+	// word. Returns how many severities changed.
+	DeleteAsset(ctx context.Context, assetIdentifier string) (int, error)
+	// RescoreAssets re-decides the open findings on these assets, or on every
+	// asset in the inventory when nil. Returns how many severities changed.
+	RescoreAssets(ctx context.Context, assetIDs []string) (int, error)
 }
 
 // AuditStore: the immutable audit log
@@ -142,7 +148,9 @@ type ServiceAccountStore interface {
 
 // KEVStore: the CISA known-exploited catalog you load yourself
 type KEVStore interface {
-	SyncCISACatalog(ctx context.Context, feed *CISAFeed) error
+	// SyncCISACatalog loads the catalog, flags the findings that name a listed
+	// CVE, and raises the open ones to Critical. Returns how many it raised.
+	SyncCISACatalog(ctx context.Context, feed *CISAFeed) (int, error)
 	KEVCatalogStatus(ctx context.Context) (KEVStatus, error)
 }
 

@@ -15,7 +15,7 @@ func TestIngest_FlagsKEVAtInsert(t *testing.T) {
 	ctx := context.Background()
 	var feed domain.CISAFeed
 	json.Unmarshal([]byte(`{"vulnerabilities":[{"cveID":"CVE-2021-44228","dateAdded":"2021-12-10"}]}`), &feed)
-	if err := s.SyncCISACatalog(ctx, &feed); err != nil {
+	if _, err := s.SyncCISACatalog(ctx, &feed); err != nil {
 		t.Fatal(err)
 	}
 	batch := []domain.Ticket{
@@ -43,7 +43,7 @@ func TestIngest_FlagsKEVAtInsert(t *testing.T) {
 	}
 	// Loading a catalog that dropped the CVE unflags both
 	json.Unmarshal([]byte(`{"vulnerabilities":[{"cveID":"CVE-2014-0160","dateAdded":"2022-05-04"}]}`), &feed)
-	if err := s.SyncCISACatalog(ctx, &feed); err != nil {
+	if _, err := s.SyncCISACatalog(ctx, &feed); err != nil {
 		t.Fatal(err)
 	}
 	if flagged("Apache Log4j2 RCE") || flagged("CVE-2021-44228 in image") {

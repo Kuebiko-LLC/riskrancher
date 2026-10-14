@@ -37,7 +37,8 @@ func (h *Handler) HandleSyncCISAKEV(w http.ResponseWriter, r *http.Request) {
 	store := h.Store
 
 	// Execute the Air-Gapped Sync
-	if err := store.SyncCISACatalog(r.Context(), &feed); err != nil {
+	raised, err := store.SyncCISACatalog(r.Context(), &feed)
+	if err != nil {
 		http.Error(w, "Database sync failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -47,6 +48,7 @@ func (h *Handler) HandleSyncCISAKEV(w http.ResponseWriter, r *http.Request) {
 		"status":          "success",
 		"message":         "CISA KEV Catalog synced successfully",
 		"vulnerabilities": len(feed.Vulnerabilities),
+		"raised":          raised,
 	})
 }
 

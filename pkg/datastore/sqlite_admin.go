@@ -34,7 +34,12 @@ func (s *SQLiteStore) GetAppConfig(ctx context.Context) (domain2.AppConfig, erro
 
 // buildSLAMap creates a fast 2D lookup table: map[Domain][Severity]Policy
 func (s *SQLiteStore) buildSLAMap(ctx context.Context) (map[string]map[string]domain2.SLAPolicy, error) {
-	policies, err := s.GetSLAPolicies(ctx)
+	return readSLAMap(ctx, s.DB)
+}
+
+// readSLAMap is buildSLAMap through a *sql.DB or a *sql.Tx.
+func readSLAMap(ctx context.Context, q queryer) (map[string]map[string]domain2.SLAPolicy, error) {
+	policies, err := readSLAPolicies(ctx, q)
 	if err != nil {
 		return nil, err
 	}
@@ -49,17 +54,23 @@ func (s *SQLiteStore) buildSLAMap(ctx context.Context) (map[string]map[string]do
 	return slaMap, nil
 }
 
-// dueDates returns the triage and remediation clocks for a domain and severity
-// from the SLA matrix, falling back to 3 and 30 days when no policy matches.
-func (s *SQLiteStore) dueDates(ctx context.Context, domain, severity string) (time.Time, time.Time) {
-	daysToTriage, daysToRemediate := 3, 30
-	if slaMap, err := s.buildSLAMap(ctx); err == nil {
-		if dMap, ok := slaMap[domain]; ok {
-			if policy, ok := dMap[severity]; ok {
-				daysToTriage, daysToRemediate = policy.DaysToTriage, policy.DaysToRemediate
-			}
+// slaDays reads the triage and remediation day counts for a domain and
+// severity from the matrix, 3 and 30 when it has no row.
+func slaDays(slaMap map[string]map[string]domain2.SLAPolicy, domain, severity string) (triage, remediate int) {
+	triage, remediate = 3, 30
+	if dMap, ok := slaMap[domain]; ok {
+		if policy, ok := dMap[severity]; ok {
+			triage, remediate = policy.DaysToTriage, policy.DaysToRemediate
 		}
 	}
+	return
+}
+
+// dueDates returns the triage and remediation clocks for a domain and severity
+// from the SLA matrix, starting now.
+func (s *SQLiteStore) dueDates(ctx context.Context, domain, severity string) (time.Time, time.Time) {
+	slaMap, _ := s.buildSLAMap(ctx)
+	daysToTriage, daysToRemediate := slaDays(slaMap, domain, severity)
 	now := time.Now()
 	return now.AddDate(0, 0, daysToTriage), now.AddDate(0, 0, daysToRemediate)
 }
@@ -110,7 +121,11 @@ func (s *SQLiteStore) ExportSystemState(ctx context.Context) (domain2.ExportStat
 }
 
 func (s *SQLiteStore) GetSLAPolicies(ctx context.Context) ([]domain2.SLAPolicy, error) {
-	rows, err := s.DB.QueryContext(ctx, "SELECT domain, severity, days_to_remediate, max_extensions, days_to_triage FROM sla_policies ORDER BY domain, severity")
+	return readSLAPolicies(ctx, s.DB)
+}
+
+func readSLAPolicies(ctx context.Context, q queryer) ([]domain2.SLAPolicy, error) {
+	rows, err := q.QueryContext(ctx, "SELECT domain, severity, days_to_remediate, max_extensions, days_to_triage FROM sla_policies ORDER BY domain, severity")
 	if err != nil {
 		return nil, err
 	}

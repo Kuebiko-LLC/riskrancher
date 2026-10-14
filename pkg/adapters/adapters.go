@@ -57,9 +57,18 @@ func getJSONValue(data interface{}, path string) interface{} {
 	keys := strings.Split(path, ".")
 	current := data
 	for _, key := range keys {
-		if m, ok := current.(map[string]interface{}); ok {
-			current = m[key]
-		} else {
+		switch node := current.(type) {
+		case map[string]interface{}:
+			current = node[key]
+		case []interface{}:
+			// a numeric segment indexes into an array, so a path like
+			// Results.0.Vulnerabilities reaches the findings inside the first result
+			i, err := strconv.Atoi(key)
+			if err != nil || i < 0 || i >= len(node) {
+				return nil
+			}
+			current = node[i]
+		default:
 			return nil // Path broke
 		}
 	}

@@ -79,6 +79,7 @@ func (s *SQLiteStore) UpdateTicketInline(ctx context.Context, ticketID int, seve
 		    description = CASE WHEN ? != '' THEN ? ELSE description END,
 		    recommended_remediation = CASE WHEN ? != '' THEN ? ELSE recommended_remediation END,
 		    status = CASE WHEN ? != '' THEN ? ELSE status END,
+		    patched_at = CASE WHEN ? = 'Patched' THEN CURRENT_TIMESTAMP WHEN ? != '' THEN NULL ELSE patched_at END,
 		    assignee = CASE WHEN ? != '' THEN ? ELSE assignee END,
 		    latest_comment = CASE WHEN ? != '' THEN ? ELSE latest_comment END,
 		    updated_at = CURRENT_TIMESTAMP
@@ -94,7 +95,7 @@ func (s *SQLiteStore) UpdateTicketInline(ctx context.Context, ticketID int, seve
 
 	_, err := s.DB.ExecContext(ctx, query,
 		severity, severity, description, description, remediation, remediation,
-		status, status, assignee, assignee, formattedComment, formattedComment, ticketID)
+		status, status, status, status, assignee, assignee, formattedComment, formattedComment, ticketID)
 	return err
 }
 

@@ -25,7 +25,8 @@ func (s *SQLiteStore) BulkUpdateStatusAndAssign(ctx context.Context, ticketIDs [
 			var oldStatus string
 			tx.QueryRowContext(ctx, "SELECT status FROM tickets WHERE id = ?", id).Scan(&oldStatus)
 
-			if _, err := tx.ExecContext(ctx, `UPDATE tickets SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, status, id); err != nil {
+			// Patched stamps the close; leaving Patched clears it, so MTTR sees hand verifies too
+			if _, err := tx.ExecContext(ctx, `UPDATE tickets SET status = ?, patched_at = CASE WHEN ? = 'Patched' THEN CURRENT_TIMESTAMP ELSE NULL END, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, status, status, id); err != nil {
 				return "", err
 			}
 			if _, err := tx.ExecContext(ctx, `INSERT INTO ticket_activity (ticket_id, actor, activity_type, old_value, new_value) VALUES (?, ?, 'status_change', ?, ?)`, id, actor, oldStatus, status); err != nil {

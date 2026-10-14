@@ -356,6 +356,37 @@ func (s *SQLiteStore) GetAnalyticsSummary(ctx context.Context) (map[string]int, 
 	return summary, nil
 }
 
+// GetPaginatedActivityFeed is the audit log as the System Logs tab reads it:
+// newest first, a page at a time, optionally filtered by actor, action, or target.
 func (s *SQLiteStore) GetPaginatedActivityFeed(ctx context.Context, filter string, limit, offset int) ([]domain2.FeedItem, int, error) {
-	return []domain2.FeedItem{}, 0, nil
+	where := ""
+	var args []any
+	if filter != "" {
+		where = " WHERE actor LIKE ? OR action LIKE ? OR target_resource LIKE ?"
+		like := "%" + filter + "%"
+		args = append(args, like, like, like)
+	}
+	var total int
+	if err := s.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM audit_logs"+where, args...).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+	rows, err := s.DB.QueryContext(ctx, `SELECT actor, action || ' ' || target_resource, status_code,
+		CASE WHEN status_code >= 400 THEN error_details ELSE 'Success' END, created_at
+		FROM audit_logs`+where+` ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`, append(args, limit, offset)...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+	feed := []domain2.FeedItem{}
+	for rows.Next() {
+		var item domain2.FeedItem
+		var createdAt string
+		var statusCode int
+		if err := rows.Scan(&item.Actor, &item.ActivityType, &statusCode, &item.NewValue, &createdAt); err != nil {
+			return nil, 0, err
+		}
+		item.TimeAgo = createdAt
+		feed = append(feed, item)
+	}
+	return feed, total, rows.Err()
 }

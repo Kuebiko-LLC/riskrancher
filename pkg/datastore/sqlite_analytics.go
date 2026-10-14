@@ -12,14 +12,14 @@ import (
 func (s *SQLiteStore) GetSheriffAnalytics(ctx context.Context) (domain2.SheriffAnalytics, error) {
 	var metrics domain2.SheriffAnalytics
 
-	s.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM tickets WHERE is_cisa_kev = 1 AND status NOT IN ('Patched', 'Risk Accepted', 'False Positive')").Scan(&metrics.ActiveKEVs)
-	s.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM tickets WHERE severity = 'Critical' AND status NOT IN ('Patched', 'Risk Accepted', 'False Positive')").Scan(&metrics.OpenCriticals)
-	s.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM tickets WHERE remediation_due_date < CURRENT_TIMESTAMP AND status NOT IN ('Patched', 'Risk Accepted', 'False Positive')").Scan(&metrics.TotalOverdue)
+	s.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM tickets WHERE released = 1 AND is_cisa_kev = 1 AND status NOT IN ('Patched', 'Risk Accepted', 'False Positive')").Scan(&metrics.ActiveKEVs)
+	s.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM tickets WHERE released = 1 AND severity = 'Critical' AND status NOT IN ('Patched', 'Risk Accepted', 'False Positive')").Scan(&metrics.OpenCriticals)
+	s.DB.QueryRowContext(ctx, "SELECT COUNT(*) FROM tickets WHERE released = 1 AND remediation_due_date < CURRENT_TIMESTAMP AND status NOT IN ('Patched', 'Risk Accepted', 'False Positive')").Scan(&metrics.TotalOverdue)
 
 	mttrQuery := `
        SELECT COALESCE(AVG(julianday(t.patched_at) - julianday(t.created_at)), 0)
        FROM tickets t
-       WHERE t.status = 'Patched' 
+       WHERE t.released = 1 AND t.status = 'Patched'
     `
 	var mttrFloat float64
 	s.DB.QueryRowContext(ctx, mttrQuery).Scan(&mttrFloat)
@@ -40,6 +40,7 @@ func (s *SQLiteStore) GetSheriffAnalytics(ctx context.Context) (domain2.SheriffA
             SUM(CASE WHEN t.status = 'Risk Accepted' THEN 1 ELSE 0 END) as risk_accepted,
             SUM(CASE WHEN t.status = 'False Positive' THEN 1 ELSE 0 END) as false_positive
         FROM tickets t
+        WHERE t.released = 1
         GROUP BY t.source
         ORDER BY criticals DESC, patch_overdue DESC
     `
@@ -53,7 +54,7 @@ func (s *SQLiteStore) GetSheriffAnalytics(ctx context.Context) (domain2.SheriffA
 			topAssigneeQ := `
              SELECT COALESCE(ta.assignee, 'Unassigned'), COUNT(t.id) as c
              FROM tickets t LEFT JOIN ticket_assignments ta ON t.id = ta.ticket_id
-             WHERE t.source = ? AND t.status NOT IN ('Patched', 'Risk Accepted', 'False Positive')
+             WHERE t.released = 1 AND t.source = ? AND t.status NOT IN ('Patched', 'Risk Accepted', 'False Positive')
              GROUP BY ta.assignee ORDER BY c DESC LIMIT 1`
 
 			var assignee string
@@ -87,7 +88,7 @@ func (s *SQLiteStore) GetSheriffAnalytics(ctx context.Context) (domain2.SheriffA
 		}
 	}
 
-	sevQuery := `SELECT severity, COUNT(id) FROM tickets WHERE status NOT IN ('Patched', 'Risk Accepted', 'False Positive') GROUP BY severity`
+	sevQuery := `SELECT severity, COUNT(id) FROM tickets WHERE released = 1 AND status NOT IN ('Patched', 'Risk Accepted', 'False Positive') GROUP BY severity`
 	rowsSev, err := s.DB.QueryContext(ctx, sevQuery)
 	if err == nil {
 		defer rowsSev.Close()
@@ -118,7 +119,7 @@ func (s *SQLiteStore) GetSheriffAnalytics(ctx context.Context) (domain2.SheriffA
 		}
 	}
 
-	resQuery := `SELECT status, COUNT(id) FROM tickets WHERE status IN ('Patched', 'Risk Accepted', 'False Positive') GROUP BY status`
+	resQuery := `SELECT status, COUNT(id) FROM tickets WHERE released = 1 AND status IN ('Patched', 'Risk Accepted', 'False Positive') GROUP BY status`
 	rowsRes, err := s.DB.QueryContext(ctx, resQuery)
 	if err == nil {
 		defer rowsRes.Close()
@@ -145,7 +146,7 @@ func (s *SQLiteStore) GetSheriffAnalytics(ctx context.Context) (domain2.SheriffA
 		}
 	}
 
-	assetQuery := `SELECT asset_identifier, COUNT(id) as c FROM tickets WHERE status NOT IN ('Patched', 'Risk Accepted', 'False Positive') GROUP BY asset_identifier ORDER BY c DESC LIMIT 5`
+	assetQuery := `SELECT asset_identifier, COUNT(id) as c FROM tickets WHERE released = 1 AND status NOT IN ('Patched', 'Risk Accepted', 'False Positive') GROUP BY asset_identifier ORDER BY c DESC LIMIT 5`
 	rowsAsset, err := s.DB.QueryContext(ctx, assetQuery)
 	if err == nil {
 		defer rowsAsset.Close()
@@ -333,13 +334,13 @@ func (s *SQLiteStore) GetAnalyticsSummary(ctx context.Context) (map[string]int, 
 	summary := make(map[string]int)
 
 	var total int
-	err := s.DB.QueryRowContext(ctx, `SELECT COUNT(*) FROM tickets WHERE status != 'Patched' AND status != 'Risk Accepted'`).Scan(&total)
+	err := s.DB.QueryRowContext(ctx, `SELECT COUNT(*) FROM tickets WHERE released = 1 AND status != 'Patched' AND status != 'Risk Accepted'`).Scan(&total)
 	if err != nil {
 		return nil, err
 	}
 	summary["Total_Open"] = total
 
-	sourceRows, err := s.DB.QueryContext(ctx, `SELECT source, COUNT(*) FROM tickets WHERE status != 'Patched' AND status != 'Risk Accepted' GROUP BY source`)
+	sourceRows, err := s.DB.QueryContext(ctx, `SELECT source, COUNT(*) FROM tickets WHERE released = 1 AND status != 'Patched' AND status != 'Risk Accepted' GROUP BY source`)
 	if err == nil {
 		defer sourceRows.Close()
 		for sourceRows.Next() {
@@ -351,7 +352,7 @@ func (s *SQLiteStore) GetAnalyticsSummary(ctx context.Context) (map[string]int, 
 		}
 	}
 
-	sevRows, err := s.DB.QueryContext(ctx, `SELECT severity, COUNT(*) FROM tickets WHERE status != 'Patched' AND status != 'Risk Accepted' GROUP BY severity`)
+	sevRows, err := s.DB.QueryContext(ctx, `SELECT severity, COUNT(*) FROM tickets WHERE released = 1 AND status != 'Patched' AND status != 'Risk Accepted' GROUP BY severity`)
 	if err == nil {
 		defer sevRows.Close()
 		for sevRows.Next() {

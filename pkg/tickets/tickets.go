@@ -62,7 +62,9 @@ func (h *Handler) HandleUpdateTicket(w http.ResponseWriter, r *http.Request) {
 
 // HandleGetTickets fetches a list of tickets via the API
 func (h *Handler) HandleGetTickets(w http.ResponseWriter, r *http.Request) {
-	tickets, err := h.Store.GetTickets(r.Context())
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+	tickets, err := h.Store.GetTickets(r.Context(), limit, offset)
 	if err != nil {
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return

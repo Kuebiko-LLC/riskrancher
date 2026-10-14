@@ -10,20 +10,33 @@ import (
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
-func (s *SQLiteStore) GetTickets(ctx context.Context) ([]domain.Ticket, error) {
-	rows, err := s.DB.QueryContext(ctx, "SELECT id, title, severity, status FROM tickets LIMIT 100")
+// GetTickets lists released findings for the API: enough to act on each one
+// (asset, source, owner, status, clock), oldest first, a page at a time.
+func (s *SQLiteStore) GetTickets(ctx context.Context, limit, offset int) ([]domain.Ticket, error) {
+	if limit <= 0 || limit > 1000 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	rows, err := s.DB.QueryContext(ctx, `SELECT id, domain, source, asset_identifier, title, severity, status, COALESCE(assignee, 'Unassigned'), remediation_due_date, COALESCE(is_cisa_kev, 0), created_at, updated_at
+		FROM tickets WHERE released = 1 ORDER BY id LIMIT ? OFFSET ?`, limit, offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var tickets []domain.Ticket
+	tickets := []domain.Ticket{}
 	for rows.Next() {
 		var t domain.Ticket
-		rows.Scan(&t.ID, &t.Title, &t.Severity, &t.Status)
+		var due sql.NullTime
+		if err := rows.Scan(&t.ID, &t.Domain, &t.Source, &t.AssetIdentifier, &t.Title, &t.Severity, &t.Status, &t.Assignee, &due, &t.IsCISAKEV, &t.CreatedAt, &t.UpdatedAt); err != nil {
+			return nil, err
+		}
+		t.RemediationDueDate = due.Time
 		tickets = append(tickets, t)
 	}
-	return tickets, nil
+	return tickets, rows.Err()
 }
 
 // insertTicket writes one finding. CreateTicket (rules.go) runs the rules engine first.

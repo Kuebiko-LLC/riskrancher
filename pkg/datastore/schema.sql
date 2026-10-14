@@ -234,6 +234,7 @@ CREATE TABLE IF NOT EXISTS magic_batches (
                                              expires_at DATETIME NOT NULL,
                                              is_revoked BOOLEAN DEFAULT 0,
                                              kind TEXT NOT NULL DEFAULT 'owner' CHECK (kind IN ('owner', 'approver')),
+                                             assignee TEXT NOT NULL DEFAULT '', -- the owner an owner link was minted for
                                              ticket_ids TEXT NOT NULL, -- JSON array of IDs
                                              created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

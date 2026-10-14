@@ -195,6 +195,9 @@ func (s *SQLiteStore) ReviewRiskRequest(ctx context.Context, ids []int, action, 
 			return fmt.Errorf("unknown action %q", action)
 		}
 	}
+	if err := revokeStaleLinks(ctx, tx, ids); err != nil {
+		return err
+	}
 	return tx.Commit()
 }
 
@@ -234,6 +237,13 @@ func (s *SQLiteStore) ReopenExpiredExceptions(ctx context.Context) (int, error) 
 		if _, err := tx.ExecContext(ctx, `INSERT INTO ticket_activity (ticket_id, actor, activity_type, old_value, new_value) VALUES (?, 'Expiry sweep', 'exception_expired', 'Risk Accepted', 'Waiting to be Triaged')`, d.id); err != nil {
 			return 0, err
 		}
+	}
+	var ids []int
+	for _, d := range expired {
+		ids = append(ids, d.id)
+	}
+	if err := revokeStaleLinks(ctx, tx, ids); err != nil {
+		return 0, err
 	}
 	return len(expired), tx.Commit()
 }

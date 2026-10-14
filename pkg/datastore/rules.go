@@ -64,15 +64,57 @@ func (s *SQLiteStore) BulkUpdateStatusAndAssign(ctx context.Context, ticketIDs [
 		idsJSON, _ := json.Marshal(ticketIDs)
 
 		_, err = tx.ExecContext(ctx, `
-          INSERT INTO magic_batches (token, created_by, expires_at, kind, ticket_ids)
-          VALUES (?, ?, DATETIME('now', '+90 days'), 'owner', ?)`,
-			batchToken, actor, string(idsJSON))
+          INSERT INTO magic_batches (token, created_by, expires_at, kind, assignee, ticket_ids)
+          VALUES (?, ?, DATETIME('now', '+90 days'), 'owner', ?, ?)`,
+			batchToken, actor, assignee, string(idsJSON))
 		if err != nil {
 			return "", err
 		}
 	}
+	if err := revokeStaleLinks(ctx, tx, ticketIDs); err != nil {
+		return "", err
+	}
 
 	return batchToken, tx.Commit()
+}
+
+// revokeStaleLinks ends every link that no longer has work on it: an owner's
+// link once none of its findings is still that owner's and open, an
+// approver's link once none of its findings waits for a decision. Called
+// inside the transaction that moved the findings.
+func revokeStaleLinks(ctx context.Context, tx *sql.Tx, ticketIDs []int) error {
+	if len(ticketIDs) == 0 {
+		return nil
+	}
+	idsJSON, _ := json.Marshal(ticketIDs)
+	rows, err := tx.QueryContext(ctx, `SELECT DISTINCT m.token, m.kind, m.assignee, m.ticket_ids FROM magic_batches m, json_each(m.ticket_ids) j
+		WHERE m.is_revoked = 0 AND j.value IN (SELECT value FROM json_each(?))`, string(idsJSON))
+	if err != nil {
+		return err
+	}
+	type batch struct{ token, kind, assignee, ids string }
+	var batches []batch
+	for rows.Next() {
+		var b batch
+		if err := rows.Scan(&b.token, &b.kind, &b.assignee, &b.ids); err == nil {
+			batches = append(batches, b)
+		}
+	}
+	rows.Close()
+	for _, b := range batches {
+		var live int
+		if b.kind == "approver" {
+			tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM tickets WHERE id IN (SELECT value FROM json_each(?)) AND status = 'Pending Risk Approval'`, b.ids).Scan(&live)
+		} else {
+			tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM tickets WHERE id IN (SELECT value FROM json_each(?)) AND assignee = ? AND status IN ('Assigned Out', 'Pending Verification', 'Pending Risk Approval')`, b.ids, b.assignee).Scan(&live)
+		}
+		if live == 0 {
+			if _, err := tx.ExecContext(ctx, `UPDATE magic_batches SET is_revoked = 1 WHERE token = ?`, b.token); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // --- Auto-triage rules ---

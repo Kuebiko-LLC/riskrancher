@@ -15,12 +15,15 @@ import (
 
 // handOut creates n findings on one asset, hands them to dana, and returns
 // their ids and the owner's link.
+var handOutBatch int
+
 func handOut(t *testing.T, app *App, n int) ([]int, string) {
 	t.Helper()
 	ctx := context.Background()
+	handOutBatch++
 	var ids []int
 	for i := 0; i < n; i++ {
-		tk := domain.Ticket{Source: "Nessus", AssetIdentifier: "payments-api", Title: "CVE-0000-000" + strconv.Itoa(i+1) + " kinds", Severity: "High", Domain: "Vulnerability",
+		tk := domain.Ticket{Source: "Nessus", AssetIdentifier: "payments-api", Title: "CVE-0000-" + strconv.Itoa(handOutBatch) + "-" + strconv.Itoa(i+1) + " kinds", Severity: "High", Domain: "Vulnerability",
 			TriageDueDate: time.Now().Add(72 * time.Hour), RemediationDueDate: time.Now().Add(720 * time.Hour)}
 		if err := app.Store.CreateTicket(ctx, &tk); err != nil {
 			t.Fatal(err)
@@ -146,5 +149,39 @@ func TestDenyOneLeavesTheOthersPending(t *testing.T) {
 	json.Unmarshal(rec.Body.Bytes(), &minted)
 	if rec := send(app, http.MethodPatch, "/api/share/"+minted.Token+"/review", `{"action":"Approve","comment":"fine","extension_days":7,"ticket_ids":[`+strconv.Itoa(ids[1])+`]}`, nil); rec.Code != http.StatusOK {
 		t.Fatalf("approve the second: %d %s", rec.Code, rec.Body.String())
+	}
+}
+
+// A link lives while the owner still has work on it. Once every finding on
+// it has left that owner (returned, reassigned, patched, accepted) the link
+// stops answering, well before its 90 days are up.
+func TestLinkStopsWhenFindingsLeaveTheOwner(t *testing.T) {
+	app, sheriff := appWithUser(t, "Sheriff")
+	ids, owner := handOut(t, app, 2)
+	open := func() int { return send(app, http.MethodGet, "/api/share/"+owner, "", nil).Code }
+	if open() != http.StatusOK {
+		t.Fatalf("a fresh link opens")
+	}
+	// one finding returned: the other is still dana's, the link lives
+	if rec := send(app, http.MethodPost, "/api/share/"+owner+"/reject", `{"ticket_ids":[`+strconv.Itoa(ids[0])+`],"reason":"WRONG_OWNER","comment":"not mine"}`, nil); rec.Code != http.StatusOK {
+		t.Fatalf("return: %d %s", rec.Code, rec.Body.String())
+	}
+	if open() != http.StatusOK {
+		t.Fatalf("one finding returned, one still owned: the link must still open")
+	}
+	// the last one verified patched from the office: nothing left on the link
+	if rec := send(app, http.MethodPatch, "/api/tickets/bulk", `{"ticket_ids":[`+strconv.Itoa(ids[1])+`],"status":"Patched","comment":"rescan clean"}`, sheriff); rec.Code != http.StatusOK {
+		t.Fatalf("verify: %d %s", rec.Code, rec.Body.String())
+	}
+	if c := open(); c != http.StatusNotFound {
+		t.Fatalf("every finding left the owner: the link must stop, got %d", c)
+	}
+	// reassigning to someone else mints their link and ends the old one
+	ids2, owner2 := handOut(t, app, 1)
+	if rec := send(app, http.MethodPatch, "/api/tickets/bulk", `{"ticket_ids":[`+strconv.Itoa(ids2[0])+`],"status":"Assigned Out","assignee":"sam@rr.test","comment":"wrong team"}`, sheriff); rec.Code != http.StatusOK {
+		t.Fatalf("reassign: %d %s", rec.Code, rec.Body.String())
+	}
+	if c := send(app, http.MethodGet, "/api/share/"+owner2, "", nil).Code; c != http.StatusNotFound {
+		t.Fatalf("dana's link must stop once the finding is sam's, got %d", c)
 	}
 }

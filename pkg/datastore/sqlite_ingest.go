@@ -201,9 +201,17 @@ func (s *SQLiteStore) executeBatchMutations(ctx context.Context, tx *sql.Tx, sou
 	if len(autocloses) > 0 {
 		closeStmt, _ := tx.PrepareContext(ctx, `UPDATE tickets SET status = 'Patched', patched_at = CURRENT_TIMESTAMP WHERE dedupe_hash = ?`)
 		defer closeStmt.Close()
+		var closedIDs []int
 		for _, hash := range autocloses {
 			tx.ExecContext(ctx, `INSERT INTO ticket_activity (ticket_id, actor, activity_type, old_value, new_value) SELECT id, 'Scan', 'scan_closed', status, 'Patched' FROM tickets WHERE dedupe_hash = ?`, hash)
 			closeStmt.ExecContext(ctx, hash)
+			var id int
+			if err := tx.QueryRowContext(ctx, `SELECT id FROM tickets WHERE dedupe_hash = ?`, hash).Scan(&id); err == nil {
+				closedIDs = append(closedIDs, id)
+			}
+		}
+		if err := revokeStaleLinks(ctx, tx, closedIDs); err != nil {
+			return err
 		}
 	}
 

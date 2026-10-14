@@ -106,10 +106,22 @@ func (s *SQLiteStore) UpdateTicketInline(ctx context.Context, ticketID int, seve
 		severity = domain.NormalizeSeverity(severity)
 	}
 
-	_, err := s.DB.ExecContext(ctx, query,
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.ExecContext(ctx, query,
 		severity, severity, description, description, remediation, remediation,
-		status, status, status, status, assignee, assignee, formattedComment, formattedComment, ticketID)
-	return err
+		status, status, status, status, assignee, assignee, formattedComment, formattedComment, ticketID); err != nil {
+		return err
+	}
+	if status != "" || assignee != "" {
+		if err := revokeStaleLinks(ctx, tx, []int{ticketID}); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 // RejectTicketFromWrangler puts a ticket back into the Holding Pen
@@ -126,6 +138,9 @@ func (s *SQLiteStore) RejectTicketFromWrangler(ctx context.Context, ticketIDs []
 		if err != nil {
 			return err
 		}
+	}
+	if err := revokeStaleLinks(ctx, tx, ticketIDs); err != nil {
+		return err
 	}
 	return tx.Commit()
 }

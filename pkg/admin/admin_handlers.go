@@ -1,6 +1,8 @@
 package admin
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -23,15 +25,24 @@ func (h *Handler) HandleAdminResetPassword(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// A body with new_password sets that password. No body, as the admin
+	// page sends, means generate one and hand it back once.
 	var req PasswordResetRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
-		return
+	generated := false
+	if r.Body != nil && r.ContentLength != 0 {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
+			return
+		}
 	}
-
 	if req.NewPassword == "" {
-		http.Error(w, "New password cannot be empty", http.StatusBadRequest)
-		return
+		b := make([]byte, 12)
+		if _, err := rand.Read(b); err != nil {
+			http.Error(w, "Could not generate a password", http.StatusInternalServerError)
+			return
+		}
+		req.NewPassword = hex.EncodeToString(b)
+		generated = true
 	}
 
 	hashedPassword, err := auth.HashPassword(req.NewPassword)
@@ -40,16 +51,19 @@ func (h *Handler) HandleAdminResetPassword(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err = h.Store.UpdateUserPassword(r.Context(), userID, hashedPassword)
-	if err != nil {
+	if err := h.Store.UpdateUserPassword(r.Context(), userID, hashedPassword); err != nil {
 		http.Error(w, "Failed to update user password", http.StatusInternalServerError)
 		return
 	}
 
+	if generated {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(req.NewPassword))
+		return
+	}
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Password reset successfully",
-	})
+	json.NewEncoder(w).Encode(map[string]string{"message": "Password reset successfully"})
 }
 
 type RoleUpdateRequest struct {

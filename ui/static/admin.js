@@ -77,7 +77,6 @@ window.editRole = async function(id, currentRole) {
 }
 window.resetPassword = async function(id) { if(confirm("Generate new password?")) await fetch(`/api/admin/users/${id}/reset-password`, { method: 'PATCH' }).then(async r => r.ok ? alert("New Password: \n\n" + await r.text()) : alert("Failed")); }
 window.deleteRule = async function(id) { if(confirm("Delete rule?")) await fetch(`/api/admin/routing/${id}`, { method: 'DELETE' }).then(r => r.ok ? window.location.reload() : alert("Failed")); }
-window.updateBackupPolicy = async function() { const pol = document.getElementById("backupPolicy").value; await fetch(`/api/admin/backup-policy`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ policy: pol }) }).then(r => r.ok ? alert("Saved") : alert("Failed")); }
 window.checkUpdates = async function() { await fetch(`/api/admin/check-updates`).then(async r => alert(await r.text())); }
 
 document.addEventListener("DOMContentLoaded", function() {

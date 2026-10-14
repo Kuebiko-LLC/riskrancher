@@ -140,9 +140,7 @@ func TestUIFetchCallsHaveRoutes(t *testing.T) {
 // knownDrift is the burn-down list: calls the pages make today that the
 // server does not answer. Each fix deletes its line. The test fails when a
 // new one appears or when a listed one is fixed without being removed here.
-var knownDrift = []string{
-	"admin.js: PUT /api/admin/backup-policy",
-}
+var knownDrift = []string{}
 
 // knownOrphans is the same burn-down for routes nothing reaches: each is
 // either wired to a page, documented in the README, or removed.

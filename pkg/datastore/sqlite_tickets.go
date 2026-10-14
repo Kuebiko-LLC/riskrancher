@@ -69,14 +69,19 @@ func (s *SQLiteStore) insertTicket(ctx context.Context, t *domain.Ticket) error 
 	return nil
 }
 
-// UpdateTicketInline handles a single UI edit and updates the flattened comment tracking
+// UpdateTicketInline is a single edit from the dashboard drawer. Every field
+// is optional: an empty value leaves the column as it is, so an edit to the
+// severity or the text never touches the finding's status or owner.
 func (s *SQLiteStore) UpdateTicketInline(ctx context.Context, ticketID int, severity, description, remediation, comment, actor, status, assignee string) error {
 	query := `
-		UPDATE tickets 
-		SET severity = ?, description = ?, recommended_remediation = ?, 
-		    status = ?, assignee = ?, 
+		UPDATE tickets
+		SET severity = CASE WHEN ? != '' THEN ? ELSE severity END,
+		    description = CASE WHEN ? != '' THEN ? ELSE description END,
+		    recommended_remediation = CASE WHEN ? != '' THEN ? ELSE recommended_remediation END,
+		    status = CASE WHEN ? != '' THEN ? ELSE status END,
+		    assignee = CASE WHEN ? != '' THEN ? ELSE assignee END,
 		    latest_comment = CASE WHEN ? != '' THEN ? ELSE latest_comment END,
-		    updated_at = CURRENT_TIMESTAMP 
+		    updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?`
 
 	formattedComment := ""
@@ -84,7 +89,9 @@ func (s *SQLiteStore) UpdateTicketInline(ctx context.Context, ticketID int, seve
 		formattedComment = "[" + actor + "] " + comment
 	}
 
-	_, err := s.DB.ExecContext(ctx, query, severity, description, remediation, status, assignee, formattedComment, formattedComment, ticketID)
+	_, err := s.DB.ExecContext(ctx, query,
+		severity, severity, description, description, remediation, remediation,
+		status, status, assignee, assignee, formattedComment, formattedComment, ticketID)
 	return err
 }
 

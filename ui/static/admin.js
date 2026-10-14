@@ -51,7 +51,7 @@ window.denyRisk = async function(id) {
 // --- CONFIG & USERS LOGIC ---
 window.deleteUser = async function(id) { if(confirm("Deactivate this user?")) await fetch(`/api/admin/users/${id}`, { method: 'DELETE' }).then(r => r.ok ? window.location.reload() : alert("Failed")); }
 window.editRole = async function(id, currentRole) {
-    const newRole = prompt("Enter new role (RangeHand, Wrangler, Magistrate, Sheriff):", currentRole);
+    const newRole = prompt("Enter new role (Sheriff, RangeHand, Wrangler, Magistrate, Bounty Hunter):", currentRole);
     if(newRole && newRole !== currentRole) await fetch(`/api/admin/users/${id}/role`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ global_role: newRole }) }).then(r => r.ok ? window.location.reload() : alert("Failed"));
 }
 window.resetPassword = async function(id) { if(confirm("Generate new password?")) await fetch(`/api/admin/users/${id}/reset-password`, { method: 'PATCH' }).then(async r => r.ok ? alert("New Password: \n\n" + await r.text()) : alert("Failed")); }

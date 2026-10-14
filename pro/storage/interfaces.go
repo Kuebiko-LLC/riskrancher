@@ -1,4 +1,3 @@
-// File: RiskRancher/pro/storage/pro_interfaces.go
 package storage
 
 import (

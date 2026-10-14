@@ -1,4 +1,3 @@
-// File: RiskRancher/pro/internal/tickets/handlers_test.go
 package tickets
 
 import (

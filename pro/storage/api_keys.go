@@ -1,4 +1,3 @@
-// File: RiskRancher/pro/storage/pro_api_keys.go
 package storage
 
 import (

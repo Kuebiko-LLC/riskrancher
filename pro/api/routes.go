@@ -1,4 +1,3 @@
-// File: RiskRancher/pro/api/pro_routes.go
 package api
 
 import (

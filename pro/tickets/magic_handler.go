@@ -1,4 +1,3 @@
-// File: RiskRancher/pro/internal/tickets/magic_handler.go
 package tickets
 
 import (

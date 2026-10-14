@@ -1,4 +1,3 @@
-// File: RiskRancher/pro/internal/admin/routing.go
 package admin
 
 import (

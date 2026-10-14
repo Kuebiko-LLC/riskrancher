@@ -1,4 +1,3 @@
-// File: RiskRancher/pro/api/audit_test.go
 package middleware
 
 import (

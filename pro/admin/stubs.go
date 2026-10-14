@@ -1,4 +1,3 @@
-// File: RiskRancher/pro/internal/admin/stubs.go
 package admin
 
 import "net/http"

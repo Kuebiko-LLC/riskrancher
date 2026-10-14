@@ -1,4 +1,3 @@
-// File: RiskRancher/pro/api/api_key.go
 package middleware
 
 import (

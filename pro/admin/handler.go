@@ -1,4 +1,3 @@
-// File: RiskRancher/pro/internal/admin/pro_handler.go
 package admin
 
 import (

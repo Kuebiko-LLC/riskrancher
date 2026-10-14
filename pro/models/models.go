@@ -1,4 +1,3 @@
-// File: RiskRancher/pro/models/pro_models.go
 package models
 
 import (

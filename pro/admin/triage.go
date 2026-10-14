@@ -1,4 +1,3 @@
-// File: RiskRancher/pro/internal/admin/triage.go
 package admin
 
 import (

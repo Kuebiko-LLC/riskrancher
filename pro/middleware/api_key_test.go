@@ -1,4 +1,3 @@
-// File: RiskRancher/pro/internal/middleware/api_key_test.go
 package middleware_test
 
 import (

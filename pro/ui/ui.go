@@ -1,4 +1,3 @@
-// File: RiskRancher/pro/ui/pro_ui.go
 package ui
 
 import (

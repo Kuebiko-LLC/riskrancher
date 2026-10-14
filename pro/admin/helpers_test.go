@@ -1,4 +1,3 @@
-// File: RiskRancher/pro/internal/admin/helpers_test.go
 package admin
 
 import (

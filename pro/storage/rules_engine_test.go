@@ -1,4 +1,3 @@
-// File: RiskRancher/pro/storage/rules_engine_test.go
 package storage_test
 
 import (

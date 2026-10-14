@@ -12,39 +12,11 @@ import (
 
 // 🚀 THE FIX: This tells the Go compiler to read the file and inject it into this variable at compile-time!
 //
-//go:embed pro_schema.sql
-var proSchemaSQL string
 
 // InjectProSchema applies the $4,999 Enterprise tables to the Core database
 func InjectProSchema(db *sql.DB) {
-	// 🚀 THE FIX: Run the ALTER TABLE auto-migrations BEFORE executing the schema!
-	migrations := []string{
-		"ALTER TABLE tickets ADD COLUMN is_cisa_kev BOOLEAN DEFAULT 0;",
-		"ALTER TABLE tickets ADD COLUMN verification_requested_at DATETIME;",
-		"ALTER TABLE tickets ADD COLUMN extension_count INTEGER DEFAULT 0;",
-		"ALTER TABLE tickets ADD COLUMN risk_rationale TEXT;",
-		"ALTER TABLE tickets ADD COLUMN risk_evidence TEXT;",
-		"ALTER TABLE tickets ADD COLUMN risk_approved_by TEXT;",
-		"ALTER TABLE tickets ADD COLUMN risk_approved_at DATETIME;",
-		"ALTER TABLE tickets ADD COLUMN exception_expires_at DATETIME;",
-		"ALTER TABLE tickets ADD COLUMN engagement_id INTEGER;",
-		"ALTER TABLE pentest_reports ADD COLUMN body TEXT;",
-		"ALTER TABLE pentest_reports ADD COLUMN engagement_id INTEGER;",
-		"ALTER TABLE finding_templates ADD COLUMN cvss_vector TEXT;",
-		"ALTER TABLE finding_templates ADD COLUMN cvss_score REAL;",
-		"ALTER TABLE finding_templates ADD COLUMN cwe TEXT;",
-		"ALTER TABLE finding_templates ADD COLUMN business_impact TEXT;",
-	}
-
-	for _, query := range migrations {
-		db.Exec(query) // Ignore errors; they just mean the column was already added!
-	}
-
-	// Now that the columns exist, it's safe to create the indexes and tables!
-	if _, err := db.Exec(proSchemaSQL); err != nil {
-		log.Fatalf("🚨 PRO FATAL: Could not inject Pro Schema: %v", err)
-	}
-
+	// The whole schema lives in pkg/datastore/schema.sql and is applied by
+	// InitDB. Kept so existing callers keep compiling.
 	log.Println("🤠 RiskRancher: schema ready")
 }
 

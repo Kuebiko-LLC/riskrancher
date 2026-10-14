@@ -38,46 +38,11 @@ func InitDB(dbPath string) *sql.DB {
 	db.SetMaxIdleConns(25)
 	db.SetConnMaxLifetime(5 * time.Minute)
 
-	migrations := []string{
-		schemaSQL,
-		// v2: drop the hardcoded role CHECK on users (roles are validated in the
-		// app layer now, which supports Bounty Hunter and future custom roles).
-		// SQLite can't alter a CHECK in place, so rebuild the table.
-		`CREATE TABLE users_rebuild (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			email TEXT UNIQUE NOT NULL,
-			password_hash TEXT NOT NULL,
-			full_name TEXT NOT NULL,
-			global_role TEXT NOT NULL,
-			department TEXT NOT NULL DEFAULT 'Security',
-			is_active BOOLEAN DEFAULT 1,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			FOREIGN KEY(department) REFERENCES departments(name) ON DELETE SET DEFAULT
-		);
-		INSERT INTO users_rebuild (id,email,password_hash,full_name,global_role,department,is_active,created_at)
-			SELECT id,email,password_hash,full_name,global_role,department,is_active,created_at FROM users;
-		DROP TABLE users;
-		ALTER TABLE users_rebuild RENAME TO users;`,
-		// v3: findings held in an unreleased engagement are hidden from the
-		// triage queue until released. Normal findings default to visible (1).
-		`ALTER TABLE tickets ADD COLUMN released INTEGER NOT NULL DEFAULT 1;`,
-		// v4: structured pentest fields on findings (for report findings).
-		`ALTER TABLE tickets ADD COLUMN cvss_vector TEXT;
-		 ALTER TABLE tickets ADD COLUMN cvss_score REAL;
-		 ALTER TABLE tickets ADD COLUMN cwe TEXT;
-		 ALTER TABLE tickets ADD COLUMN business_impact TEXT;`,
-		// v5: the Holding Pen pages by asset. This covering index lets the page
-		// query walk assets in order and stop at LIMIT, so a page costs the same
-		// at a million findings as at thirty.
-		`CREATE INDEX IF NOT EXISTS idx_tickets_asset_status ON tickets(asset_identifier, status, released);`,
-		// v6: the dashboard's headline counts (open criticals, overdue) read
-		// these instead of filtering a severity or due-date range row by row.
-		`CREATE INDEX IF NOT EXISTS idx_tickets_severity_status ON tickets(severity, status, released);
-		 CREATE INDEX IF NOT EXISTS idx_tickets_remediation_due ON tickets(remediation_due_date, status, released);`,
-	}
-
-	if err := RunMigrations(db, migrations); err != nil {
-		log.Fatalf("Database upgrade failed! Halting boot to protect data: %v", err)
+	// The schema is the one source of truth. It is applied whole on every boot
+	// (every statement is IF NOT EXISTS). There is no migration ledger: when the
+	// schema changes, delete the database file and reprovision.
+	if _, err := db.Exec(schemaSQL); err != nil {
+		log.Fatalf("Could not apply schema: %v", err)
 	}
 
 	SeedAdapters(db)

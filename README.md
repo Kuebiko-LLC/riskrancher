@@ -45,6 +45,10 @@ It wipes the ticket table, seeds every dashboard tab, and prints working portal 
 
 **Roles, keys, audit.** Four roles (Sheriff, RangeHand, Wrangler, Magistrate) enforced by middleware, service accounts with API keys, and an immutable audit log.
 
+## Schema changes
+
+`pkg/datastore/schema.sql` is the whole schema and the only source of truth; it is applied on every boot and every statement is `IF NOT EXISTS`. There is no migration ledger. When the schema changes, delete `data/riskrancher.db` and start the binary again; it reprovisions from the file. Nothing here holds production data.
+
 ## How it is built
 
 - One Go module, `github.com/Kuebiko-LLC/riskrancher`.

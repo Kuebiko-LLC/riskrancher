@@ -2,7 +2,6 @@ package datastore
 
 import (
 	"context"
-	"fmt"
 
 	domain2 "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
@@ -65,47 +64,26 @@ func (s *SQLiteStore) UpdateDraft(ctx context.Context, draftID int, payload doma
 	return err
 }
 
+// PromotePentestDrafts turns a report's drafts into findings through the same
+// engine scanner findings use: the rules run, the SLA matrix sets the clock,
+// routing hands them out, and the analyst stays on each one. The drafts are
+// consumed afterwards.
 func (s *SQLiteStore) PromotePentestDrafts(ctx context.Context, reportID string, analystEmail string, tickets []domain2.Ticket) error {
-	tx, err := s.DB.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	for _, t := range tickets {
-		hash := fmt.Sprintf("manual-pentest-%s-%s", t.AssetIdentifier, t.Title)
-
-		t.Severity = domain2.NormalizeSeverity(t.Severity)
-		promoteTriageDue, promoteRemediationDue := s.dueDates(ctx, "", t.Severity)
-		res, err := tx.ExecContext(ctx, `
-			INSERT INTO tickets (
-				source, asset_identifier, title, description, recommended_remediation, severity, status, dedupe_hash,
-				triage_due_date, remediation_due_date, created_at, updated_at
-			)
-			VALUES (?, ?, ?, ?, ?, ?, 'Waiting to be Triaged', ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-		`, "Manual Pentest", t.AssetIdentifier, t.Title, t.Description, t.RecommendedRemediation, t.Severity, hash, promoteTriageDue, promoteRemediationDue)
-		if err != nil {
+	for i := range tickets {
+		t := tickets[i]
+		t.Source = "Manual Pentest"
+		if t.Domain == "" {
+			t.Domain = "Vulnerability"
+		}
+		t.Status = ""
+		t.DedupeHash = ""
+		if err := s.CreateTicket(ctx, &t); err != nil {
 			return err
 		}
-
-		ticketID, err := res.LastInsertId()
-		if err != nil {
-			return err
-		}
-
-		_, err = tx.ExecContext(ctx, `
-			INSERT INTO ticket_assignments (ticket_id, assignee, role)
-			VALUES (?, ?, 'RangeHand')
-		`, ticketID, analystEmail)
-		if err != nil {
+		if _, err := s.DB.ExecContext(ctx, `INSERT OR IGNORE INTO ticket_assignments (ticket_id, assignee, role) VALUES (?, ?, 'RangeHand')`, t.ID, analystEmail); err != nil {
 			return err
 		}
 	}
-
-	_, err = tx.ExecContext(ctx, "DELETE FROM draft_tickets WHERE report_id = ?", reportID)
-	if err != nil {
-		return err
-	}
-
-	return tx.Commit()
+	_, err := s.DB.ExecContext(ctx, "DELETE FROM draft_tickets WHERE report_id = ?", reportID)
+	return err
 }

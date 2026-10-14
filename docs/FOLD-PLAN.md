@@ -1,6 +1,6 @@
 # One RiskRancher: folding the `pro/` layer into the product
 
-Status: Stages 1, 2 and 3 landed 2026-10-14. `pro/` is gone. Stage 4 (loose ends) remains. Stages land as
+Status: all four stages landed 2026-10-14. `pro/` is gone. Stages land as
 separate commits, suite green between each, so any stage can be bisected or reverted on its own.
 
 ## Goal
@@ -120,7 +120,11 @@ Deleted outright: `pro/license`, `pro/middleware/license.go`, `pro/admin/license
 - Stage 2 also deleted the embedding and matchmaker sketches (they queried tables the schema never had and nothing called them) and a base GetGlobalActivityFeed that returned an upsell message instead of the audit log.
 - Stage 3 notes: the pro route wrappers logged every API call to the audit log and the base ones did not; the merged set audits every protected API route, so the log now covers the whole product. The core paginated audit feed was a stub returning nothing (fixed with a test, 166d987). `PUT /api/config` is Sheriff-only and the report-image route serves the URLs the upload handler returns (fixed with tests after Stage 3).
 
-## Stage 4 remaining
-- `workspace_id` hard-coded to 1 in the rules tables and queries; decide whether workspaces are a feature.
-- `ServiceAccountAuth` sets string context keys instead of `auth.UserIDKey`, so API keys never satisfy `RequireAuth`; it is unused in production. Either wire it properly (with a test) or remove it.
-- `HandleGetAPIKeys`, `HandleCreateAPIKey`, `HandleRevokeAPIKey`, `HandleExecDashboardData`, and the suppression-rule handlers are empty stubs behind live routes.
+## Stage 4 -- DONE
+
+- Workspaces removed (66b4fc8). One install is one ranch.
+- API keys work: bearer key acts as its owner, ReadOnly keys only GET, expiry honored; mint/list/revoke handlers with tests.
+- Suppression rules have an API (list, create by source+asset+title or hash, delete); the test ingests the suppressed finding and finds it closed.
+- The empty executive-dashboard route is gone.
+
+The fold is complete. `pro/` does not exist; the words Pro, Core, OSS, Enterprise, license, paywall and the gem do not appear in code, templates or scripts.

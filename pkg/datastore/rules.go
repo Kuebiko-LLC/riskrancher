@@ -198,6 +198,30 @@ func (s *SQLiteStore) CreateSuppressionRule(ctx context.Context, rule *domain.Su
 	return nil
 }
 
+// ListSuppressionRules returns the logged false positives, newest first.
+func (s *SQLiteStore) ListSuppressionRules(ctx context.Context) ([]domain.SuppressionRule, error) {
+	rows, err := s.DB.QueryContext(ctx, `SELECT id, dedupe_hash, asset_identifier, rationale, actor, created_at FROM suppression_rules ORDER BY created_at DESC, id DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	rules := []domain.SuppressionRule{}
+	for rows.Next() {
+		var r domain.SuppressionRule
+		if err := rows.Scan(&r.ID, &r.DedupeHash, &r.AssetIdentifier, &r.Rationale, &r.Actor, &r.CreatedAt); err != nil {
+			return nil, err
+		}
+		rules = append(rules, r)
+	}
+	return rules, rows.Err()
+}
+
+// DeleteSuppressionRule un-logs a false positive; the next scan treats the finding as new.
+func (s *SQLiteStore) DeleteSuppressionRule(ctx context.Context, id int) error {
+	_, err := s.DB.ExecContext(ctx, `DELETE FROM suppression_rules WHERE id = ?`, id)
+	return err
+}
+
 func (s *SQLiteStore) CreateRoutingRule(ctx context.Context, rule *domain.RoutingRule) error {
 	res, err := s.DB.ExecContext(ctx,
 		"INSERT INTO routing_rules (rule_type, match_value, assignee, role) VALUES (?, ?, ?, ?)",

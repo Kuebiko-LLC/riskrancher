@@ -118,7 +118,6 @@ func RegisterRoutes(app *App) {
 
 	// Analytics
 	app.Router.Handle("GET /api/analytics/summary", protected(analyticsH.HandleGetAnalyticsSummary))
-	app.Router.Handle("GET /api/analytics/executive", execOnly(adminH.HandleExecDashboardData))
 
 	// Pentest report intake (upload, parse, draft, promote)
 	app.Router.Handle("POST /api/reports/upload", protected(reportH.HandleUploadReport))

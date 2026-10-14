@@ -40,8 +40,7 @@ type Ticket struct {
 
 	DedupeHash string `json:"dedupe_hash"`
 
-	PatchEvidence *string    `json:"patch_evidence"`
-	OwnerViewedAt *time.Time `json:"owner_viewed_at"`
+	PatchEvidence *string `json:"patch_evidence"`
 
 	TriageDueDate      time.Time  `json:"triage_due_date"`
 	RemediationDueDate time.Time  `json:"remediation_due_date"`

@@ -24,13 +24,10 @@ func (s *SQLiteStore) UpdateAppConfig(ctx context.Context, config domain2.AppCon
 func (s *SQLiteStore) GetAppConfig(ctx context.Context) (domain2.AppConfig, error) {
 	var c domain2.AppConfig
 
-	query := `SELECT timezone, business_start, business_end, default_extension_days, 
-                     backup_enabled, backup_interval_hours, backup_retention_days 
-              FROM app_config WHERE id = 1`
+	query := `SELECT timezone, business_start, business_end, default_extension_days FROM app_config WHERE id = 1`
 
 	err := s.DB.QueryRowContext(ctx, query).Scan(
 		&c.Timezone, &c.BusinessStart, &c.BusinessEnd, &c.DefaultExtensionDays,
-		&c.Backup.Enabled, &c.Backup.IntervalHours, &c.Backup.RetentionDays,
 	)
 	return c, err
 }
@@ -110,15 +107,6 @@ func (s *SQLiteStore) ExportSystemState(ctx context.Context) (domain2.ExportStat
 	}
 
 	return state, nil
-}
-
-func (s *SQLiteStore) UpdateBackupPolicy(ctx context.Context, policy domain2.BackupPolicy) error {
-	_, err := s.DB.ExecContext(ctx, `
-		UPDATE app_config 
-		SET backup_enabled = ?, backup_interval_hours = ?, backup_retention_days = ? 
-		WHERE id = 1`,
-		policy.Enabled, policy.IntervalHours, policy.RetentionDays)
-	return err
 }
 
 func (s *SQLiteStore) GetSLAPolicies(ctx context.Context) ([]domain2.SLAPolicy, error) {

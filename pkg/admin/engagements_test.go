@@ -16,7 +16,7 @@ import (
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
-// setupEngagementsTest builds a ProHandler over a real DB with the full schema
+// setupEngagementsTest builds a Handler over a real DB with the full schema
 // and a Bounty Hunter user, and returns a request decorator that authenticates
 // as that user (so handlers resolve the owner from context).
 func setupEngagementsTest(t *testing.T) (*Handler, *sql.DB, func(*http.Request) *http.Request) {

@@ -2,7 +2,6 @@ package domain
 
 import (
 	"context"
-	"net/http"
 	"time"
 )
 
@@ -59,7 +58,6 @@ type IdentityStore interface {
 
 // IngestStore: Scanners, Adapters, and Sync History
 type IngestStore interface {
-	IngestTickets(ctx context.Context, tickets []Ticket) error
 	ProcessIngestionBatch(ctx context.Context, source string, assetIdentifier string, incoming []Ticket) error
 
 	GetAdapters(ctx context.Context) ([]Adapter, error)
@@ -78,7 +76,6 @@ type ConfigStore interface {
 	UpdateAppConfig(ctx context.Context, config AppConfig) error
 	GetSLAPolicies(ctx context.Context) ([]SLAPolicy, error)
 	UpdateSLAPolicies(ctx context.Context, slas []SLAPolicy) error
-	UpdateBackupPolicy(ctx context.Context, policy BackupPolicy) error
 	ExportSystemState(ctx context.Context) (ExportState, error)
 }
 
@@ -97,15 +94,6 @@ type DraftStore interface {
 	DeleteDraft(ctx context.Context, draftID string) error
 	UpdateDraft(ctx context.Context, draftID int, payload Ticket) error
 	PromotePentestDrafts(ctx context.Context, reportID string, analystEmail string, tickets []Ticket) error
-}
-
-type Authenticator interface {
-	Middleware(next http.Handler) http.Handler
-}
-
-type SLACalculator interface {
-	CalculateDueDate(severity string) *time.Time
-	CalculateTrueSLAHours(ctx context.Context, ticketID int, store Store) (float64, error)
 }
 
 // WorkflowStore: bulk actions, portals, and the dashboard view with portal tokens

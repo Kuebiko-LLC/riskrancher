@@ -109,11 +109,6 @@ func main() {
 			TriageDueDate:      now,
 			RemediationDueDate: now.Add(30 * 24 * time.Hour),
 		}
-		// Some have been viewed, some haven't (Tests the bold/unread UI)
-		if i%2 == 0 {
-			nowTime := now
-			ticket.OwnerViewedAt = &nowTime
-		}
 		store.CreateTicket(ctx, ticket)
 		magistrateIDs = append(magistrateIDs, ticket.ID)
 	}

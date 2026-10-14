@@ -3,10 +3,7 @@ CREATE TABLE IF NOT EXISTS app_config (
     timezone TEXT DEFAULT 'America/New_York',
     business_start INTEGER DEFAULT 9,
     business_end INTEGER DEFAULT 17,
-    default_extension_days INTEGER DEFAULT 30,
-    backup_enabled BOOLEAN DEFAULT 1,
-    backup_interval_hours INTEGER DEFAULT 24,
-    backup_retention_days INTEGER DEFAULT 30
+    default_extension_days INTEGER DEFAULT 30
     );
 
 INSERT OR IGNORE INTO app_config (id) VALUES (1);
@@ -60,9 +57,6 @@ CREATE TABLE IF NOT EXISTS tickets (
                                        domain TEXT NOT NULL DEFAULT 'Vulnerability',
                                        source TEXT NOT NULL DEFAULT 'Manual',
                                        asset_identifier TEXT NOT NULL DEFAULT 'Default',
-                                       cve_id TEXT,
-                                       audit_id TEXT UNIQUE,
-                                       compliance_tags TEXT,
                                        title TEXT NOT NULL,
                                        description TEXT,
                                        recommended_remediation TEXT,
@@ -87,7 +81,6 @@ CREATE TABLE IF NOT EXISTS tickets (
     engagement_id INTEGER,
     dedupe_hash TEXT UNIQUE NOT NULL,
     patch_evidence TEXT,
-    accessible_to_internet BOOLEAN DEFAULT 0,
     assignee TEXT DEFAULT 'Unassigned',
     latest_comment TEXT DEFAULT '',
 
@@ -102,7 +95,6 @@ CREATE TABLE IF NOT EXISTS tickets (
     exception_expires_at DATETIME,
 
     assigned_at DATETIME,
-    owner_viewed_at DATETIME,
     triage_due_date DATETIME,
     remediation_due_date DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -264,16 +256,6 @@ CREATE TABLE IF NOT EXISTS api_keys (
     last_used_at DATETIME
     );
 
-CREATE TABLE IF NOT EXISTS webhooks (
-                                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                        name TEXT NOT NULL,
-    payload_url TEXT NOT NULL,
-    secret_key TEXT NOT NULL,
-    event_triggers TEXT NOT NULL,
-    is_active BOOLEAN DEFAULT 1,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
 CREATE TABLE IF NOT EXISTS audit_logs (
                                           id INTEGER PRIMARY KEY AUTOINCREMENT,
                                           actor TEXT NOT NULL,
@@ -284,43 +266,6 @@ CREATE TABLE IF NOT EXISTS audit_logs (
                                           ip_address TEXT,
                                           created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
-
--- ==========================================
--- 5. ASSET TOPOLOGY
--- ==========================================
-CREATE TABLE IF NOT EXISTS asset_sequences (
-                                               asset_identifier TEXT PRIMARY KEY,
-                                               prefix TEXT NOT NULL,
-                                               current_sequence INTEGER DEFAULT 0
-);
-
-CREATE TABLE IF NOT EXISTS applications (
-                                            id TEXT PRIMARY KEY,
-                                            name TEXT NOT NULL UNIQUE,
-                                            business_criticality TEXT DEFAULT 'Medium',
-                                            owner_team TEXT,
-                                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS asset_aliases (
-                                             id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                             application_id TEXT NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
-    alias TEXT NOT NULL,
-    layer TEXT NOT NULL CHECK(layer IN ('Code', 'Artifact', 'Runtime', 'Cloud', 'CompensatingControl')),
-    discovery_source TEXT,
-    is_verified BOOLEAN DEFAULT 1,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(application_id, alias)
-    );
-
-CREATE TABLE IF NOT EXISTS asset_edges (
-                                           id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                           source_alias TEXT NOT NULL,
-                                           target_alias TEXT NOT NULL,
-                                           relationship TEXT NOT NULL,
-                                           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                                           UNIQUE(source_alias, target_alias, relationship)
-    );
 
 -- ==========================================
 -- 5a0. FINDING TEMPLATES (reusable finding blueprints)
@@ -416,6 +361,5 @@ CREATE TABLE IF NOT EXISTS pentest_reports (
 -- ==========================================
 CREATE INDEX IF NOT EXISTS idx_activity_ticket_id ON ticket_activity(ticket_id);
 CREATE INDEX IF NOT EXISTS idx_activity_created_at ON ticket_activity(created_at);
-CREATE INDEX IF NOT EXISTS idx_asset_aliases ON asset_aliases(alias);
 CREATE INDEX IF NOT EXISTS idx_global_suppression ON global_suppression_rules(is_active);
 CREATE INDEX IF NOT EXISTS idx_tickets_cisa_kev ON tickets(status) WHERE is_cisa_kev = 1;

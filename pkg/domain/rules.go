@@ -59,35 +59,3 @@ type APIKey struct {
 	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
 	LastUsedAt  *time.Time `json:"last_used_at,omitempty"`
 }
-
-// Application represents the canonical "Big Picture" entity
-type Application struct {
-	ID                  string    `json:"id"`
-	Name                string    `json:"name"`
-	BusinessCriticality string    `json:"business_criticality"`
-	OwnerTeam           string    `json:"owner_team"`
-	CreatedAt           time.Time `json:"created_at"`
-}
-
-// AssetAlias represents the raw string from a scanner (Trivy, Semgrep, etc.)
-type AssetAlias struct {
-	ID              int       `json:"id"`
-	ApplicationID   string    `json:"application_id"`
-	Alias           string    `json:"alias"`
-	Layer           string    `json:"layer"`
-	DiscoverySource string    `json:"discovery_source"`
-	IsAiSuggested   bool      `json:"is_ai_suggested"`
-	IsVerified      bool      `json:"is_verified"`
-	CreatedAt       time.Time `json:"created_at"`
-}
-
-// MatchmakerProposal represents the AI's suggestion to merge an alias into an App
-type MatchmakerProposal struct {
-	ID                  int       `json:"id"`
-	SourceAliasID       int       `json:"source_alias_id"`
-	TargetApplicationID string    `json:"target_application_id"`
-	ConfidenceScore     float64   `json:"confidence_score"`
-	Status              string    `json:"status"`
-	Reasoning           string    `json:"reasoning"`
-	CreatedAt           time.Time `json:"created_at"`
-}

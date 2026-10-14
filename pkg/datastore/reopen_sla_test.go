@@ -40,4 +40,11 @@ func TestIngest_ReopenUsesSLAMatrix(t *testing.T) {
 	if days := int(time.Until(due).Hours()/24 + 0.5); days != 14 {
 		t.Fatalf("reopened Critical gets the matrix clock of 14 days, got %d", days)
 	}
+	// both scan decisions are on the record
+	var closed, reopened int
+	s.DB.QueryRow(`SELECT COUNT(*) FROM ticket_activity a JOIN tickets t ON t.id = a.ticket_id WHERE t.title = 'CVE-0000-0001 back' AND a.activity_type = 'scan_closed'`).Scan(&closed)
+	s.DB.QueryRow(`SELECT COUNT(*) FROM ticket_activity a JOIN tickets t ON t.id = a.ticket_id WHERE t.title = 'CVE-0000-0001 back' AND a.activity_type = 'scan_reopened'`).Scan(&reopened)
+	if closed != 1 || reopened != 1 {
+		t.Fatalf("the scan writes history: closed=%d reopened=%d", closed, reopened)
+	}
 }

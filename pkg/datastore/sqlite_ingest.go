@@ -186,6 +186,7 @@ func (s *SQLiteStore) executeBatchMutations(ctx context.Context, tx *sql.Tx, sou
 				}
 			}
 			updateStmt.ExecContext(ctx, now.AddDate(0, 0, daysToTriage), now.AddDate(0, 0, daysToRemediate), t.DedupeHash)
+			tx.ExecContext(ctx, `INSERT INTO ticket_activity (ticket_id, actor, activity_type, old_value, new_value) SELECT id, 'Scan', 'scan_reopened', 'Patched', 'Waiting to be Triaged' FROM tickets WHERE dedupe_hash = ?`, t.DedupeHash)
 		}
 	}
 
@@ -201,6 +202,7 @@ func (s *SQLiteStore) executeBatchMutations(ctx context.Context, tx *sql.Tx, sou
 		closeStmt, _ := tx.PrepareContext(ctx, `UPDATE tickets SET status = 'Patched', patched_at = CURRENT_TIMESTAMP WHERE dedupe_hash = ?`)
 		defer closeStmt.Close()
 		for _, hash := range autocloses {
+			tx.ExecContext(ctx, `INSERT INTO ticket_activity (ticket_id, actor, activity_type, old_value, new_value) SELECT id, 'Scan', 'scan_closed', status, 'Patched' FROM tickets WHERE dedupe_hash = ?`, hash)
 			closeStmt.ExecContext(ctx, hash)
 		}
 	}

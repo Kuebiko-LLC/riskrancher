@@ -47,7 +47,9 @@ It wipes the ticket table, seeds every dashboard tab, and prints working portal 
 
 ## Schema changes
 
-`pkg/datastore/schema.sql` is the whole schema and the only source of truth; it is applied on every boot and every statement is `IF NOT EXISTS`. There is no migration ledger. When the schema changes, delete `data/riskrancher.db` and start the binary again; it reprovisions from the file. Nothing here holds production data.
+`pkg/datastore/schema.sql` is the baseline: the whole schema for a fresh install, applied as version 1. Changes to a database that already exists in the field go in as migrations in `pkg/datastore/db.go`, one entry per version, and the `schema_migrations` table records how far each database has been upgraded.
+
+While nothing runs in production, the simpler path is fine: edit the baseline, delete `data/riskrancher.db`, start again. Once an install exists that must keep its data, leave the baseline alone and append a migration.
 
 ## How it is built
 

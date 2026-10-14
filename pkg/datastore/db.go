@@ -38,11 +38,19 @@ func InitDB(dbPath string) *sql.DB {
 	db.SetMaxIdleConns(25)
 	db.SetConnMaxLifetime(5 * time.Minute)
 
-	// The schema is the one source of truth. It is applied whole on every boot
-	// (every statement is IF NOT EXISTS). There is no migration ledger: when the
-	// schema changes, delete the database file and reprovision.
-	if _, err := db.Exec(schemaSQL); err != nil {
-		log.Fatalf("Could not apply schema: %v", err)
+	// schema.sql is the baseline: the whole schema for a fresh install, applied
+	// as version 1. Changes to a database that already exists in the field go
+	// in as migrations appended below, one entry per version, and the ledger
+	// (schema_migrations) records how far a database has been upgraded.
+	//
+	// While nothing runs in production, edit the baseline and reprovision
+	// (delete data/riskrancher.db). Once an install exists that must keep its
+	// data, leave the baseline alone and append a migration instead.
+	migrations := []string{
+		schemaSQL,
+	}
+	if err := RunMigrations(db, migrations); err != nil {
+		log.Fatalf("Database upgrade failed! Halting boot to protect data: %v", err)
 	}
 
 	SeedAdapters(db)

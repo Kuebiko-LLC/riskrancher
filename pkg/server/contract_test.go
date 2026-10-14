@@ -104,6 +104,12 @@ func uiFetchCalls(t *testing.T) []uiCall {
 	return calls
 }
 
+// fsReadUI reads a shipped UI file as text.
+func fsReadUI(name string) (string, error) {
+	b, err := fs.ReadFile(ui.UIFS, name)
+	return string(b), err
+}
+
 func routerApp(t *testing.T) *App {
 	t.Helper()
 	db := datastore.InitDB(":memory:")
@@ -137,7 +143,6 @@ func TestUIFetchCallsHaveRoutes(t *testing.T) {
 var knownDrift = []string{
 	"admin.js: PATCH /api/risk/1/review",
 	"admin.js: PUT /api/admin/backup-policy",
-	"magic.js: POST /api/share/1/review",
 }
 
 // knownOrphans is the same burn-down for routes nothing reaches: each is
@@ -155,7 +160,6 @@ var knownOrphans = []string{
 	"GET /api/reports/view/{id}",
 	"GET /api/tickets",
 	"GET /api/wranglers",
-	"PATCH /api/share/{token}/review",
 	"POST /api/admin/shutdown",
 	"POST /api/admin/triage",
 	"POST /api/integrations/cisa/sync",

@@ -44,7 +44,7 @@
         try {
             // Hit the Magistrate Review Endpoint
             const res = await fetch(`/api/share/${currentToken}/review`, {
-                method: 'POST',
+                method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: action, actor: "Legal / Compliance", comment: comment, extension_days: isNaN(days) ? 0 : days })
             });

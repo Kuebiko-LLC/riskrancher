@@ -96,7 +96,7 @@ func RegisterRoutes(app *App) {
 	app.Router.Handle("POST /api/adapters", protected(adapterH.HandleCreateAdapter))
 	app.Router.Handle("DELETE /api/adapters/{id}", protected(adapterH.HandleDeleteAdapter))
 	app.Router.Handle("GET /api/config", protected(adminH.HandleGetConfig))
-	app.Router.Handle("PUT /api/config", authH.RequireUIAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	app.Router.Handle("PUT /api/config", sheriffOnly(func(w http.ResponseWriter, r *http.Request) {
 		var payload struct {
 			domain.AppConfig
 			SLAs []domain.SLAPolicy `json:"slas"`
@@ -114,7 +114,7 @@ func RegisterRoutes(app *App) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-	})))
+	}))
 
 	// Analytics
 	app.Router.Handle("GET /api/analytics/summary", protected(analyticsH.HandleGetAnalyticsSummary))
@@ -129,7 +129,8 @@ func RegisterRoutes(app *App) {
 	app.Router.Handle("DELETE /api/drafts/{draft_id}", protected(reportH.HandleDeleteDraft))
 	app.Router.Handle("POST /api/reports/promote/{id}", protected(reportH.HandlePromoteDrafts))
 	app.Router.Handle("POST /api/images/upload", protected(reportH.HandleImageUpload))
-	app.Router.Handle("GET /uploads/", http.StripPrefix("/testdata/", http.FileServer(http.Dir("./data/testdata"))))
+	// Report images are handed out as /testdata/images/<file> and served from data/testdata.
+	app.Router.Handle("GET /testdata/", http.StripPrefix("/testdata/", http.FileServer(http.Dir("./data/testdata"))))
 
 	// Engagements, finding templates, evidence, reports out
 	app.Router.Handle("POST /api/engagements", bountyHunter(adminH.HandleCreateEngagement))

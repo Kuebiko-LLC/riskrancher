@@ -152,3 +152,43 @@ func (s *SQLiteStore) ReviewRiskRequest(ctx context.Context, ids []int, action, 
 	}
 	return tx.Commit()
 }
+
+// ReopenExpiredExceptions is the sweep: an accepted risk is deferred, not
+// closed, and when its expiry passes it returns to the queue with a fresh
+// clock from the SLA matrix and a line in the activity.
+func (s *SQLiteStore) ReopenExpiredExceptions(ctx context.Context) (int, error) {
+	rows, err := s.DB.QueryContext(ctx, `SELECT id, domain, severity FROM tickets WHERE status = 'Risk Accepted' AND exception_expires_at IS NOT NULL AND exception_expires_at <= CURRENT_TIMESTAMP`)
+	if err != nil {
+		return 0, err
+	}
+	type due struct {
+		id               int
+		domain, severity string
+	}
+	var expired []due
+	for rows.Next() {
+		var d due
+		if err := rows.Scan(&d.id, &d.domain, &d.severity); err == nil {
+			expired = append(expired, d)
+		}
+	}
+	rows.Close()
+	if len(expired) == 0 {
+		return 0, nil
+	}
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	for _, d := range expired {
+		triageDue, remediationDue := s.dueDates(ctx, d.domain, d.severity)
+		if _, err := tx.ExecContext(ctx, `UPDATE tickets SET status = 'Waiting to be Triaged', exception_expires_at = NULL, triage_due_date = ?, remediation_due_date = ?, latest_comment = 'Risk acceptance expired: back on the queue for a fresh look', updated_at = CURRENT_TIMESTAMP WHERE id = ?`, triageDue, remediationDue, d.id); err != nil {
+			return 0, err
+		}
+		if _, err := tx.ExecContext(ctx, `INSERT INTO ticket_activity (ticket_id, actor, activity_type, old_value, new_value) VALUES (?, 'Expiry sweep', 'exception_expired', 'Risk Accepted', 'Waiting to be Triaged')`, d.id); err != nil {
+			return 0, err
+		}
+	}
+	return len(expired), tx.Commit()
+}

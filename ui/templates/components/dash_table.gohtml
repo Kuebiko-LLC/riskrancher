@@ -115,7 +115,7 @@
                                 <span class="archive-badge" style="background: #fff7ed; color: #9a3412; border: 1px solid #ffedd5;">👻 IGNORED</span>
                             {{end}}
                             <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">
-                                Archived {{.UpdatedAt.Format "Jan 02"}} (Took {{.SLAString}})
+                                Archived {{.UpdatedAt.Format "Jan 02"}} (Took {{.SLAString}}){{if .ExceptionExpiresAt}} · back on the queue {{.ExceptionExpiresAt.Format "Jan 02, 2006"}}{{end}}
                             </div>
                         </td>
                     {{end}}

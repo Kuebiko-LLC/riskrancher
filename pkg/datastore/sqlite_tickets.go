@@ -126,17 +126,24 @@ func (s *SQLiteStore) GetTicketByID(ctx context.Context, id int) (domain.Ticket,
 	var cvssScore sql.NullFloat64
 	var rationale sql.NullString
 	var extensions sql.NullInt64
+	var kev sql.NullBool
+	var expires sql.NullTime
 
-	query := `SELECT id, domain, source, asset_identifier, title, description, recommended_remediation, severity, status, dedupe_hash, triage_due_date, remediation_due_date, created_at, updated_at, patched_at, assignee, latest_comment, cvss_vector, cvss_score, cwe, business_impact, risk_rationale, extension_count FROM tickets WHERE id = ?`
+	query := `SELECT id, domain, source, asset_identifier, title, description, recommended_remediation, severity, status, dedupe_hash, triage_due_date, remediation_due_date, created_at, updated_at, patched_at, assignee, latest_comment, cvss_vector, cvss_score, cwe, business_impact, risk_rationale, extension_count, is_cisa_kev, exception_expires_at FROM tickets WHERE id = ?`
 
 	err := s.DB.QueryRowContext(ctx, query, id).Scan(
-		&t.ID, &t.Domain, &t.Source, &t.AssetIdentifier, &t.Title, &t.Description, &t.RecommendedRemediation, &t.Severity, &t.Status, &t.DedupeHash, &triageDue, &remDue, &created, &updated, &patchedAt, &t.Assignee, &t.LatestComment, &cvssVec, &cvssScore, &cwe, &bizImpact, &rationale, &extensions,
+		&t.ID, &t.Domain, &t.Source, &t.AssetIdentifier, &t.Title, &t.Description, &t.RecommendedRemediation, &t.Severity, &t.Status, &t.DedupeHash, &triageDue, &remDue, &created, &updated, &patchedAt, &t.Assignee, &t.LatestComment, &cvssVec, &cvssScore, &cwe, &bizImpact, &rationale, &extensions, &kev, &expires,
 	)
 	if err != nil {
 		return t, err
 	}
 	t.RiskRationale = rationale.String
 	t.ExtensionCount = int(extensions.Int64)
+	t.IsCISAKEV = kev.Bool
+	if expires.Valid {
+		exp := expires.Time
+		t.ExceptionExpiresAt = &exp
+	}
 	t.CVSSVector = cvssVec.String
 	t.CVSSScore = cvssScore.Float64
 	t.CWE = cwe.String

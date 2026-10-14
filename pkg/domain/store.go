@@ -205,4 +205,7 @@ type PortalStore interface {
 	SubmitPortalFix(ctx context.Context, ids []int, evidence, actor string) error
 	RequestRiskException(ctx context.Context, ids []int, kind, rationale, actor string) error
 	ReviewRiskRequest(ctx context.Context, ids []int, action, actor, comment string, days int) error
+	// ReopenExpiredExceptions puts every accepted risk whose expiry has passed
+	// back on the queue. It runs at boot and before every upload.
+	ReopenExpiredExceptions(ctx context.Context) (int, error)
 }

@@ -13,6 +13,7 @@ import (
 )
 
 func (h *Handler) HandleIngest(w http.ResponseWriter, r *http.Request) {
+	h.Store.ReopenExpiredExceptions(r.Context())
 	decoder := json.NewDecoder(r.Body)
 	_, err := decoder.Token()
 	if err != nil {
@@ -71,6 +72,7 @@ func (h *Handler) HandleIngest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) HandleCSVIngest(w http.ResponseWriter, r *http.Request) {
+	h.Store.ReopenExpiredExceptions(r.Context())
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		http.Error(w, "Failed to parse form", http.StatusBadRequest)
 		return

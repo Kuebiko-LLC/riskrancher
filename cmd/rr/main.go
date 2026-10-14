@@ -4,6 +4,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -26,6 +27,11 @@ func main() {
 	defer db.Close()
 
 	store := datastore.NewSQLiteStore(db)
+	if n, err := store.ReopenExpiredExceptions(context.Background()); err != nil {
+		log.Printf("expiry sweep failed: %v", err)
+	} else if n > 0 {
+		log.Printf("expiry sweep: %d accepted risk(s) back on the queue", n)
+	}
 
 	app := server.NewApp(store)
 

@@ -87,6 +87,7 @@ func interfaceToString(val interface{}) string {
 
 // HandleAdapterIngest dynamically maps deeply nested JSON arrays into Tickets
 func (h *Handler) HandleAdapterIngest(w http.ResponseWriter, r *http.Request) {
+	h.Store.ReopenExpiredExceptions(r.Context())
 	adapterName := r.PathValue("name")
 	adapter, err := h.Store.GetAdapterByName(r.Context(), adapterName)
 	if err != nil {

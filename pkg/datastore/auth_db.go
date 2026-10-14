@@ -24,19 +24,13 @@ func (s *SQLiteStore) CreateUser(ctx context.Context, email, fullName, passwordH
 	if err != nil {
 		return nil, err
 	}
-
-	return &domain.User{
-		ID:           int(id),
-		Email:        email,
-		FullName:     fullName,
-		PasswordHash: passwordHash,
-		GlobalRole:   globalRole,
-	}, nil
+	// Read the row back so the caller sees what the database holds: active, and when.
+	return s.GetUserByID(ctx, int(id))
 }
 
 func (s *SQLiteStore) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var user domain.User
-	query := "SELECT id, email, password_hash, full_name, global_role FROM users WHERE email = ? AND is_active = 1"
+	query := "SELECT id, email, password_hash, full_name, global_role, COALESCE(is_active, 1), COALESCE(created_at, CURRENT_TIMESTAMP) FROM users WHERE email = ? AND is_active = 1"
 
 	err := s.DB.QueryRowContext(ctx, query, email).Scan(
 		&user.ID,
@@ -44,6 +38,8 @@ func (s *SQLiteStore) GetUserByEmail(ctx context.Context, email string) (*domain
 		&user.PasswordHash,
 		&user.FullName,
 		&user.GlobalRole,
+		&user.IsActive,
+		&user.CreatedAt,
 	)
 
 	if err != nil {
@@ -84,7 +80,7 @@ func (s *SQLiteStore) GetSession(ctx context.Context, token string) (*domain.Ses
 
 // GetUserByID fetches a user's full record, including their role
 func (s *SQLiteStore) GetUserByID(ctx context.Context, id int) (*domain.User, error) {
-	query := `SELECT id, email, full_name, password_hash, global_role, COALESCE(is_active, 1) FROM users WHERE id = ?`
+	query := `SELECT id, email, full_name, password_hash, global_role, COALESCE(is_active, 1), COALESCE(created_at, CURRENT_TIMESTAMP) FROM users WHERE id = ?`
 
 	var user domain.User
 	err := s.DB.QueryRowContext(ctx, query, id).Scan(
@@ -94,6 +90,7 @@ func (s *SQLiteStore) GetUserByID(ctx context.Context, id int) (*domain.User, er
 		&user.PasswordHash,
 		&user.GlobalRole,
 		&user.IsActive,
+		&user.CreatedAt,
 	)
 
 	if err != nil {

@@ -51,3 +51,20 @@ func TestAuditLogsLoginAndPortalActor(t *testing.T) {
 		t.Fatalf("a refused call must be on the record: %v", auditRows(t, app))
 	}
 }
+
+// The account you just made or signed in with is active, and the response
+// says so instead of showing a zero value.
+func TestSignInResponseShowsAnActiveAccount(t *testing.T) {
+	app, _ := appWithUser(t, "Sheriff")
+	rec := send(app, http.MethodPost, "/api/auth/login", `{"email":"Sheriff@rr.test","password":"x"}`, nil)
+	_ = rec // the fixture's hash is not a real password; use a fresh registration instead
+	app2 := routerApp(t)
+	rec = send(app2, http.MethodPost, "/api/auth/register", `{"email":"first@rr.test","full_name":"First","password":"correct-horse-battery","global_role":"Sheriff"}`, nil)
+	if rec.Code != http.StatusCreated || !strings.Contains(rec.Body.String(), `"is_active":true`) || strings.Contains(rec.Body.String(), "0001-01-01") {
+		t.Fatalf("register response: %d %s", rec.Code, rec.Body.String())
+	}
+	rec = send(app2, http.MethodPost, "/api/auth/login", `{"email":"first@rr.test","password":"correct-horse-battery"}`, nil)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"is_active":true`) || strings.Contains(rec.Body.String(), "0001-01-01") {
+		t.Fatalf("login response: %d %s", rec.Code, rec.Body.String())
+	}
+}

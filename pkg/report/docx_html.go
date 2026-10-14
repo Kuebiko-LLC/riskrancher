@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"path/filepath"
@@ -82,7 +83,7 @@ func ServeDOCXAsHTML(w http.ResponseWriter, docxPath string) {
 					if se.Name.Local == "t" {
 						var text string
 						decoder.DecodeElement(&text, &se)
-						htmlOutput.WriteString(text)
+						htmlOutput.WriteString(html.EscapeString(text))
 					}
 					if se.Name.Local == "blip" {
 						for _, attr := range se.Attr {

@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 // File: RiskRancher/pro/internal/admin/pro_handler.go
@@ -21,11 +20,7 @@ func (h *ProHandler) HandleCreateRoutingRule(w http.ResponseWriter, r *http.Requ
 
 	rule.WorkspaceID = 1
 
-	proStore, ok := h.Store.(storage.ProStoreInterface)
-	if !ok {
-		http.Error(w, "storage not available", http.StatusInternalServerError)
-		return
-	}
+	proStore := h.Store
 
 	if err := proStore.CreateRoutingRule(r.Context(), &rule); err != nil {
 		// 🚀 FIX: Log the actual SQLite error so we aren't flying blind!
@@ -39,7 +34,7 @@ func (h *ProHandler) HandleCreateRoutingRule(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *ProHandler) HandleGetRoutingRules(w http.ResponseWriter, r *http.Request) {
-	proStore := h.Store.(storage.ProStoreInterface)
+	proStore := h.Store
 	rules, err := proStore.GetRoutingRules(r.Context())
 	if err != nil {
 		http.Error(w, "Failed to fetch rules", http.StatusInternalServerError)
@@ -51,7 +46,7 @@ func (h *ProHandler) HandleGetRoutingRules(w http.ResponseWriter, r *http.Reques
 
 func (h *ProHandler) HandleDeleteRoutingRule(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(r.PathValue("id"))
-	proStore := h.Store.(storage.ProStoreInterface)
+	proStore := h.Store
 
 	// 🚀 FIX: Wire up the delete
 	if err := proStore.DeleteRoutingRule(r.Context(), id); err != nil {

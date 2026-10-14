@@ -1,4 +1,4 @@
-package storage
+package datastore
 
 import (
 	"context"
@@ -27,7 +27,7 @@ func HashToken(rawToken string) string {
 }
 
 // CreateAPIKey generates a secure token, hashes it, stores the record, and returns the RAW token.
-func (s *ProSQLiteStore) CreateAPIKey(ctx context.Context, key domain.APIKey) (string, error) {
+func (s *SQLiteStore) CreateAPIKey(ctx context.Context, key domain.APIKey) (string, error) {
 	rawToken, err := GenerateSecureToken()
 	if err != nil {
 		return "", fmt.Errorf("failed to generate secure token: %w", err)
@@ -40,7 +40,7 @@ func (s *ProSQLiteStore) CreateAPIKey(ctx context.Context, key domain.APIKey) (s
 		VALUES (?, ?, ?, ?, ?, ?)
 		RETURNING id, created_at
 	`
-	err = s.db.QueryRowContext(
+	err = s.DB.QueryRowContext(
 		ctx, query,
 		hashedToken, key.WorkspaceID, key.Name, key.Permissions, key.CreatedBy, key.ExpiresAt,
 	).Scan(&key.ID, &key.CreatedAt)
@@ -54,7 +54,7 @@ func (s *ProSQLiteStore) CreateAPIKey(ctx context.Context, key domain.APIKey) (s
 }
 
 // GetAPIKeyByHash retrieves an API key using the hashed version of the token provided in the Authorization header.
-func (s *ProSQLiteStore) GetAPIKeyByHash(ctx context.Context, hash string) (*domain.APIKey, error) {
+func (s *SQLiteStore) GetAPIKeyByHash(ctx context.Context, hash string) (*domain.APIKey, error) {
 	query := `
 		SELECT id, token_hash, workspace_id, name, permissions, created_by, created_at, expires_at, last_used_at
 		FROM api_keys
@@ -62,7 +62,7 @@ func (s *ProSQLiteStore) GetAPIKeyByHash(ctx context.Context, hash string) (*dom
 	`
 
 	var k domain.APIKey
-	err := s.db.QueryRowContext(ctx, query, hash).Scan(
+	err := s.DB.QueryRowContext(ctx, query, hash).Scan(
 		&k.ID, &k.TokenHash, &k.WorkspaceID, &k.Name, &k.Permissions,
 		&k.CreatedBy, &k.CreatedAt, &k.ExpiresAt, &k.LastUsedAt,
 	)
@@ -75,7 +75,7 @@ func (s *ProSQLiteStore) GetAPIKeyByHash(ctx context.Context, hash string) (*dom
 	}
 
 	// Async/Background task: Update last_used_at (could be decoupled for performance)
-	_, _ = s.db.ExecContext(ctx, `UPDATE api_keys SET last_used_at = CURRENT_TIMESTAMP WHERE id = ?`, k.ID)
+	_, _ = s.DB.ExecContext(ctx, `UPDATE api_keys SET last_used_at = CURRENT_TIMESTAMP WHERE id = ?`, k.ID)
 
 	return &k, nil
 }

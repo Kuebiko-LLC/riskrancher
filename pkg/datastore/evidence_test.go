@@ -1,10 +1,10 @@
-package storage_test
+package datastore_test
 
 import (
 	"context"
 	"testing"
 
-	coredomain "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 func TestEvidenceRoundTrip(t *testing.T) {
@@ -12,12 +12,12 @@ func TestEvidenceRoundTrip(t *testing.T) {
 	store, done := newEngStore(t)
 	defer done()
 
-	tk := &coredomain.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "XSS", Severity: "High", Status: "Waiting to be Triaged"}
+	tk := &domain.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "XSS", Severity: "High", Status: "Waiting to be Triaged"}
 	store.CreateTicket(ctx, tk)
 
 	web := []byte("WEB-IMAGE-BYTES")
 	thumb := []byte("THUMB")
-	ev := &coredomain.Evidence{
+	ev := &domain.Evidence{
 		TicketID: tk.ID, Caption: "login page popup", ContentType: "image/png",
 		Width: 800, Height: 600, Size: len(web), CreatedBy: "bh@ranch.com",
 	}
@@ -68,9 +68,9 @@ func TestEngagementOwnerForTicket(t *testing.T) {
 	store, done := newEngStore(t)
 	defer done()
 
-	eng := &coredomain.Engagement{Name: "P", OwnerEmail: "owner@ranch.com"}
+	eng := &domain.Engagement{Name: "P", OwnerEmail: "owner@ranch.com"}
 	store.CreateEngagement(ctx, eng)
-	tk := &coredomain.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "x", Severity: "High", Status: "Waiting to be Triaged"}
+	tk := &domain.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "x", Severity: "High", Status: "Waiting to be Triaged"}
 	store.CreateTicket(ctx, tk)
 	store.AddFindingsToEngagement(ctx, eng.ID, []int{tk.ID})
 

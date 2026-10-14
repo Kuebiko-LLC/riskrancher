@@ -319,17 +319,6 @@ func (s *SQLiteStore) GetDashboardTickets(ctx context.Context, tabStatus, filter
 	return tickets, total, metrics, nil
 }
 
-func (s *SQLiteStore) GetGlobalActivityFeed(ctx context.Context, limit int) ([]domain2.FeedItem, error) {
-	return []domain2.FeedItem{
-		{
-			Actor:        "System",
-			ActivityType: "Info",
-			NewValue:     "Detailed Immutable Audit Logging is a RiskRancher Pro feature. Upgrade to track all ticket lifecycle events.",
-			TimeAgo:      "Just now",
-		},
-	}, nil
-}
-
 func (s *SQLiteStore) GetAnalyticsSummary(ctx context.Context) (map[string]int, error) {
 	summary := make(map[string]int)
 

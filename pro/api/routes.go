@@ -18,7 +18,6 @@ import (
 
 	proAdmin "github.com/Kuebiko-LLC/riskrancher/pro/admin"
 	"github.com/Kuebiko-LLC/riskrancher/pro/middleware"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 	proTickets "github.com/Kuebiko-LLC/riskrancher/pro/tickets"
 	proUI "github.com/Kuebiko-LLC/riskrancher/pro/ui"
 )
@@ -48,13 +47,10 @@ func ProUIInterceptor(app *core.App, next http.Handler) http.Handler {
 		activityFeed, _ := app.Store.GetGlobalActivityFeed(r.Context(), 15)
 		syncLogs, _ := app.Store.GetRecentSyncLogs(r.Context(), 10)
 
-		proStore, ok := app.Store.(storage.ProStoreInterface)
-		if !ok {
-			log.Println("🚨 CRITICAL: Store is not a ProStoreInterface!")
-		}
+		proStore := app.Store
 		// 🚀 FETCH THE REAL RULES!
 		rules, _ := proStore.GetRoutingRules(r.Context())
-		riskTickets, _, _, _ := proStore.GetProDashboardTickets(r.Context(), "Pending Risk Approval", "", "", "", "Sheriff", 50, 0)
+		riskTickets, _, _, _ := proStore.GetDashboardTicketsWithPortals(r.Context(), "Pending Risk Approval", "", "", "", "Sheriff", 50, 0)
 		unreadRiskCount := 0
 		for _, t := range riskTickets {
 			if t.OwnerViewedAt == nil {
@@ -130,14 +126,10 @@ func ProUIInterceptor(app *core.App, next http.Handler) http.Handler {
 		limit := 10 // assets per page; each asset group arrives whole
 		offset := (page - 1) * limit
 
-		proStore, ok := app.Store.(storage.ProStoreInterface)
-		if !ok {
-			http.Error(w, "Pro store not configured", http.StatusInternalServerError)
-			return
-		}
+		proStore := app.Store
 
 		// 🚀 FETCH ENTERPRISE TICKETS: This attaches the MagicTokens!
-		tickets, totalRecords, metrics, err := proStore.GetProDashboardTickets(r.Context(), statusFilter, filter, assetFilter, user.Email, user.GlobalRole, limit, offset)
+		tickets, totalRecords, metrics, err := proStore.GetDashboardTicketsWithPortals(r.Context(), statusFilter, filter, assetFilter, user.Email, user.GlobalRole, limit, offset)
 		if err != nil {
 			http.Error(w, "DB Error: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -152,7 +144,7 @@ func ProUIInterceptor(app *core.App, next http.Handler) http.Handler {
 		}
 
 		data := map[string]any{
-			"Tickets":           tickets, // This is now []ProDashboardTicket!
+			"Tickets":           tickets, // []domain.DashboardTicket
 			"CurrentTab":        tab,
 			"CurrentFilter":     filter,
 			"CurrentAsset":      assetFilter,
@@ -209,7 +201,7 @@ func ProUIInterceptor(app *core.App, next http.Handler) http.Handler {
 }
 
 func RegisterProRoutes(app *core.App) {
-	proStore := app.Store.(storage.ProStoreInterface)
+	proStore := app.Store
 
 	proUI.InjectProTemplates(proStore)
 

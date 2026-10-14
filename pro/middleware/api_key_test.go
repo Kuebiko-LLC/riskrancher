@@ -6,21 +6,19 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	core "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 	"github.com/Kuebiko-LLC/riskrancher/pro/middleware"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 func TestServiceAccountAuth_BDD(t *testing.T) {
 	// 1. Setup In-Memory DB and Store
-	db := core.InitDB(":memory:")
+	db := datastore.InitDB(":memory:")
 	defer db.Close()
 
 	// Disable FKs so we don't have to mock the entire Core User/Workspace tables
 	_, _ = db.Exec("PRAGMA foreign_keys = OFF;")
-	storage.InjectProSchema(db)
-	store := storage.NewProSQLiteStore(db)
+	store := datastore.NewSQLiteStore(db)
 
 	// 2. Mint a valid API Key for testing
 	validAPIKeyReq := domain.APIKey{

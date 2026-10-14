@@ -1,10 +1,10 @@
-package storage_test
+package datastore_test
 
 import (
 	"context"
 	"testing"
 
-	coredomain "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 // Findings being worked in an unreleased engagement must not appear in the
@@ -27,16 +27,16 @@ func TestUnreleasedEngagementFindingsHiddenFromQueue(t *testing.T) {
 	}
 
 	// A normal scanner finding is visible immediately.
-	normal := &coredomain.Ticket{Source: "Trivy", AssetIdentifier: "host", Title: "normal", Severity: "High", Status: "Waiting to be Triaged"}
+	normal := &domain.Ticket{Source: "Trivy", AssetIdentifier: "host", Title: "normal", Severity: "High", Status: "Waiting to be Triaged"}
 	store.CreateTicket(ctx, normal)
 	if !inQueue()[normal.ID] {
 		t.Fatalf("a normal finding should be in the RangeHand queue")
 	}
 
 	// A BH engagement finding is hidden while the engagement is Active.
-	eng := &coredomain.Engagement{Name: "Pentest", Client: "Acme", OwnerEmail: "bh@ranch.com"}
+	eng := &domain.Engagement{Name: "Pentest", Client: "Acme", OwnerEmail: "bh@ranch.com"}
 	store.CreateEngagement(ctx, eng)
-	finding := &coredomain.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "XSS", Severity: "Critical", Status: "Waiting to be Triaged"}
+	finding := &domain.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "XSS", Severity: "Critical", Status: "Waiting to be Triaged"}
 	store.CreateTicket(ctx, finding)
 	store.AddFindingsToEngagement(ctx, eng.ID, []int{finding.ID})
 

@@ -15,7 +15,6 @@ import (
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	datastore "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	core "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 // setupReportsTest builds a ProHandler over a real SQLite DB with the full core
@@ -24,8 +23,7 @@ import (
 func setupReportsTest(t *testing.T) (*ProHandler, *sql.DB, []int, func(*http.Request) *http.Request) {
 	t.Helper()
 	db := datastore.InitDB(filepath.Join(t.TempDir(), "reports.db"))
-	storage.InjectProSchema(db)
-	store := storage.NewProSQLiteStore(db)
+	store := datastore.NewSQLiteStore(db)
 
 	ctx := context.Background()
 	author, _ := store.CreateUser(ctx, "author@ranch.com", "Author BH", "h", "Bounty Hunter")

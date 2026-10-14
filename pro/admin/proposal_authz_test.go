@@ -12,15 +12,13 @@ import (
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	datastore "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	core "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 func TestProposalAcceptIsOwnerOnlyAndStateChecked(t *testing.T) {
 	ctx := context.Background()
 	db := datastore.InitDB(t.TempDir() + "/pauthz.db")
 	defer db.Close()
-	storage.InjectProSchema(db)
-	store := storage.NewProSQLiteStore(db)
+	store := datastore.NewSQLiteStore(db)
 	h := NewProHandler(store)
 
 	owner, _ := store.CreateUser(ctx, "owner@ranch.com", "Owner BH", "h", "Bounty Hunter")

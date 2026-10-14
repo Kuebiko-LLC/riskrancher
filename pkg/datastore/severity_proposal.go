@@ -1,4 +1,4 @@
-package storage
+package datastore
 
 import (
 	"context"
@@ -23,8 +23,8 @@ var (
 
 // txResolve applies a final severity to the finding and resolves the proposal
 // in one transaction, so a partial failure cannot leave them out of sync.
-func (s *ProSQLiteStore) txResolve(ctx context.Context, ticketID int, newSeverity string, proposalID int, status, actor, note string) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+func (s *SQLiteStore) txResolve(ctx context.Context, ticketID int, newSeverity string, proposalID int, status, actor, note string) error {
+	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -42,9 +42,9 @@ func (s *ProSQLiteStore) txResolve(ctx context.Context, ticketID int, newSeverit
 
 // EngagementOwnerForProposal returns the owner_email of the engagement the
 // proposal's finding belongs to, for owner-only authorization checks.
-func (s *ProSQLiteStore) EngagementOwnerForProposal(ctx context.Context, proposalID int) (string, error) {
+func (s *SQLiteStore) EngagementOwnerForProposal(ctx context.Context, proposalID int) (string, error) {
 	var owner string
-	err := s.db.QueryRowContext(ctx, `
+	err := s.DB.QueryRowContext(ctx, `
 		SELECT e.owner_email
 		FROM severity_proposals sp
 		JOIN tickets t ON t.id = sp.ticket_id
@@ -71,8 +71,8 @@ func scanSevProposal(row interface{ Scan(...any) error }) (*domain.SeverityPropo
 	return &p, nil
 }
 
-func (s *ProSQLiteStore) logActivity(ctx context.Context, ticketID int, actor, activityType, oldVal, newVal string) {
-	s.db.ExecContext(ctx,
+func (s *SQLiteStore) logActivity(ctx context.Context, ticketID int, actor, activityType, oldVal, newVal string) {
+	s.DB.ExecContext(ctx,
 		`INSERT INTO ticket_activity (ticket_id, actor, activity_type, old_value, new_value) VALUES (?, ?, ?, ?, ?)`,
 		ticketID, actor, activityType, oldVal, newVal)
 }
@@ -81,10 +81,10 @@ func (s *ProSQLiteStore) logActivity(ctx context.Context, ticketID int, actor, a
 // BH-origin finding. It does NOT change the severity; it records a Pending
 // proposal and logs the request. Returns ErrNotBountyHunterFinding if the
 // finding is not tied to an engagement.
-func (s *ProSQLiteStore) ProposeSeverityChange(ctx context.Context, ticketID int, toSeverity, justification, proposedBy string) (*domain.SeverityProposal, error) {
+func (s *SQLiteStore) ProposeSeverityChange(ctx context.Context, ticketID int, toSeverity, justification, proposedBy string) (*domain.SeverityProposal, error) {
 	var engagementID sql.NullInt64
 	var fromSeverity string
-	err := s.db.QueryRowContext(ctx, `SELECT engagement_id, severity FROM tickets WHERE id = ?`, ticketID).Scan(&engagementID, &fromSeverity)
+	err := s.DB.QueryRowContext(ctx, `SELECT engagement_id, severity FROM tickets WHERE id = ?`, ticketID).Scan(&engagementID, &fromSeverity)
 	if err != nil {
 		return nil, err
 	}
@@ -93,14 +93,14 @@ func (s *ProSQLiteStore) ProposeSeverityChange(ctx context.Context, ticketID int
 	}
 
 	var openCount int
-	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM severity_proposals WHERE ticket_id = ? AND status = 'Pending'`, ticketID).Scan(&openCount); err != nil {
+	if err := s.DB.QueryRowContext(ctx, `SELECT COUNT(*) FROM severity_proposals WHERE ticket_id = ? AND status = 'Pending'`, ticketID).Scan(&openCount); err != nil {
 		return nil, err
 	}
 	if openCount > 0 {
 		return nil, ErrProposalAlreadyOpen
 	}
 
-	res, err := s.db.ExecContext(ctx, `
+	res, err := s.DB.ExecContext(ctx, `
 		INSERT INTO severity_proposals (ticket_id, from_severity, to_severity, justification, proposed_by, status)
 		VALUES (?, ?, ?, ?, ?, 'Pending')`, ticketID, fromSeverity, toSeverity, justification, proposedBy)
 	if err != nil {
@@ -112,14 +112,14 @@ func (s *ProSQLiteStore) ProposeSeverityChange(ctx context.Context, ticketID int
 }
 
 // GetSeverityProposal returns one proposal by id.
-func (s *ProSQLiteStore) GetSeverityProposal(ctx context.Context, id int) (*domain.SeverityProposal, error) {
-	row := s.db.QueryRowContext(ctx, `SELECT `+sevProposalCols+` FROM severity_proposals WHERE id = ?`, id)
+func (s *SQLiteStore) GetSeverityProposal(ctx context.Context, id int) (*domain.SeverityProposal, error) {
+	row := s.DB.QueryRowContext(ctx, `SELECT `+sevProposalCols+` FROM severity_proposals WHERE id = ?`, id)
 	return scanSevProposal(row)
 }
 
 // ListProposalsForTicket returns a finding's full proposal history, oldest first.
-func (s *ProSQLiteStore) ListProposalsForTicket(ctx context.Context, ticketID int) ([]domain.SeverityProposal, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT `+sevProposalCols+` FROM severity_proposals WHERE ticket_id = ? ORDER BY id`, ticketID)
+func (s *SQLiteStore) ListProposalsForTicket(ctx context.Context, ticketID int) ([]domain.SeverityProposal, error) {
+	rows, err := s.DB.QueryContext(ctx, `SELECT `+sevProposalCols+` FROM severity_proposals WHERE ticket_id = ? ORDER BY id`, ticketID)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +129,7 @@ func (s *ProSQLiteStore) ListProposalsForTicket(ctx context.Context, ticketID in
 
 // AcceptSeverityProposal (called by the owning Bounty Hunter) applies the
 // proposed severity to the finding and resolves the proposal.
-func (s *ProSQLiteStore) AcceptSeverityProposal(ctx context.Context, proposalID int, actor string) error {
+func (s *SQLiteStore) AcceptSeverityProposal(ctx context.Context, proposalID int, actor string) error {
 	p, err := s.GetSeverityProposal(ctx, proposalID)
 	if err != nil {
 		return err
@@ -146,7 +146,7 @@ func (s *ProSQLiteStore) AcceptSeverityProposal(ctx context.Context, proposalID 
 
 // ContestSeverityProposal (called by the owning Bounty Hunter) escalates a
 // proposal to the Sheriff without changing the severity.
-func (s *ProSQLiteStore) ContestSeverityProposal(ctx context.Context, proposalID int, actor, note string) error {
+func (s *SQLiteStore) ContestSeverityProposal(ctx context.Context, proposalID int, actor, note string) error {
 	p, err := s.GetSeverityProposal(ctx, proposalID)
 	if err != nil {
 		return err
@@ -154,7 +154,7 @@ func (s *ProSQLiteStore) ContestSeverityProposal(ctx context.Context, proposalID
 	if p.Status != "Pending" {
 		return ErrProposalNotPending
 	}
-	if _, err := s.db.ExecContext(ctx, `UPDATE severity_proposals SET status = 'Contested' WHERE id = ?`, proposalID); err != nil {
+	if _, err := s.DB.ExecContext(ctx, `UPDATE severity_proposals SET status = 'Contested' WHERE id = ?`, proposalID); err != nil {
 		return err
 	}
 	s.logActivity(ctx, p.TicketID, actor, "severity_contested", p.ToSeverity, note)
@@ -163,7 +163,7 @@ func (s *ProSQLiteStore) ContestSeverityProposal(ctx context.Context, proposalID
 
 // AdjudicateSeverityProposal (called by the Sheriff) breaks the tie: it applies
 // the Sheriff's final severity and resolves the proposal.
-func (s *ProSQLiteStore) AdjudicateSeverityProposal(ctx context.Context, proposalID int, finalSeverity, actor, note string) error {
+func (s *SQLiteStore) AdjudicateSeverityProposal(ctx context.Context, proposalID int, finalSeverity, actor, note string) error {
 	p, err := s.GetSeverityProposal(ctx, proposalID)
 	if err != nil {
 		return err
@@ -180,8 +180,8 @@ func (s *ProSQLiteStore) AdjudicateSeverityProposal(ctx context.Context, proposa
 
 // ListPendingProposalsForOwner returns the Pending proposals on findings in
 // engagements owned by ownerEmail: the Bounty Hunter's alert feed.
-func (s *ProSQLiteStore) ListPendingProposalsForOwner(ctx context.Context, ownerEmail string) ([]domain.SeverityProposal, error) {
-	rows, err := s.db.QueryContext(ctx, `
+func (s *SQLiteStore) ListPendingProposalsForOwner(ctx context.Context, ownerEmail string) ([]domain.SeverityProposal, error) {
+	rows, err := s.DB.QueryContext(ctx, `
 		SELECT `+prefixedSevCols("sp")+`
 		FROM severity_proposals sp
 		JOIN tickets t ON t.id = sp.ticket_id
@@ -197,8 +197,8 @@ func (s *ProSQLiteStore) ListPendingProposalsForOwner(ctx context.Context, owner
 
 // ListContestedProposals returns all contested proposals awaiting a Sheriff's
 // adjudication: the Sheriff's queue.
-func (s *ProSQLiteStore) ListContestedProposals(ctx context.Context) ([]domain.SeverityProposal, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT `+sevProposalCols+` FROM severity_proposals WHERE status = 'Contested' ORDER BY id`)
+func (s *SQLiteStore) ListContestedProposals(ctx context.Context) ([]domain.SeverityProposal, error) {
+	rows, err := s.DB.QueryContext(ctx, `SELECT `+sevProposalCols+` FROM severity_proposals WHERE status = 'Contested' ORDER BY id`)
 	if err != nil {
 		return nil, err
 	}

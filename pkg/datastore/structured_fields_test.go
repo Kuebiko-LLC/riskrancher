@@ -1,11 +1,10 @@
-package storage_test
+package datastore_test
 
 import (
 	"context"
 	"testing"
 
-	coredomain "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	proModels "github.com/Kuebiko-LLC/riskrancher/pro/storage"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 func TestFindingStructuredFields(t *testing.T) {
@@ -13,10 +12,10 @@ func TestFindingStructuredFields(t *testing.T) {
 	store, done := newEngStore(t)
 	defer done()
 
-	tk := &coredomain.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "XSS", Severity: "High", Status: "Waiting to be Triaged"}
+	tk := &domain.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "XSS", Severity: "High", Status: "Waiting to be Triaged"}
 	store.CreateTicket(ctx, tk)
 
-	err := store.UpdateFindingDetails(ctx, tk.ID, proModels.FindingDetails{
+	err := store.UpdateFindingDetails(ctx, tk.ID, domain.FindingDetails{
 		Severity: "Critical", Description: "reflected XSS in q param", Remediation: "encode output",
 		CVSSVector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:N", CVSSScore: 9.1,
 		CWE: "CWE-79", BusinessImpact: "Account takeover of any authenticated user",

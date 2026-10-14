@@ -1,11 +1,11 @@
-package storage_test
+package datastore_test
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 )
 
 // A proposal moves Pending -> Accepted | Contested, and Contested -> Resolved.
@@ -23,7 +23,7 @@ func TestProposalStateMachine(t *testing.T) {
 		if err := store.AcceptSeverityProposal(ctx, p.ID, "bh@ranch.com"); err != nil {
 			t.Fatalf("first accept: %v", err)
 		}
-		if err := store.AcceptSeverityProposal(ctx, p.ID, "bh@ranch.com"); !errors.Is(err, storage.ErrProposalNotPending) {
+		if err := store.AcceptSeverityProposal(ctx, p.ID, "bh@ranch.com"); !errors.Is(err, datastore.ErrProposalNotPending) {
 			t.Errorf("expected ErrProposalNotPending re-accepting, got %v", err)
 		}
 	})
@@ -32,7 +32,7 @@ func TestProposalStateMachine(t *testing.T) {
 		tid := seedBHFinding(t, store, "bh@ranch.com", "Critical")
 		p, _ := store.ProposeSeverityChange(ctx, tid, "Low", "x", "rh@ranch.com")
 		// still Pending, not Contested
-		if err := store.AdjudicateSeverityProposal(ctx, p.ID, "High", "sheriff@ranch.com", "n"); !errors.Is(err, storage.ErrProposalNotContested) {
+		if err := store.AdjudicateSeverityProposal(ctx, p.ID, "High", "sheriff@ranch.com", "n"); !errors.Is(err, datastore.ErrProposalNotContested) {
 			t.Errorf("expected ErrProposalNotContested adjudicating a Pending proposal, got %v", err)
 		}
 	})
@@ -41,7 +41,7 @@ func TestProposalStateMachine(t *testing.T) {
 		tid := seedBHFinding(t, store, "bh@ranch.com", "Critical")
 		p, _ := store.ProposeSeverityChange(ctx, tid, "Low", "x", "rh@ranch.com")
 		store.AcceptSeverityProposal(ctx, p.ID, "bh@ranch.com")
-		if err := store.ContestSeverityProposal(ctx, p.ID, "bh@ranch.com", "wait"); !errors.Is(err, storage.ErrProposalNotPending) {
+		if err := store.ContestSeverityProposal(ctx, p.ID, "bh@ranch.com", "wait"); !errors.Is(err, datastore.ErrProposalNotPending) {
 			t.Errorf("expected ErrProposalNotPending contesting a resolved proposal, got %v", err)
 		}
 	})

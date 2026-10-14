@@ -1,16 +1,16 @@
-package storage
+package datastore
 
 import (
 	"context"
 	"database/sql"
 
-	coredomain "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 const findingTemplateCols = `id, name, title, severity, description, remediation, tags, cvss_vector, cvss_score, cwe, business_impact, created_by, created_at, updated_at`
 
-func scanFindingTemplate(row interface{ Scan(...any) error }) (*coredomain.FindingTemplate, error) {
-	var t coredomain.FindingTemplate
+func scanFindingTemplate(row interface{ Scan(...any) error }) (*domain.FindingTemplate, error) {
+	var t domain.FindingTemplate
 	var cvssVec, cwe, bi sql.NullString
 	var cvssScore sql.NullFloat64
 	if err := row.Scan(&t.ID, &t.Name, &t.Title, &t.Severity, &t.Description, &t.Remediation, &t.Tags,
@@ -25,8 +25,8 @@ func scanFindingTemplate(row interface{ Scan(...any) error }) (*coredomain.Findi
 }
 
 // CreateFindingTemplate inserts a new template and sets its id on the struct.
-func (s *ProSQLiteStore) CreateFindingTemplate(ctx context.Context, t *coredomain.FindingTemplate) (int, error) {
-	res, err := s.db.ExecContext(ctx, `
+func (s *SQLiteStore) CreateFindingTemplate(ctx context.Context, t *domain.FindingTemplate) (int, error) {
+	res, err := s.DB.ExecContext(ctx, `
 		INSERT INTO finding_templates (name, title, severity, description, remediation, tags, cvss_vector, cvss_score, cwe, business_impact, created_by)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		t.Name, t.Title, t.Severity, t.Description, t.Remediation, t.Tags, t.CVSSVector, t.CVSSScore, t.CWE, t.BusinessImpact, t.CreatedBy)
@@ -38,21 +38,21 @@ func (s *ProSQLiteStore) CreateFindingTemplate(ctx context.Context, t *coredomai
 		return 0, err
 	}
 	t.ID = int(id)
-	_ = s.db.QueryRowContext(ctx, `SELECT created_at, updated_at FROM finding_templates WHERE id = ?`, t.ID).Scan(&t.CreatedAt, &t.UpdatedAt)
+	_ = s.DB.QueryRowContext(ctx, `SELECT created_at, updated_at FROM finding_templates WHERE id = ?`, t.ID).Scan(&t.CreatedAt, &t.UpdatedAt)
 	return t.ID, nil
 }
 
-func (s *ProSQLiteStore) GetFindingTemplate(ctx context.Context, id int) (*coredomain.FindingTemplate, error) {
-	return scanFindingTemplate(s.db.QueryRowContext(ctx, `SELECT `+findingTemplateCols+` FROM finding_templates WHERE id = ?`, id))
+func (s *SQLiteStore) GetFindingTemplate(ctx context.Context, id int) (*domain.FindingTemplate, error) {
+	return scanFindingTemplate(s.DB.QueryRowContext(ctx, `SELECT `+findingTemplateCols+` FROM finding_templates WHERE id = ?`, id))
 }
 
-func (s *ProSQLiteStore) ListFindingTemplates(ctx context.Context) ([]coredomain.FindingTemplate, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT `+findingTemplateCols+` FROM finding_templates ORDER BY name`)
+func (s *SQLiteStore) ListFindingTemplates(ctx context.Context) ([]domain.FindingTemplate, error) {
+	rows, err := s.DB.QueryContext(ctx, `SELECT `+findingTemplateCols+` FROM finding_templates ORDER BY name`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var out []coredomain.FindingTemplate
+	var out []domain.FindingTemplate
 	for rows.Next() {
 		t, err := scanFindingTemplate(rows)
 		if err != nil {
@@ -63,8 +63,8 @@ func (s *ProSQLiteStore) ListFindingTemplates(ctx context.Context) ([]coredomain
 	return out, rows.Err()
 }
 
-func (s *ProSQLiteStore) UpdateFindingTemplate(ctx context.Context, t *coredomain.FindingTemplate) error {
-	_, err := s.db.ExecContext(ctx, `
+func (s *SQLiteStore) UpdateFindingTemplate(ctx context.Context, t *domain.FindingTemplate) error {
+	_, err := s.DB.ExecContext(ctx, `
 		UPDATE finding_templates SET name = ?, title = ?, severity = ?, description = ?, remediation = ?, tags = ?,
 			cvss_vector = ?, cvss_score = ?, cwe = ?, business_impact = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?`,
@@ -72,20 +72,20 @@ func (s *ProSQLiteStore) UpdateFindingTemplate(ctx context.Context, t *coredomai
 	return err
 }
 
-func (s *ProSQLiteStore) DeleteFindingTemplate(ctx context.Context, id int) error {
-	_, err := s.db.ExecContext(ctx, `DELETE FROM finding_templates WHERE id = ?`, id)
+func (s *SQLiteStore) DeleteFindingTemplate(ctx context.Context, id int) error {
+	_, err := s.DB.ExecContext(ctx, `DELETE FROM finding_templates WHERE id = ?`, id)
 	return err
 }
 
 // CreateFindingFromTemplate instantiates a template as a new finding on an
 // engagement (held out of the triage queue until release), prefilled from the
 // template and targeted at the given asset. Returns the new finding id.
-func (s *ProSQLiteStore) CreateFindingFromTemplate(ctx context.Context, templateID, engagementID int, asset, actor string) (int, error) {
+func (s *SQLiteStore) CreateFindingFromTemplate(ctx context.Context, templateID, engagementID int, asset, actor string) (int, error) {
 	tpl, err := s.GetFindingTemplate(ctx, templateID)
 	if err != nil {
 		return 0, err
 	}
-	tk := &coredomain.Ticket{
+	tk := &domain.Ticket{
 		Source:                 "Template",
 		AssetIdentifier:        asset,
 		Title:                  tpl.Title,

@@ -8,21 +8,19 @@ import (
 	"math/rand"
 	"time"
 
-	core "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 const TotalTickets = 10000   // Crank this to 1000000 for the ultimate stress test!
 const TotalRiskRequests = 50 // Number of items for the Risk Reviews tab
 
 func main() {
-	db := core.InitDB("./data/riskrancher.db")
+	db := datastore.InitDB("./data/riskrancher.db")
 	defer db.Close()
 
 	// Inject enterprise schema
-	storage.InjectProSchema(db)
-	store := storage.NewProSQLiteStore(db)
+	store := datastore.NewSQLiteStore(db)
 
 	ctx := context.Background()
 

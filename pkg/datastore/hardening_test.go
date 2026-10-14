@@ -1,12 +1,12 @@
-package storage_test
+package datastore_test
 
 import (
 	"context"
 	"errors"
 	"testing"
 
+	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 // L2: only one open (Pending) severity proposal may exist per finding.
@@ -20,7 +20,7 @@ func TestOneOpenProposalPerFinding(t *testing.T) {
 	if _, err := store.ProposeSeverityChange(ctx, tid, "Low", "x", "rh@ranch.com"); err != nil {
 		t.Fatalf("first proposal: %v", err)
 	}
-	if _, err := store.ProposeSeverityChange(ctx, tid, "Medium", "y", "rh@ranch.com"); !errors.Is(err, storage.ErrProposalAlreadyOpen) {
+	if _, err := store.ProposeSeverityChange(ctx, tid, "Medium", "y", "rh@ranch.com"); !errors.Is(err, datastore.ErrProposalAlreadyOpen) {
 		t.Errorf("expected ErrProposalAlreadyOpen on a second open proposal, got %v", err)
 	}
 

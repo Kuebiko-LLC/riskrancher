@@ -7,8 +7,7 @@ import (
 	"strings"
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
-	coredomain "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 	coreUI "github.com/Kuebiko-LLC/riskrancher/ui"
 )
 
@@ -23,7 +22,7 @@ func init() {
 
 // InjectProTemplates parses the page templates and installs them as the pages
 // the server renders.
-func InjectProTemplates(proStore storage.ProStoreInterface) {
+func InjectProTemplates(proStore domain.Store) {
 	funcMap := template.FuncMap{
 		"lower": strings.ToLower,
 	}
@@ -48,7 +47,7 @@ func InjectProTemplates(proStore storage.ProStoreInterface) {
 
 // userPage serves a JS-driven page that only needs the signed-in user's
 // identity (email + role) as server data; the page talks to the JSON APIs.
-func userPage(store coredomain.Store, page string) http.HandlerFunc {
+func userPage(store domain.Store, page string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		id, ok := r.Context().Value(auth.UserIDKey).(int)
@@ -69,13 +68,13 @@ func userPage(store coredomain.Store, page string) http.HandlerFunc {
 }
 
 // HandleEngagementsUI serves the Bounty Hunter workspace (engagements + report builder).
-func HandleEngagementsUI(store coredomain.Store) http.HandlerFunc {
+func HandleEngagementsUI(store domain.Store) http.HandlerFunc {
 	return userPage(store, "engagements")
 }
 
 // HandleSeverityReviewsUI serves the severity-proposal review page (propose for
 // RangeHand/Sheriff; contested adjudication queue for the Sheriff).
-func HandleSeverityReviewsUI(store coredomain.Store) http.HandlerFunc {
+func HandleSeverityReviewsUI(store domain.Store) http.HandlerFunc {
 	return userPage(store, "severity_reviews")
 }
 

@@ -13,7 +13,6 @@ import (
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	datastore "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	core "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 type authzEnv struct {
@@ -30,8 +29,7 @@ func setupAuthz(t *testing.T) authzEnv {
 	t.Helper()
 	ctx := context.Background()
 	db := datastore.InitDB(t.TempDir() + "/authz.db")
-	storage.InjectProSchema(db)
-	store := storage.NewProSQLiteStore(db)
+	store := datastore.NewSQLiteStore(db)
 
 	owner, _ := store.CreateUser(ctx, "owner@ranch.com", "Owner BH", "h", "Bounty Hunter")
 	other, _ := store.CreateUser(ctx, "other@ranch.com", "Other BH", "h", "Bounty Hunter")

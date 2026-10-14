@@ -13,7 +13,6 @@ import (
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	datastore "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	core "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 type propTestEnv struct {
@@ -30,8 +29,7 @@ func setupProposalsTest(t *testing.T) propTestEnv {
 	t.Helper()
 	ctx := context.Background()
 	db := datastore.InitDB(t.TempDir() + "/prop.db")
-	storage.InjectProSchema(db)
-	store := storage.NewProSQLiteStore(db)
+	store := datastore.NewSQLiteStore(db)
 
 	rh, _ := store.CreateUser(ctx, "rh@ranch.com", "Range Hand", "h", "RangeHand")
 	bh, _ := store.CreateUser(ctx, "bh@ranch.com", "Bounty Hunter", "h", "Bounty Hunter")

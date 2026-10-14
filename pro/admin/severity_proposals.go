@@ -3,10 +3,9 @@ package admin
 import (
 	"encoding/json"
 	"errors"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	"net/http"
 	"strconv"
-
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 // HandleProposeSeverity lets a RangeHand propose a severity change on a
@@ -38,9 +37,9 @@ func (h *ProHandler) HandleProposeSeverity(w http.ResponseWriter, r *http.Reques
 	p, err := h.ProStore.ProposeSeverityChange(r.Context(), ticketID, req.ToSeverity, req.Justification, h.currentUserEmail(r))
 	if err != nil {
 		switch {
-		case errors.Is(err, storage.ErrNotBountyHunterFinding):
+		case errors.Is(err, datastore.ErrNotBountyHunterFinding):
 			http.Error(w, err.Error(), http.StatusBadRequest)
-		case errors.Is(err, storage.ErrProposalAlreadyOpen):
+		case errors.Is(err, datastore.ErrProposalAlreadyOpen):
 			http.Error(w, err.Error(), http.StatusConflict)
 		default:
 			httpServerError(w, "ProposeSeverityChange", err)
@@ -71,7 +70,7 @@ func (h *ProHandler) ownsProposalOrSheriff(r *http.Request, proposalID int) bool
 
 // proposalStateError maps a state-machine rejection to 409, else 500.
 func proposalStateError(w http.ResponseWriter, err error) {
-	if errors.Is(err, storage.ErrProposalNotPending) || errors.Is(err, storage.ErrProposalNotContested) {
+	if errors.Is(err, datastore.ErrProposalNotPending) || errors.Is(err, datastore.ErrProposalNotContested) {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}

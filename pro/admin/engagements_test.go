@@ -14,7 +14,6 @@ import (
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	datastore "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	core "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 // setupEngagementsTest builds a ProHandler over a real DB with the full schema
@@ -23,8 +22,7 @@ import (
 func setupEngagementsTest(t *testing.T) (*ProHandler, *sql.DB, func(*http.Request) *http.Request) {
 	t.Helper()
 	db := datastore.InitDB(filepath.Join(t.TempDir(), "eng.db"))
-	storage.InjectProSchema(db)
-	store := storage.NewProSQLiteStore(db)
+	store := datastore.NewSQLiteStore(db)
 
 	bh, err := store.CreateUser(context.Background(), "hunter@ranch.com", "Doc Holliday", "hash", "Bounty Hunter")
 	if err != nil {

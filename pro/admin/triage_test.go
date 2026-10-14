@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 func TestAutoTriageRuleLifecycleBDD(t *testing.T) {
@@ -19,7 +18,7 @@ func TestAutoTriageRuleLifecycleBDD(t *testing.T) {
 	defer db.Close()
 
 	// Convert the core.Store to ProStore so we can check the DB directly
-	proStore := app.Store.(storage.ProStoreInterface)
+	proStore := app.Store
 
 	var createdRuleID int
 

@@ -1,4 +1,4 @@
-package storage_test
+package datastore_test
 
 import (
 	"context"
@@ -6,15 +6,13 @@ import (
 	"testing"
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
-	coredomain "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
-func newEngStore(t *testing.T) (*storage.ProSQLiteStore, func()) {
+func newEngStore(t *testing.T) (*datastore.SQLiteStore, func()) {
 	t.Helper()
 	db := datastore.InitDB(filepath.Join(t.TempDir(), "eng.db"))
-	storage.InjectProSchema(db)
-	return storage.NewProSQLiteStore(db), func() { db.Close() }
+	return datastore.NewSQLiteStore(db), func() { db.Close() }
 }
 
 func TestCreateEngagementAutoNumbers(t *testing.T) {
@@ -22,7 +20,7 @@ func TestCreateEngagementAutoNumbers(t *testing.T) {
 	store, done := newEngStore(t)
 	defer done()
 
-	first := &coredomain.Engagement{Name: "Acme External", Client: "Acme", OwnerEmail: "hunter@acme.test"}
+	first := &domain.Engagement{Name: "Acme External", Client: "Acme", OwnerEmail: "hunter@acme.test"}
 	id1, err := store.CreateEngagement(ctx, first)
 	if err != nil {
 		t.Fatalf("CreateEngagement: %v", err)
@@ -37,7 +35,7 @@ func TestCreateEngagementAutoNumbers(t *testing.T) {
 		t.Errorf("expected a new engagement to default to Active, got %q", first.Status)
 	}
 
-	second := &coredomain.Engagement{Name: "Beta Internal", Client: "Beta", OwnerEmail: "hunter@acme.test"}
+	second := &domain.Engagement{Name: "Beta Internal", Client: "Beta", OwnerEmail: "hunter@acme.test"}
 	if _, err := store.CreateEngagement(ctx, second); err != nil {
 		t.Fatalf("CreateEngagement 2: %v", err)
 	}
@@ -51,8 +49,8 @@ func TestGetAndListEngagements(t *testing.T) {
 	store, done := newEngStore(t)
 	defer done()
 
-	a := &coredomain.Engagement{Name: "A", Client: "ClientA", OwnerEmail: "h1@test"}
-	b := &coredomain.Engagement{Name: "B", Client: "ClientB", OwnerEmail: "h2@test"}
+	a := &domain.Engagement{Name: "A", Client: "ClientA", OwnerEmail: "h1@test"}
+	b := &domain.Engagement{Name: "B", Client: "ClientB", OwnerEmail: "h2@test"}
 	store.CreateEngagement(ctx, a)
 	store.CreateEngagement(ctx, b)
 
@@ -81,12 +79,12 @@ func TestEngagementFindingsLink(t *testing.T) {
 	store, done := newEngStore(t)
 	defer done()
 
-	eng := &coredomain.Engagement{Name: "Pentest", Client: "Acme", OwnerEmail: "hunter@acme.test"}
+	eng := &domain.Engagement{Name: "Pentest", Client: "Acme", OwnerEmail: "hunter@acme.test"}
 	store.CreateEngagement(ctx, eng)
 
 	// Two findings ingested by the bounty hunter during this engagement.
-	t1 := &coredomain.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "XSS", Severity: "High", Status: "Waiting to be Triaged"}
-	t2 := &coredomain.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "IDOR", Severity: "Critical", Status: "Waiting to be Triaged"}
+	t1 := &domain.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "XSS", Severity: "High", Status: "Waiting to be Triaged"}
+	t2 := &domain.Ticket{Source: "Burp", AssetIdentifier: "web", Title: "IDOR", Severity: "Critical", Status: "Waiting to be Triaged"}
 	store.CreateTicket(ctx, t1)
 	store.CreateTicket(ctx, t2)
 
@@ -102,7 +100,7 @@ func TestEngagementFindingsLink(t *testing.T) {
 		t.Fatalf("expected 2 findings linked, got %d", len(findings))
 	}
 	// A finding not added to the engagement must not appear.
-	other := &coredomain.Ticket{Source: "Nessus", AssetIdentifier: "host", Title: "Old TLS", Severity: "Low", Status: "Waiting to be Triaged"}
+	other := &domain.Ticket{Source: "Nessus", AssetIdentifier: "host", Title: "Old TLS", Severity: "Low", Status: "Waiting to be Triaged"}
 	store.CreateTicket(ctx, other)
 	findings2, _ := store.ListEngagementFindings(ctx, eng.ID)
 	if len(findings2) != 2 {

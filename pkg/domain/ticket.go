@@ -65,3 +65,21 @@ type TicketAssignment struct {
 	Assignee string `json:"assignee"`
 	Role     string `json:"role"`
 }
+
+// DashboardTicket is a ticket as the dashboard shows it, with the portal token
+// an owner can use to update it without an account.
+type DashboardTicket struct {
+	Ticket
+	MagicToken string `json:"magic_token,omitempty"`
+}
+
+// FindingDetails are the structured fields a pentester fills on a finding.
+type FindingDetails struct {
+	Severity       string
+	Description    string
+	Remediation    string
+	CVSSVector     string
+	CVSSScore      float64
+	CWE            string
+	BusinessImpact string
+}

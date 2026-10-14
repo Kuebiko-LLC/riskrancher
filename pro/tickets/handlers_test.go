@@ -10,14 +10,13 @@ import (
 	"testing"
 	"time"
 
-	core "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	models "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 // setupTestTickets spins up an in-memory database and the ProHandler for testing
 func setupTestTickets(t *testing.T) (*ProHandler, *sql.DB) {
-	db := core.InitDB(":memory:")
+	db := datastore.InitDB(":memory:")
 
 	// 🚀 FIX: Inject the Pro schema tables required by the Dashboard query
 	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS magic_batches (
@@ -33,7 +32,7 @@ func setupTestTickets(t *testing.T) (*ProHandler, *sql.DB) {
 	}
 
 	// Initialize the store
-	store := storage.NewProSQLiteStore(db)
+	store := datastore.NewSQLiteStore(db)
 
 	return NewProHandler(store), db
 }

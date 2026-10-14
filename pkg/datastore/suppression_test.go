@@ -1,16 +1,16 @@
-package storage_test
+package datastore_test
 
 import (
 	"context"
 	"testing"
 
+	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 func TestSuppressionEngine(t *testing.T) {
 	store := setupTestDB(t) // Assumes this runs pro_schema.sql
-	engine := storage.NewSuppressionEngine(store.DB)
+	engine := datastore.NewSuppressionEngine(store.DB)
 	ctx := context.Background()
 
 	t.Run("Given an active global suppression rule for Log4j on AWS", func(t *testing.T) {

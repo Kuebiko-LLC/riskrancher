@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 // HandleSyncCISAKEV accepts a multipart file upload of the official CISA JSON catalog
@@ -35,11 +34,7 @@ func (h *ProHandler) HandleSyncCISAKEV(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	proStore, ok := h.Store.(storage.ProStoreInterface)
-	if !ok {
-		http.Error(w, "storage not available", http.StatusInternalServerError)
-		return
-	}
+	proStore := h.Store
 
 	// Execute the Air-Gapped Sync
 	if err := proStore.SyncCISACatalog(r.Context(), &feed); err != nil {

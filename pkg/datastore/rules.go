@@ -1,34 +1,17 @@
-package storage
+package datastore
 
 import (
 	"context"
 	"crypto/rand"
-	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 
-	coreStorage "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
-	models "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
-// ProSQLiteStore wraps the core store and implements ProStoreInterface
-type ProSQLiteStore struct {
-	*coreStorage.SQLiteStore
-	db *sql.DB
-}
-
-// Update your constructor to accept the AI Engine
-func NewProSQLiteStore(db *sql.DB) *ProSQLiteStore {
-	coreStore := coreStorage.NewSQLiteStore(db)
-	return &ProSQLiteStore{
-		SQLiteStore: coreStore,
-		db:          db,
-	}
-}
-
 // --- Ticket workflow ---
-func (s *ProSQLiteStore) BulkUpdateStatusAndAssign(ctx context.Context, ticketIDs []int, status, assignee, comment, actor string) (string, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+func (s *SQLiteStore) BulkUpdateStatusAndAssign(ctx context.Context, ticketIDs []int, status, assignee, comment, actor string) (string, error) {
+	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return "", err
 	}
@@ -86,8 +69,8 @@ func (s *ProSQLiteStore) BulkUpdateStatusAndAssign(ctx context.Context, ticketID
 }
 
 // --- Auto-triage rules ---
-func (s *ProSQLiteStore) CreateAutoTriageRule(ctx context.Context, rule *models.AutoTriageRule) error {
-	res, err := s.db.ExecContext(ctx,
+func (s *SQLiteStore) CreateAutoTriageRule(ctx context.Context, rule *domain.AutoTriageRule) error {
+	res, err := s.DB.ExecContext(ctx,
 		"INSERT INTO auto_triage_rules (workspace_id, match_source, match_asset, match_cve, action_type, action_value) VALUES (?, ?, ?, ?, ?, ?)",
 		rule.WorkspaceID, rule.MatchSource, rule.MatchAsset, rule.MatchCVE, rule.ActionType, rule.ActionValue)
 	if err != nil {
@@ -99,7 +82,7 @@ func (s *ProSQLiteStore) CreateAutoTriageRule(ctx context.Context, rule *models.
 }
 
 // Audit log feed
-func (s *ProSQLiteStore) GetGlobalActivityFeed(ctx context.Context, limit int) ([]models.FeedItem, error) {
+func (s *SQLiteStore) GetGlobalActivityFeed(ctx context.Context, limit int) ([]domain.FeedItem, error) {
 	query := `
 		SELECT actor, action || ' ' || target_resource, status_code, 
 		CASE WHEN status_code >= 400 THEN error_details ELSE 'Success' END, 
@@ -108,15 +91,15 @@ func (s *ProSQLiteStore) GetGlobalActivityFeed(ctx context.Context, limit int) (
 		ORDER BY created_at DESC 
 		LIMIT ?`
 
-	rows, err := s.db.QueryContext(ctx, query, limit)
+	rows, err := s.DB.QueryContext(ctx, query, limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var feed []models.FeedItem
+	var feed []domain.FeedItem
 	for rows.Next() {
-		var item models.FeedItem
+		var item domain.FeedItem
 		var createdAt string
 		var statusCode int
 		rows.Scan(&item.Actor, &item.ActivityType, &statusCode, &item.NewValue, &createdAt)
@@ -128,16 +111,16 @@ func (s *ProSQLiteStore) GetGlobalActivityFeed(ctx context.Context, limit int) (
 	return feed, nil
 }
 
-func (s *ProSQLiteStore) GetAutoTriageRules(ctx context.Context, workspaceID int) ([]models.AutoTriageRule, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT id, workspace_id, match_source, match_asset, match_cve, action_type, action_value, created_at FROM auto_triage_rules WHERE workspace_id = ?", workspaceID)
+func (s *SQLiteStore) GetAutoTriageRules(ctx context.Context, workspaceID int) ([]domain.AutoTriageRule, error) {
+	rows, err := s.DB.QueryContext(ctx, "SELECT id, workspace_id, match_source, match_asset, match_cve, action_type, action_value, created_at FROM auto_triage_rules WHERE workspace_id = ?", workspaceID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var rules []models.AutoTriageRule
+	var rules []domain.AutoTriageRule
 	for rows.Next() {
-		var r models.AutoTriageRule
+		var r domain.AutoTriageRule
 		if err := rows.Scan(&r.ID, &r.WorkspaceID, &r.MatchSource, &r.MatchAsset, &r.MatchCVE, &r.ActionType, &r.ActionValue, &r.CreatedAt); err != nil {
 			return nil, err
 		}
@@ -146,27 +129,23 @@ func (s *ProSQLiteStore) GetAutoTriageRules(ctx context.Context, workspaceID int
 	return rules, nil
 }
 
-func (s *ProSQLiteStore) DeleteAutoTriageRule(ctx context.Context, ruleID int) error {
-	_, err := s.db.ExecContext(ctx, "DELETE FROM auto_triage_rules WHERE id = ?", ruleID)
+func (s *SQLiteStore) DeleteAutoTriageRule(ctx context.Context, ruleID int) error {
+	_, err := s.DB.ExecContext(ctx, "DELETE FROM auto_triage_rules WHERE id = ?", ruleID)
 	return err
 }
 
-// ProDashboardTicket is a ticket with its portal token
-type ProDashboardTicket struct {
-	models.Ticket        // Embed the base open-source ticket
-	MagicToken    string `json:"magic_token,omitempty"` // Add the Pro field
-}
+// domain.DashboardTicket is a ticket with its portal token
 
-// GetProDashboardTickets is the dashboard query plus the portal token per ticket
-func (s *ProSQLiteStore) GetProDashboardTickets(ctx context.Context, tabStatus, filter, assetFilter, userEmail, userRole string, limit, offset int) ([]ProDashboardTicket, int, map[string]int, error) {
+// GetDashboardTickets is the dashboard query plus the portal token per ticket
+func (s *SQLiteStore) GetDashboardTicketsWithPortals(ctx context.Context, tabStatus, filter, assetFilter, userEmail, userRole string, limit, offset int) ([]domain.DashboardTicket, int, map[string]int, error) {
 
 	// 1. The base dashboard query
-	coreTickets, total, metrics, err := s.SQLiteStore.GetDashboardTickets(ctx, tabStatus, filter, assetFilter, userEmail, userRole, limit, offset)
+	coreTickets, total, metrics, err := s.GetDashboardTickets(ctx, tabStatus, filter, assetFilter, userEmail, userRole, limit, offset)
 	if err != nil {
 		return nil, 0, nil, err
 	}
 
-	var proTickets []ProDashboardTicket
+	var proTickets []domain.DashboardTicket
 
 	// 2. If no tickets were returned, skip enrichment
 	if len(coreTickets) == 0 {
@@ -175,9 +154,9 @@ func (s *ProSQLiteStore) GetProDashboardTickets(ctx context.Context, tabStatus, 
 
 	// 3. Fetch the portal tokens for the returned tickets
 	for _, t := range coreTickets {
-		pt := ProDashboardTicket{Ticket: t}
+		pt := domain.DashboardTicket{Ticket: t}
 		var token string
-		err := s.db.QueryRowContext(ctx, `
+		err := s.DB.QueryRowContext(ctx, `
           SELECT m.token 
           FROM magic_batches m, json_each(m.ticket_ids) j 
           WHERE j.value = ? AND m.is_revoked = 0 AND m.expires_at > CURRENT_TIMESTAMP 
@@ -193,8 +172,8 @@ func (s *ProSQLiteStore) GetProDashboardTickets(ctx context.Context, tabStatus, 
 }
 
 // Immutable audit logging
-func (s *ProSQLiteStore) LogAuditAction(ctx context.Context, actor, action, resource string, statusCode int, errorDetails, ip string) error {
-	_, err := s.db.ExecContext(ctx,
+func (s *SQLiteStore) LogAuditAction(ctx context.Context, actor, action, resource string, statusCode int, errorDetails, ip string) error {
+	_, err := s.DB.ExecContext(ctx,
 		`INSERT INTO audit_logs (actor, action, target_resource, status_code, error_details, ip_address) 
         VALUES (?, ?, ?, ?, ?, ?)`,
 		actor, action, resource, statusCode, errorDetails, ip)
@@ -207,8 +186,8 @@ func (s *ProSQLiteStore) LogAuditAction(ctx context.Context, actor, action, reso
 // Rules engine CRUD
 // ==========================================
 
-func (s *ProSQLiteStore) CreateSuppressionRule(ctx context.Context, rule *models.SuppressionRule) error {
-	res, err := s.db.ExecContext(ctx,
+func (s *SQLiteStore) CreateSuppressionRule(ctx context.Context, rule *domain.SuppressionRule) error {
+	res, err := s.DB.ExecContext(ctx,
 		"INSERT INTO suppression_rules (dedupe_hash, asset_identifier, rationale, actor) VALUES (?, ?, ?, ?)",
 		rule.DedupeHash, rule.AssetIdentifier, rule.Rationale, rule.Actor)
 	if err != nil {
@@ -219,8 +198,8 @@ func (s *ProSQLiteStore) CreateSuppressionRule(ctx context.Context, rule *models
 	return nil
 }
 
-func (s *ProSQLiteStore) CreateRoutingRule(ctx context.Context, rule *models.RoutingRule) error {
-	res, err := s.db.ExecContext(ctx,
+func (s *SQLiteStore) CreateRoutingRule(ctx context.Context, rule *domain.RoutingRule) error {
+	res, err := s.DB.ExecContext(ctx,
 		"INSERT INTO routing_rules (workspace_id, rule_type, match_value, assignee, role) VALUES (?, ?, ?, ?, ?)",
 		rule.WorkspaceID, rule.RuleType, rule.MatchValue, rule.Assignee, rule.Role)
 	if err != nil {
@@ -235,8 +214,8 @@ func (s *ProSQLiteStore) CreateRoutingRule(ctx context.Context, rule *models.Rou
 // CISA KEV catalog
 // ==========================================
 
-func (s *ProSQLiteStore) SyncCISACatalog(ctx context.Context, feed *models.CISAFeed) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+func (s *SQLiteStore) SyncCISACatalog(ctx context.Context, feed *domain.CISAFeed) error {
+	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -280,16 +259,16 @@ func (s *ProSQLiteStore) SyncCISACatalog(ctx context.Context, feed *models.CISAF
 	return tx.Commit()
 }
 
-func (s *ProSQLiteStore) GetRoutingRules(ctx context.Context) ([]models.RoutingRule, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT id, workspace_id, rule_type, match_value, assignee, role, created_at FROM routing_rules WHERE workspace_id = 1 ORDER BY created_at DESC")
+func (s *SQLiteStore) GetRoutingRules(ctx context.Context) ([]domain.RoutingRule, error) {
+	rows, err := s.DB.QueryContext(ctx, "SELECT id, workspace_id, rule_type, match_value, assignee, role, created_at FROM routing_rules WHERE workspace_id = 1 ORDER BY created_at DESC")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var rules []models.RoutingRule
+	var rules []domain.RoutingRule
 	for rows.Next() {
-		var r models.RoutingRule
+		var r domain.RoutingRule
 		if err := rows.Scan(&r.ID, &r.WorkspaceID, &r.RuleType, &r.MatchValue, &r.Assignee, &r.Role, &r.CreatedAt); err != nil {
 			return nil, err
 		}
@@ -298,7 +277,7 @@ func (s *ProSQLiteStore) GetRoutingRules(ctx context.Context) ([]models.RoutingR
 	return rules, nil
 }
 
-func (s *ProSQLiteStore) DeleteRoutingRule(ctx context.Context, id int) error {
-	_, err := s.db.ExecContext(ctx, "DELETE FROM routing_rules WHERE id = ?", id)
+func (s *SQLiteStore) DeleteRoutingRule(ctx context.Context, id int) error {
+	_, err := s.DB.ExecContext(ctx, "DELETE FROM routing_rules WHERE id = ?", id)
 	return err
 }

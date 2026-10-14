@@ -3,13 +3,13 @@ package middleware
 import (
 	"bytes"
 	"fmt"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 	"log/slog"
 	"net/http"
 	"runtime/debug"
 	"time"
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 type responseRecorder struct {
@@ -29,7 +29,7 @@ func (r *responseRecorder) Write(b []byte) (int, error) {
 }
 
 // AuditLogger catches panics and logs structured JSON for SIEMs, plus immutable SQLite logs.
-func AuditLogger(proStore storage.ProStoreInterface, logger *slog.Logger) func(http.Handler) http.Handler {
+func AuditLogger(proStore domain.Store, logger *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()

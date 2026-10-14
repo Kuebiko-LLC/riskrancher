@@ -4,13 +4,12 @@ import (
 	"encoding/json"
 	"net/http"
 
-	core "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 type ProHandler struct {
-	Store    core.Store
-	ProStore storage.ProStoreInterface // 🚀 FIX: Hold the Pro version of the store
+	Store    domain.Store
+	ProStore domain.Store // 🚀 FIX: Hold the Pro version of the store
 }
 
 // 🚀 NEW: Power the System Logs Tab
@@ -27,10 +26,10 @@ func (h *ProHandler) HandleGetLogs(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func NewProHandler(store core.Store) *ProHandler {
+func NewProHandler(store domain.Store) *ProHandler {
 	return &ProHandler{
 		Store:    store,
-		ProStore: store.(storage.ProStoreInterface), // 🚀 FIX: Type assert it once at boot
+		ProStore: store.(domain.Store), // 🚀 FIX: Type assert it once at boot
 	}
 }
 

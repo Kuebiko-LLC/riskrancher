@@ -50,8 +50,6 @@ type CISAFeed struct {
 	} `json:"vulnerabilities"`
 }
 
-// Add to File: RiskRancher/pro/models/pro_models.go
-
 // APIKey represents a Service Account token for automated systems
 type APIKey struct {
 	ID          int        `json:"id"`

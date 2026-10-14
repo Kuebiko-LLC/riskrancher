@@ -14,7 +14,6 @@ import (
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	datastore "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	core "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 type reportAuthzEnv struct {
@@ -31,8 +30,7 @@ func setupReportAuthz(t *testing.T) reportAuthzEnv {
 	t.Helper()
 	ctx := context.Background()
 	db := datastore.InitDB(t.TempDir() + "/rauthz.db")
-	storage.InjectProSchema(db)
-	store := storage.NewProSQLiteStore(db)
+	store := datastore.NewSQLiteStore(db)
 
 	author, _ := store.CreateUser(ctx, "author@ranch.com", "Author BH", "h", "Bounty Hunter")
 	other, _ := store.CreateUser(ctx, "other@ranch.com", "Other BH", "h", "Bounty Hunter")

@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	core "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 type ProHandler struct {
@@ -42,13 +41,7 @@ func (h *ProHandler) HandleBulkUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 1. The store must carry the workflow methods
-	proStore, ok := h.Store.(storage.ProStoreInterface)
-	if !ok {
-		// 🚀 If it fails here, we know main.go didn't inject the database correctly
-		log.Printf("🚨 CRITICAL INIT ERROR: Store is of type %T, which does not implement ProStoreInterface!", h.Store)
-		http.Error(w, "storage not available", http.StatusInternalServerError)
-		return
-	}
+	proStore := h.Store
 
 	// 2. Execute the transaction
 	batchToken, err := proStore.BulkUpdateStatusAndAssign(r.Context(), req.TicketIDs, req.Status, req.Assignee, req.Comment, req.Actor)
@@ -130,11 +123,7 @@ func (h *ProHandler) HandleWranglerReject(w http.ResponseWriter, r *http.Request
 	}
 
 	// Assuming the Store has been updated to include the Pro interface methods
-	proStore, ok := h.Store.(storage.ProStoreInterface)
-	if !ok {
-		http.Error(w, "storage not available", http.StatusInternalServerError)
-		return
-	}
+	proStore := h.Store
 
 	if err := proStore.RejectTicketFromWrangler(r.Context(), req.TicketIDs, req.Reason, req.Comment); err != nil {
 		http.Error(w, "Failed to reject tickets", http.StatusInternalServerError)
@@ -171,11 +160,7 @@ func (h *ProHandler) RejectTicketsHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	// 3. Cast the store to the Pro Interface
-	proStore, ok := h.Store.(storage.ProStoreInterface)
-	if !ok {
-		http.Error(w, "storage not available", http.StatusInternalServerError)
-		return
-	}
+	proStore := h.Store
 
 	// 4. Execute the rejection via the Pro database method
 	err := proStore.RejectTicketFromWrangler(r.Context(), reqBody.TicketIDs, reqBody.Reason, reqBody.Comment)

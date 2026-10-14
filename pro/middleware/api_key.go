@@ -2,14 +2,14 @@ package middleware
 
 import (
 	"context"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 	"net/http"
 	"strings"
-
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 // ServiceAccountAuth middleware intercepts Bearer tokens for automated API access
-func ServiceAccountAuth(store storage.ProStoreInterface) func(http.Handler) http.Handler {
+func ServiceAccountAuth(store domain.Store) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
@@ -21,7 +21,7 @@ func ServiceAccountAuth(store storage.ProStoreInterface) func(http.Handler) http
 			}
 
 			rawToken := strings.TrimPrefix(authHeader, "Bearer ")
-			hashedToken := storage.HashToken(rawToken)
+			hashedToken := datastore.HashToken(rawToken)
 
 			// Lookup the token in the database
 			apiKey, err := store.GetAPIKeyByHash(r.Context(), hashedToken)

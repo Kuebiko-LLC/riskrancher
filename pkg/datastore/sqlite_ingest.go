@@ -141,7 +141,9 @@ func (s *SQLiteStore) GetAdapterByName(ctx context.Context, name string) (domain
 	return a, err
 }
 
-func (s *SQLiteStore) ProcessIngestionBatch(ctx context.Context, source, asset string, incoming []domain2.Ticket) error {
+// ingestBatch is the diff engine: insert, reopen, update, autoclose for one source and asset.
+// ProcessIngestionBatch (ingest_rules.go) runs the rules engine first and routes after.
+func (s *SQLiteStore) ingestBatch(ctx context.Context, source, asset string, incoming []domain2.Ticket) error {
 	slaMap, _ := s.buildSLAMap(ctx)
 
 	tx, err := s.DB.BeginTx(ctx, nil)

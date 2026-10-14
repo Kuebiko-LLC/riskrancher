@@ -1,17 +1,17 @@
-package storage
+package datastore
 
 import (
 	"context"
 	"strings"
 
-	coredomain "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 // FindingsVisibleTo returns, from the requested ids, only the findings the
 // caller is allowed to see: released findings (already in triage), findings in
 // an engagement the caller owns, or anything when the caller is a Sheriff.
 // This stops a report from pulling in another Bounty Hunter's held findings.
-func (s *ProSQLiteStore) FindingsVisibleTo(ctx context.Context, ids []int, userEmail string, isSheriff bool) ([]coredomain.Ticket, error) {
+func (s *SQLiteStore) FindingsVisibleTo(ctx context.Context, ids []int, userEmail string, isSheriff bool) ([]domain.Ticket, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -36,13 +36,13 @@ func (s *ProSQLiteStore) FindingsVisibleTo(ctx context.Context, ids []int, userE
 		  AND (? = 1 OR t.released = 1 OR e.owner_email = ?)
 		ORDER BY t.id`
 
-	rows, err := s.db.QueryContext(ctx, q, args...)
+	rows, err := s.DB.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var out []coredomain.Ticket
+	var out []domain.Ticket
 	for rows.Next() {
 		t, err := scanReportTicket(rows)
 		if err != nil {

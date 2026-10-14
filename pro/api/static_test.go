@@ -7,14 +7,13 @@ import (
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	"github.com/Kuebiko-LLC/riskrancher/pkg/server"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 // The static mount serves scripts and nothing else: template source is not web-served.
 func TestStaticMountServesScriptsOnly(t *testing.T) {
 	db := datastore.InitDB(":memory:")
 	defer db.Close()
-	app := server.NewApp(storage.NewProSQLiteStore(db))
+	app := server.NewApp(datastore.NewSQLiteStore(db))
 	server.RegisterRoutes(app)
 	RegisterProRoutes(app)
 

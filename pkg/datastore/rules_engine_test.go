@@ -1,17 +1,16 @@
-package storage_test
+package datastore_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	core "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
-	models "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
-func setupTestDB(t *testing.T) *storage.ProSQLiteStore {
-	db := core.InitDB(":memory:")
+func setupTestDB(t *testing.T) *datastore.SQLiteStore {
+	db := datastore.InitDB(":memory:")
 
 	_, err := db.Exec("CREATE TABLE IF NOT EXISTS workspaces (id INTEGER PRIMARY KEY, name TEXT)")
 	if err != nil {
@@ -23,9 +22,7 @@ func setupTestDB(t *testing.T) *storage.ProSQLiteStore {
 		t.Fatalf("Failed to insert workspace: %v", err)
 	}
 
-	storage.InjectProSchema(db)
-
-	return storage.NewProSQLiteStore(db)
+	return datastore.NewSQLiteStore(db)
 }
 
 func TestRulesEngine_BDD(t *testing.T) {
@@ -36,7 +33,7 @@ func TestRulesEngine_BDD(t *testing.T) {
 		store := setupTestDB(t)
 
 		// 1. Arrange
-		suppressionRule := &models.SuppressionRule{
+		suppressionRule := &domain.SuppressionRule{
 			DedupeHash:      "hash-123",
 			AssetIdentifier: "server-01",
 			Rationale:       "Test FP",
@@ -47,7 +44,7 @@ func TestRulesEngine_BDD(t *testing.T) {
 			t.Fatalf("Arrange Failed - Could not create suppression rule: %v", err)
 		}
 
-		ticket := &models.Ticket{
+		ticket := &domain.Ticket{
 			Source:             "Trivy",
 			AssetIdentifier:    "server-01",
 			Severity:           "High",
@@ -73,7 +70,7 @@ func TestRulesEngine_BDD(t *testing.T) {
 		store := setupTestDB(t)
 
 		// 1. Arrange
-		triageRule := &models.AutoTriageRule{
+		triageRule := &domain.AutoTriageRule{
 			WorkspaceID: 1,
 			MatchSource: "Trivy",
 			MatchAsset:  "legacy-app",
@@ -84,7 +81,7 @@ func TestRulesEngine_BDD(t *testing.T) {
 			t.Fatalf("Arrange Failed - Could not create triage rule: %v", err)
 		}
 
-		ticket := &models.Ticket{
+		ticket := &domain.Ticket{
 			Source:             "Trivy",
 			AssetIdentifier:    "legacy-app",
 			Severity:           "Critical",
@@ -110,7 +107,7 @@ func TestRulesEngine_BDD(t *testing.T) {
 		store := setupTestDB(t)
 
 		// 1. Arrange
-		routingRule := &models.RoutingRule{
+		routingRule := &domain.RoutingRule{
 			WorkspaceID: 1,
 			RuleType:    "Asset",
 			MatchValue:  "aws-cloud",
@@ -121,7 +118,7 @@ func TestRulesEngine_BDD(t *testing.T) {
 			t.Fatalf("Arrange Failed - Could not create routing rule: %v", err)
 		}
 
-		ticket := &models.Ticket{
+		ticket := &domain.Ticket{
 			Source:             "Trivy",
 			AssetIdentifier:    "aws-cloud",
 			Severity:           "High",

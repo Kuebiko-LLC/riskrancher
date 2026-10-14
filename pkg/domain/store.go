@@ -9,6 +9,16 @@ import (
 // Store is the whole persistence contract, one interface per area.
 type Store interface {
 	TicketStore
+	WorkflowStore
+	RulesStore
+	AuditStore
+	ServiceAccountStore
+	KEVStore
+	EngagementStore
+	ProposalStore
+	TemplateStore
+	EvidenceStore
+	ReportStore
 	IdentityStore
 	IngestStore
 	ConfigStore
@@ -92,4 +102,93 @@ type Authenticator interface {
 type SLACalculator interface {
 	CalculateDueDate(severity string) *time.Time
 	CalculateTrueSLAHours(ctx context.Context, ticketID int, store Store) (float64, error)
+}
+
+// WorkflowStore: bulk actions, portals, and the dashboard view with portal tokens
+type WorkflowStore interface {
+	BulkUpdateStatusAndAssign(ctx context.Context, ticketIDs []int, status, assignee, comment, actor string) (string, error)
+	RejectTicketFromWrangler(ctx context.Context, ticketIDs []int, reason, comment string) error
+	GetDashboardTicketsWithPortals(ctx context.Context, tabStatus, filter, assetFilter, userEmail, userRole string, limit, offset int) ([]DashboardTicket, int, map[string]int, error)
+}
+
+// RulesStore: the ingest rules (suppression, severity, routing)
+type RulesStore interface {
+	CreateAutoTriageRule(ctx context.Context, rule *AutoTriageRule) error
+	GetAutoTriageRules(ctx context.Context, workspaceID int) ([]AutoTriageRule, error)
+	DeleteAutoTriageRule(ctx context.Context, ruleID int) error
+	CreateSuppressionRule(ctx context.Context, rule *SuppressionRule) error
+	CreateRoutingRule(ctx context.Context, rule *RoutingRule) error
+	GetRoutingRules(ctx context.Context) ([]RoutingRule, error)
+	DeleteRoutingRule(ctx context.Context, id int) error
+}
+
+// AuditStore: the immutable audit log
+type AuditStore interface {
+	LogAuditAction(ctx context.Context, actor, action, resource string, statusCode int, errorDetails, ip string) error
+}
+
+// ServiceAccountStore: API keys
+type ServiceAccountStore interface {
+	CreateAPIKey(ctx context.Context, key APIKey) (string, error)
+	GetAPIKeyByHash(ctx context.Context, hash string) (*APIKey, error)
+}
+
+// KEVStore: the CISA known-exploited catalog you load yourself
+type KEVStore interface {
+	SyncCISACatalog(ctx context.Context, feed *CISAFeed) error
+}
+
+// EngagementStore: a pentest engagement and its findings
+type EngagementStore interface {
+	CreateEngagement(ctx context.Context, e *Engagement) (int, error)
+	GetEngagement(ctx context.Context, id int) (*Engagement, error)
+	ListEngagements(ctx context.Context) ([]Engagement, error)
+	ListEngagementsByOwner(ctx context.Context, ownerEmail string) ([]Engagement, error)
+	ReleaseEngagement(ctx context.Context, id int) error
+	UpdateFindingDetails(ctx context.Context, ticketID int, d FindingDetails) error
+	AddFindingsToEngagement(ctx context.Context, engagementID int, ticketIDs []int) error
+	ListEngagementFindings(ctx context.Context, engagementID int) ([]Ticket, error)
+}
+
+// ProposalStore: severity proposals between a RangeHand and a Bounty Hunter
+type ProposalStore interface {
+	ProposeSeverityChange(ctx context.Context, ticketID int, toSeverity, justification, proposedBy string) (*SeverityProposal, error)
+	GetSeverityProposal(ctx context.Context, id int) (*SeverityProposal, error)
+	ListProposalsForTicket(ctx context.Context, ticketID int) ([]SeverityProposal, error)
+	AcceptSeverityProposal(ctx context.Context, proposalID int, actor string) error
+	ContestSeverityProposal(ctx context.Context, proposalID int, actor, note string) error
+	AdjudicateSeverityProposal(ctx context.Context, proposalID int, finalSeverity, actor, note string) error
+	ListPendingProposalsForOwner(ctx context.Context, ownerEmail string) ([]SeverityProposal, error)
+	ListContestedProposals(ctx context.Context) ([]SeverityProposal, error)
+	EngagementOwnerForProposal(ctx context.Context, proposalID int) (string, error)
+}
+
+// TemplateStore: the reusable finding library
+type TemplateStore interface {
+	CreateFindingTemplate(ctx context.Context, t *FindingTemplate) (int, error)
+	GetFindingTemplate(ctx context.Context, id int) (*FindingTemplate, error)
+	ListFindingTemplates(ctx context.Context) ([]FindingTemplate, error)
+	UpdateFindingTemplate(ctx context.Context, t *FindingTemplate) error
+	DeleteFindingTemplate(ctx context.Context, id int) error
+	CreateFindingFromTemplate(ctx context.Context, templateID, engagementID int, asset, actor string) (int, error)
+}
+
+// EvidenceStore: screenshots attached to findings
+type EvidenceStore interface {
+	AddEvidence(ctx context.Context, ev *Evidence, web, thumb []byte) (int, error)
+	ListEvidenceForTicket(ctx context.Context, ticketID int) ([]Evidence, error)
+	GetEvidenceMeta(ctx context.Context, id int) (*Evidence, error)
+	GetEvidenceBlob(ctx context.Context, id int, thumb bool) ([]byte, string, error)
+	DeleteEvidence(ctx context.Context, id int) error
+	EngagementOwnerForTicket(ctx context.Context, ticketID int) (string, error)
+}
+
+// ReportStore: findings in, a deliverable out
+type ReportStore interface {
+	CreatePentestReport(ctx context.Context, report *PentestReport) (int, error)
+	UpdateReport(ctx context.Context, report *PentestReport) error
+	ListPentestReportsByAuthor(ctx context.Context, author string) ([]PentestReport, error)
+	FindingsVisibleTo(ctx context.Context, ids []int, userEmail string, isSheriff bool) ([]Ticket, error)
+	GetPentestReport(ctx context.Context, id int) (*PentestReport, error)
+	ListPentestReports(ctx context.Context) ([]PentestReport, error)
 }

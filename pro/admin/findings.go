@@ -2,10 +2,9 @@ package admin
 
 import (
 	"encoding/json"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 	"net/http"
 	"strconv"
-
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 // HandleUpdateFinding edits a finding's report-grade fields (severity, text,
@@ -37,7 +36,7 @@ func (h *ProHandler) HandleUpdateFinding(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "invalid severity", http.StatusBadRequest)
 		return
 	}
-	if err := h.ProStore.UpdateFindingDetails(r.Context(), id, storage.FindingDetails{
+	if err := h.ProStore.UpdateFindingDetails(r.Context(), id, domain.FindingDetails{
 		Severity: req.Severity, Description: req.Description, Remediation: req.Remediation,
 		CVSSVector: req.CVSSVector, CVSSScore: req.CVSSScore, CWE: req.CWE, BusinessImpact: req.BusinessImpact,
 	}); err != nil {

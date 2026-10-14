@@ -1,4 +1,4 @@
-package storage_test
+package datastore_test
 
 import (
 	"context"
@@ -6,21 +6,19 @@ import (
 	"encoding/hex"
 	"testing"
 	// Add this line below:
-	core "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 func TestAPIKeys_BDD(t *testing.T) {
-	db := core.InitDB(":memory:")
+	db := datastore.InitDB(":memory:")
 	defer db.Close()
 
 	// Disable foreign-key enforcement to test the API key logic in isolation
 	// without needing to perfectly mock the free tier's Users and Workspaces tables.
 	_, _ = db.Exec("PRAGMA foreign_keys = OFF;")
 
-	storage.InjectProSchema(db)
-	store := storage.NewProSQLiteStore(db)
+	store := datastore.NewSQLiteStore(db)
 	ctx := context.Background()
 
 	t.Run("Given an admin wants to create a Service Account", func(t *testing.T) {

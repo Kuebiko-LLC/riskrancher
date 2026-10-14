@@ -1,4 +1,4 @@
-package storage_test
+package datastore_test
 
 import (
 	"context"
@@ -9,18 +9,17 @@ import (
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 // One rules engine, on every path a finding can arrive by: direct creation and
 // scanner batch ingest. A decision made once (a suppressed false positive, a
 // severity rule, a routing rule) applies to every row, every scan.
 
-func newRulesStore(t *testing.T) *storage.ProSQLiteStore {
+func newRulesStore(t *testing.T) *datastore.SQLiteStore {
 	t.Helper()
 	db := datastore.InitDB(filepath.Join(t.TempDir(), "rules.db"))
 	t.Cleanup(func() { db.Close() })
-	return storage.NewProSQLiteStore(db)
+	return datastore.NewSQLiteStore(db)
 }
 
 func hashOf(source, asset, title string) string {
@@ -28,7 +27,7 @@ func hashOf(source, asset, title string) string {
 	return hex.EncodeToString(h[:])
 }
 
-func ticketStatus(t *testing.T, s *storage.ProSQLiteStore, hash string) (status, severity, assignee string) {
+func ticketStatus(t *testing.T, s *datastore.SQLiteStore, hash string) (status, severity, assignee string) {
 	t.Helper()
 	if err := s.DB.QueryRow(`SELECT status, severity, assignee FROM tickets WHERE dedupe_hash = ?`, hash).Scan(&status, &severity, &assignee); err != nil {
 		t.Fatalf("ticket %s not found: %v", hash[:8], err)

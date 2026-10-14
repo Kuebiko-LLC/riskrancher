@@ -10,7 +10,6 @@ import (
 	// 🚀 FIX: Split the imports into datastore (for DB) and domain (for core.Store)
 	datastore "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	core "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 // setupTestAdmin spins up an in-memory database and the ProHandler for testing
@@ -36,7 +35,7 @@ func setupTestAdmin(t *testing.T) (*ProHandler, *sql.DB) {
 	}
 
 	// Initialize the database
-	store := storage.NewProSQLiteStore(db)
+	store := datastore.NewSQLiteStore(db)
 
 	return NewProHandler(store), db
 }

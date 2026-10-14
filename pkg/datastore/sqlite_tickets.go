@@ -26,7 +26,8 @@ func (s *SQLiteStore) GetTickets(ctx context.Context) ([]domain.Ticket, error) {
 	return tickets, nil
 }
 
-func (s *SQLiteStore) CreateTicket(ctx context.Context, t *domain.Ticket) error {
+// insertTicket writes one finding. CreateTicket (rules.go) runs the rules engine first.
+func (s *SQLiteStore) insertTicket(ctx context.Context, t *domain.Ticket) error {
 	if t.Status == "" {
 		t.Status = "Waiting to be Triaged"
 	}

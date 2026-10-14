@@ -11,15 +11,14 @@ import (
 	"log"
 	"time"
 
-	core "github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 func main() {
 	log.Println("🤠 Saddle up! Preparing the RiskRancher QA Environment...")
 
-	db := core.InitDB("./data/riskrancher.db")
+	db := datastore.InitDB("./data/riskrancher.db")
 	defer db.Close()
 
 	// Wipe existing data for a clean QA run
@@ -29,8 +28,7 @@ func main() {
 	db.Exec("DELETE FROM sqlite_sequence") // Reset auto-increment IDs
 
 	// Inject enterprise schema
-	storage.InjectProSchema(db)
-	store := storage.NewProSQLiteStore(db)
+	store := datastore.NewSQLiteStore(db)
 
 	ctx := context.Background()
 	now := time.Now()

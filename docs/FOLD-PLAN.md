@@ -1,6 +1,6 @@
 # One RiskRancher: folding the `pro/` layer into the product
 
-Status: Stage 1 landed 2026-10-14 (d0d61a1, caa7f03, a0034cb, da50183). Stages land as
+Status: Stages 1 and 2 landed 2026-10-14. Stages land as
 separate commits, suite green between each, so any stage can be bisected or reverted on its own.
 
 ## Goal
@@ -68,7 +68,7 @@ Deleted outright: `pro/license`, `pro/middleware/license.go`, `pro/admin/license
 5. Gate: `go test ./...` green, `go vet` clean, boot a fresh DB, ingest
    `examples/trivy-sample.json`, click through dashboard, admin, ingest, a magic link.
 
-### Stage 2: one store, one domain
+### Stage 2: one store, one domain -- DONE (51e0e57 models, storage fold)
 
 1. Move `pro/models/*` into `pkg/domain` (rename `proModels` imports; 169 sites, `gofmt -r`
    or `gopls rename`).
@@ -117,3 +117,4 @@ Deleted outright: `pro/license`, `pro/middleware/license.go`, `pro/admin/license
 - Adapter findings paths could not index arrays, so the shipped Trivy adapter never ingested the shipped sample (fixed with a test, after Stage 1).
 - Verified no performance change: pen page on the million-row lab DB 0.5-0.7 s warm before and after.
 - The two create paths disagreed (Stage 2 prep, 583df0a): batch ingest skipped per-finding suppression, severity rules and routing; a global suppression match set a status the schema rejects and rolled back the ingest; the per-finding suppression check ran before the hash existed. One rules engine now runs on both paths. Million-row ingest 77 s (was 68 s); a routing rule set before the upload assigned all 200 findings on its asset.
+- Stage 2 also deleted the embedding and matchmaker sketches (they queried tables the schema never had and nothing called them) and a base GetGlobalActivityFeed that returned an upsell message instead of the audit log.

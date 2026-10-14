@@ -1,4 +1,4 @@
-package storage
+package datastore
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 
 // AddEvidence stores a processed image (web + thumbnail blobs) for a finding and
 // sets the new id on the metadata struct.
-func (s *ProSQLiteStore) AddEvidence(ctx context.Context, ev *domain.Evidence, web, thumb []byte) (int, error) {
-	res, err := s.db.ExecContext(ctx, `
+func (s *SQLiteStore) AddEvidence(ctx context.Context, ev *domain.Evidence, web, thumb []byte) (int, error) {
+	res, err := s.DB.ExecContext(ctx, `
 		INSERT INTO evidence (ticket_id, caption, content_type, width, height, size, image_data, thumb_data, created_by)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		ev.TicketID, ev.Caption, ev.ContentType, ev.Width, ev.Height, ev.Size, web, thumb, ev.CreatedBy)
@@ -21,13 +21,13 @@ func (s *ProSQLiteStore) AddEvidence(ctx context.Context, ev *domain.Evidence, w
 		return 0, err
 	}
 	ev.ID = int(id)
-	_ = s.db.QueryRowContext(ctx, `SELECT created_at FROM evidence WHERE id = ?`, ev.ID).Scan(&ev.CreatedAt)
+	_ = s.DB.QueryRowContext(ctx, `SELECT created_at FROM evidence WHERE id = ?`, ev.ID).Scan(&ev.CreatedAt)
 	return ev.ID, nil
 }
 
 // ListEvidenceForTicket returns evidence metadata (no blobs) for a finding.
-func (s *ProSQLiteStore) ListEvidenceForTicket(ctx context.Context, ticketID int) ([]domain.Evidence, error) {
-	rows, err := s.db.QueryContext(ctx, `
+func (s *SQLiteStore) ListEvidenceForTicket(ctx context.Context, ticketID int) ([]domain.Evidence, error) {
+	rows, err := s.DB.QueryContext(ctx, `
 		SELECT id, ticket_id, caption, content_type, width, height, size, created_by, created_at
 		FROM evidence WHERE ticket_id = ? ORDER BY id`, ticketID)
 	if err != nil {
@@ -48,9 +48,9 @@ func (s *ProSQLiteStore) ListEvidenceForTicket(ctx context.Context, ticketID int
 
 // GetEvidenceMeta returns one evidence row's metadata (no blobs), for auth and
 // display.
-func (s *ProSQLiteStore) GetEvidenceMeta(ctx context.Context, id int) (*domain.Evidence, error) {
+func (s *SQLiteStore) GetEvidenceMeta(ctx context.Context, id int) (*domain.Evidence, error) {
 	var e domain.Evidence
-	err := s.db.QueryRowContext(ctx, `
+	err := s.DB.QueryRowContext(ctx, `
 		SELECT id, ticket_id, caption, content_type, width, height, size, created_by, created_at
 		FROM evidence WHERE id = ?`, id,
 	).Scan(&e.ID, &e.TicketID, &e.Caption, &e.ContentType, &e.Width, &e.Height, &e.Size, &e.CreatedBy, &e.CreatedAt)
@@ -62,14 +62,14 @@ func (s *ProSQLiteStore) GetEvidenceMeta(ctx context.Context, id int) (*domain.E
 
 // GetEvidenceBlob returns the web image (or thumbnail when thumb is true) bytes
 // and content type for serving.
-func (s *ProSQLiteStore) GetEvidenceBlob(ctx context.Context, id int, thumb bool) ([]byte, string, error) {
+func (s *SQLiteStore) GetEvidenceBlob(ctx context.Context, id int, thumb bool) ([]byte, string, error) {
 	col := "image_data"
 	if thumb {
 		col = "thumb_data"
 	}
 	var data []byte
 	var ct string
-	err := s.db.QueryRowContext(ctx, `SELECT `+col+`, content_type FROM evidence WHERE id = ?`, id).Scan(&data, &ct)
+	err := s.DB.QueryRowContext(ctx, `SELECT `+col+`, content_type FROM evidence WHERE id = ?`, id).Scan(&data, &ct)
 	if err != nil {
 		return nil, "", err
 	}
@@ -77,16 +77,16 @@ func (s *ProSQLiteStore) GetEvidenceBlob(ctx context.Context, id int, thumb bool
 }
 
 // DeleteEvidence removes one evidence row.
-func (s *ProSQLiteStore) DeleteEvidence(ctx context.Context, id int) error {
-	_, err := s.db.ExecContext(ctx, `DELETE FROM evidence WHERE id = ?`, id)
+func (s *SQLiteStore) DeleteEvidence(ctx context.Context, id int) error {
+	_, err := s.DB.ExecContext(ctx, `DELETE FROM evidence WHERE id = ?`, id)
 	return err
 }
 
 // EngagementOwnerForTicket returns the owner_email of the engagement a finding
 // belongs to (empty string + nil if the finding is not in an engagement).
-func (s *ProSQLiteStore) EngagementOwnerForTicket(ctx context.Context, ticketID int) (string, error) {
+func (s *SQLiteStore) EngagementOwnerForTicket(ctx context.Context, ticketID int) (string, error) {
 	var owner string
-	err := s.db.QueryRowContext(ctx, `
+	err := s.DB.QueryRowContext(ctx, `
 		SELECT e.owner_email
 		FROM tickets t JOIN engagements e ON e.id = t.engagement_id
 		WHERE t.id = ?`, ticketID).Scan(&owner)

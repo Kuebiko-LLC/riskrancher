@@ -2,7 +2,6 @@ package datastore
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
@@ -10,13 +9,7 @@ import (
 )
 
 func setupTestDB(t *testing.T) *SQLiteStore {
-	db, err := sql.Open("sqlite", ":memory:")
-	if err != nil {
-		t.Fatalf("Failed to open in-memory SQLite database: %v", err)
-	}
-
-	store := &SQLiteStore{DB: db}
-	return store
+	return NewSQLiteStore(InitDB(":memory:"))
 }
 
 func TestIngestionDiffEngine(t *testing.T) {

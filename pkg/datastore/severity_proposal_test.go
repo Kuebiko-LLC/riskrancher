@@ -1,24 +1,24 @@
-package storage_test
+package datastore_test
 
 import (
 	"context"
 	"fmt"
 	"testing"
 
-	coredomain "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
 // seedBHFinding makes an engagement owned by ownerEmail and one finding linked
 // to it (so the finding is BH-origin), returning the ticket id.
-func seedBHFinding(t *testing.T, store *storage.ProSQLiteStore, ownerEmail, severity string) int {
+func seedBHFinding(t *testing.T, store *datastore.SQLiteStore, ownerEmail, severity string) int {
 	t.Helper()
 	ctx := context.Background()
-	eng := &coredomain.Engagement{Name: "Pentest", Client: "Acme", OwnerEmail: ownerEmail}
+	eng := &domain.Engagement{Name: "Pentest", Client: "Acme", OwnerEmail: ownerEmail}
 	if _, err := store.CreateEngagement(ctx, eng); err != nil {
 		t.Fatalf("CreateEngagement: %v", err)
 	}
-	tk := &coredomain.Ticket{Source: "Burp", AssetIdentifier: fmt.Sprintf("web-e%d", eng.ID), Title: fmt.Sprintf("finding %s e%d", severity, eng.ID), Severity: severity, Status: "Waiting to be Triaged"}
+	tk := &domain.Ticket{Source: "Burp", AssetIdentifier: fmt.Sprintf("web-e%d", eng.ID), Title: fmt.Sprintf("finding %s e%d", severity, eng.ID), Severity: severity, Status: "Waiting to be Triaged"}
 	if err := store.CreateTicket(ctx, tk); err != nil {
 		t.Fatalf("CreateTicket: %v", err)
 	}
@@ -34,7 +34,7 @@ func TestProposeSeverityOnlyForBountyHunterFindings(t *testing.T) {
 	defer done()
 
 	// A plain finding with no engagement (not BH-origin).
-	plain := &coredomain.Ticket{Source: "Trivy", AssetIdentifier: "host", Title: "plain", Severity: "High", Status: "Waiting to be Triaged"}
+	plain := &domain.Ticket{Source: "Trivy", AssetIdentifier: "host", Title: "plain", Severity: "High", Status: "Waiting to be Triaged"}
 	store.CreateTicket(ctx, plain)
 	if _, err := store.ProposeSeverityChange(ctx, plain.ID, "Low", "looks lower", "rh@ranch.com"); err == nil {
 		t.Errorf("expected an error proposing a severity change on a non-BH finding")

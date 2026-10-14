@@ -1,9 +1,8 @@
-package storage
+package datastore
 
 import (
 	"context"
 	"crypto/sha256"
-	"database/sql"
 	"encoding/hex"
 	"strings"
 
@@ -29,10 +28,10 @@ type ingestRules struct {
 }
 
 // loadIngestRules reads the rules once for a batch on one asset.
-func (s *ProSQLiteStore) loadIngestRules(ctx context.Context, asset string) (*ingestRules, error) {
+func (s *SQLiteStore) loadIngestRules(ctx context.Context, asset string) (*ingestRules, error) {
 	r := &ingestRules{suppressedHashes: map[string]bool{}}
 
-	rows, err := s.db.QueryContext(ctx, `SELECT dedupe_hash FROM suppression_rules WHERE asset_identifier = ?`, asset)
+	rows, err := s.DB.QueryContext(ctx, `SELECT dedupe_hash FROM suppression_rules WHERE asset_identifier = ?`, asset)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +43,7 @@ func (s *ProSQLiteStore) loadIngestRules(ctx context.Context, asset string) (*in
 	}
 	rows.Close()
 
-	rows, err = s.db.QueryContext(ctx, `SELECT match_source, match_asset, match_title, rationale FROM global_suppression_rules WHERE is_active = 1`)
+	rows, err = s.DB.QueryContext(ctx, `SELECT match_source, match_asset, match_title, rationale FROM global_suppression_rules WHERE is_active = 1`)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +55,7 @@ func (s *ProSQLiteStore) loadIngestRules(ctx context.Context, asset string) (*in
 	}
 	rows.Close()
 
-	rows, err = s.db.QueryContext(ctx, `SELECT COALESCE(match_source,''), COALESCE(match_asset,''), action_type, action_value FROM auto_triage_rules`)
+	rows, err = s.DB.QueryContext(ctx, `SELECT COALESCE(match_source,''), COALESCE(match_asset,''), action_type, action_value FROM auto_triage_rules`)
 	if err != nil {
 		return nil, err
 	}
@@ -117,8 +116,8 @@ func (r *ingestRules) apply(t *domain.Ticket) {
 }
 
 // routingTarget returns the owner a routing rule names for this asset or source.
-func (s *ProSQLiteStore) routingTarget(ctx context.Context, source, asset string) (assignee, role string, ok bool) {
-	err := s.db.QueryRowContext(ctx, `
+func (s *SQLiteStore) routingTarget(ctx context.Context, source, asset string) (assignee, role string, ok bool) {
+	err := s.DB.QueryRowContext(ctx, `
 		SELECT assignee, role FROM routing_rules
 		WHERE (rule_type = 'Asset' AND match_value = ?) OR (rule_type = 'Source' AND match_value = ?)
 		ORDER BY (CASE WHEN rule_type = 'Asset' THEN 1 ELSE 2 END) ASC LIMIT 1`, asset, source).Scan(&assignee, &role)
@@ -126,11 +125,11 @@ func (s *ProSQLiteStore) routingTarget(ctx context.Context, source, asset string
 }
 
 // assign hands the given tickets to an owner: the ticket row, the assignment, and the activity log.
-func (s *ProSQLiteStore) assign(ctx context.Context, ids []int, assignee, role string) error {
+func (s *SQLiteStore) assign(ctx context.Context, ids []int, assignee, role string) error {
 	if len(ids) == 0 {
 		return nil
 	}
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -152,12 +151,12 @@ func (s *ProSQLiteStore) assign(ctx context.Context, ids []int, assignee, role s
 // routeUnassigned applies the routing rule to every open, unassigned finding on
 // an asset from a source: the ones this ingest just inserted, and any earlier
 // ones nobody had picked up.
-func (s *ProSQLiteStore) routeUnassigned(ctx context.Context, source, asset string) error {
+func (s *SQLiteStore) routeUnassigned(ctx context.Context, source, asset string) error {
 	assignee, role, ok := s.routingTarget(ctx, source, asset)
 	if !ok {
 		return nil
 	}
-	rows, err := s.db.QueryContext(ctx, `SELECT id FROM tickets WHERE source = ? AND asset_identifier = ? AND status = 'Waiting to be Triaged' AND assignee = 'Unassigned'`, source, asset)
+	rows, err := s.DB.QueryContext(ctx, `SELECT id FROM tickets WHERE source = ? AND asset_identifier = ? AND status = 'Waiting to be Triaged' AND assignee = 'Unassigned'`, source, asset)
 	if err != nil {
 		return err
 	}
@@ -173,13 +172,13 @@ func (s *ProSQLiteStore) routeUnassigned(ctx context.Context, source, asset stri
 }
 
 // CreateTicket runs the rules, inserts, then routes.
-func (s *ProSQLiteStore) CreateTicket(ctx context.Context, ticket *domain.Ticket) error {
+func (s *SQLiteStore) CreateTicket(ctx context.Context, ticket *domain.Ticket) error {
 	rules, err := s.loadIngestRules(ctx, ticket.AssetIdentifier)
 	if err != nil {
 		return err
 	}
 	rules.apply(ticket)
-	if err := s.SQLiteStore.CreateTicket(ctx, ticket); err != nil {
+	if err := s.insertTicket(ctx, ticket); err != nil {
 		return err
 	}
 	if ticket.Status == "False Positive" {
@@ -196,7 +195,7 @@ func (s *ProSQLiteStore) CreateTicket(ctx context.Context, ticket *domain.Ticket
 
 // ProcessIngestionBatch runs the rules on every finding, hands the batch to the
 // base store (dedup, reopen, autoclose), then routes what is new and unowned.
-func (s *ProSQLiteStore) ProcessIngestionBatch(ctx context.Context, source, asset string, batch []domain.Ticket) error {
+func (s *SQLiteStore) ProcessIngestionBatch(ctx context.Context, source, asset string, batch []domain.Ticket) error {
 	rules, err := s.loadIngestRules(ctx, asset)
 	if err != nil {
 		return err
@@ -204,10 +203,8 @@ func (s *ProSQLiteStore) ProcessIngestionBatch(ctx context.Context, source, asse
 	for i := range batch {
 		rules.apply(&batch[i])
 	}
-	if err := s.SQLiteStore.ProcessIngestionBatch(ctx, source, asset, batch); err != nil {
+	if err := s.ingestBatch(ctx, source, asset, batch); err != nil {
 		return err
 	}
 	return s.routeUnassigned(ctx, source, asset)
 }
-
-var _ = sql.ErrNoRows

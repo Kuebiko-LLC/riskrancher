@@ -1,4 +1,4 @@
-package storage_test
+package datastore_test
 
 import (
 	"context"
@@ -7,15 +7,13 @@ import (
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 func TestPentestReportRoundTrip(t *testing.T) {
 	ctx := context.Background()
 	db := datastore.InitDB(filepath.Join(t.TempDir(), "reports.db"))
 	defer db.Close()
-	storage.InjectProSchema(db)
-	store := storage.NewProSQLiteStore(db)
+	store := datastore.NewSQLiteStore(db)
 
 	in := &domain.PentestReport{
 		Title:            "Q1 Engagement",

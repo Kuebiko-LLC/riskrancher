@@ -13,7 +13,6 @@ import (
 	coreui "github.com/Kuebiko-LLC/riskrancher/ui"
 
 	proapi "github.com/Kuebiko-LLC/riskrancher/pro/api"
-	prostorage "github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 // Set at build time via -ldflags.
@@ -28,8 +27,7 @@ func main() {
 	db := datastore.InitDB("./data/riskrancher.db")
 	defer db.Close()
 
-	prostorage.InjectProSchema(db)
-	store := prostorage.NewProSQLiteStore(db)
+	store := datastore.NewSQLiteStore(db)
 
 	app := server.NewApp(store)
 

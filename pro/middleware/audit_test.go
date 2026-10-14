@@ -3,18 +3,17 @@ package middleware
 import (
 	"bytes"
 	"context"
+	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/Kuebiko-LLC/riskrancher/pro/storage"
 )
 
 // MockStore intercepts database calls for testing
 type MockAuditStore struct {
-	storage.ProStoreInterface // Embed the interface to satisfy the signature
-	Logs                      []map[string]any
+	domain.Store // Embed the interface to satisfy the signature
+	Logs         []map[string]any
 }
 
 func (m *MockAuditStore) LogAuditAction(ctx context.Context, actor, action, resource string, statusCode int, errorDetails, ip string) error {

@@ -21,6 +21,11 @@ import (
 func RegisterRoutes(app *App) {
 	authH := auth.NewHandler(app.Store)
 	adminH := admin.NewHandler(app.Store)
+	adminH.Shutdown = func() {
+		if app.Shutdown != nil {
+			app.Shutdown()
+		}
+	}
 	ticketH := tickets.NewHandler(app.Store)
 	ingestH := ingest.NewHandler(app.Store)
 	adapterH := adapters.NewHandler(app.Store)
@@ -183,6 +188,5 @@ func RegisterRoutes(app *App) {
 	app.Router.Handle("GET /api/integrations/cisa", protected(adminH.HandleGetCISACatalog))
 	app.Router.Handle("GET /api/admin/logs", sheriffOnly(adminH.HandleGetLogs))
 	app.Router.Handle("GET /api/admin/export", sheriffOnly(adminH.HandleExportState))
-	app.Router.Handle("GET /api/admin/check-updates", sheriffOnly(adminH.HandleCheckUpdates))
 	app.Router.Handle("POST /api/admin/shutdown", sheriffOnly(adminH.HandleShutdown))
 }

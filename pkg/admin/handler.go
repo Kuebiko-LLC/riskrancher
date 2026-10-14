@@ -7,6 +7,8 @@ import (
 // Handler encapsulates all Admin and Sheriff HTTP logic
 type Handler struct {
 	Store domain.Store
+	// Shutdown stops the server; wired by the server package.
+	Shutdown func()
 }
 
 // NewHandler creates a new Admin Handler

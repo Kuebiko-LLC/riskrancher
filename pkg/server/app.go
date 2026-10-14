@@ -12,6 +12,9 @@ type App struct {
 	Router *http.ServeMux
 	Auth   domain.Authenticator
 	SLA    domain.SLACalculator
+	// Shutdown stops the listening server; main sets it, the admin
+	// shutdown route calls it.
+	Shutdown func()
 }
 
 type FreeAuth struct{}

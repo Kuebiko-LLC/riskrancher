@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	"github.com/Kuebiko-LLC/riskrancher/pkg/server"
@@ -41,6 +42,15 @@ func main() {
 	if addr == "" {
 		addr = ":8080"
 	}
+	srv := &http.Server{Addr: addr, Handler: app.Router}
+	app.Shutdown = func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		srv.Shutdown(ctx)
+	}
 	log.Printf("🤠 RiskRancher running on http://localhost%s", addr)
-	log.Fatal(http.ListenAndServe(addr, app.Router))
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatal(err)
+	}
+	log.Println("stopped")
 }

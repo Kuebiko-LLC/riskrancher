@@ -91,7 +91,6 @@ window.loadKEVCatalog = async function() {
     const card = document.getElementById("kevCatalogState");
     if (card) card.innerText = `${st.loaded} CVEs loaded, newest ${st.last_added}`;
 };
-window.checkUpdates = async function() { await fetch(`/api/admin/check-updates`).then(async r => alert(await r.text())); }
 
 document.addEventListener("DOMContentLoaded", function() {
 

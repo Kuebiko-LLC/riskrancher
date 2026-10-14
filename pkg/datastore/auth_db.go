@@ -30,7 +30,8 @@ func (s *SQLiteStore) CreateUser(ctx context.Context, email, fullName, passwordH
 
 func (s *SQLiteStore) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var user domain.User
-	query := "SELECT id, email, password_hash, full_name, global_role, COALESCE(is_active, 1), COALESCE(created_at, CURRENT_TIMESTAMP) FROM users WHERE email = ? AND is_active = 1"
+	var created sql.NullTime
+	query := "SELECT id, email, password_hash, full_name, global_role, COALESCE(is_active, 1), created_at FROM users WHERE email = ? AND is_active = 1"
 
 	err := s.DB.QueryRowContext(ctx, query, email).Scan(
 		&user.ID,
@@ -39,8 +40,9 @@ func (s *SQLiteStore) GetUserByEmail(ctx context.Context, email string) (*domain
 		&user.FullName,
 		&user.GlobalRole,
 		&user.IsActive,
-		&user.CreatedAt,
+		&created,
 	)
+	user.CreatedAt = created.Time
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -80,9 +82,10 @@ func (s *SQLiteStore) GetSession(ctx context.Context, token string) (*domain.Ses
 
 // GetUserByID fetches a user's full record, including their role
 func (s *SQLiteStore) GetUserByID(ctx context.Context, id int) (*domain.User, error) {
-	query := `SELECT id, email, full_name, password_hash, global_role, COALESCE(is_active, 1), COALESCE(created_at, CURRENT_TIMESTAMP) FROM users WHERE id = ?`
+	query := `SELECT id, email, full_name, password_hash, global_role, COALESCE(is_active, 1), created_at FROM users WHERE id = ?`
 
 	var user domain.User
+	var created sql.NullTime
 	err := s.DB.QueryRowContext(ctx, query, id).Scan(
 		&user.ID,
 		&user.Email,
@@ -90,8 +93,9 @@ func (s *SQLiteStore) GetUserByID(ctx context.Context, id int) (*domain.User, er
 		&user.PasswordHash,
 		&user.GlobalRole,
 		&user.IsActive,
-		&user.CreatedAt,
+		&created,
 	)
+	user.CreatedAt = created.Time
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

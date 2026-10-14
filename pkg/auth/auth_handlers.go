@@ -64,6 +64,9 @@ func (h *Handler) HandleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := h.Store.CreateUser(r.Context(), req.Email, req.FullName, hashedPassword, req.GlobalRole)
+	if err == nil {
+		h.Store.LogAuditAction(r.Context(), req.Email, http.MethodPost, "/api/auth/register", http.StatusCreated, "First account", r.RemoteAddr)
+	}
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 			http.Error(w, "Email already exists", http.StatusConflict)
@@ -86,12 +89,8 @@ func (h *Handler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := h.Store.GetUserByEmail(r.Context(), req.Email)
-	if err != nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-		return
-	}
-
-	if !CheckPasswordHash(req.Password, user.PasswordHash) {
+	if err != nil || !CheckPasswordHash(req.Password, user.PasswordHash) {
+		h.Store.LogAuditAction(r.Context(), req.Email, http.MethodPost, "/api/auth/login", http.StatusUnauthorized, "Invalid credentials", r.RemoteAddr)
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
@@ -118,6 +117,7 @@ func (h *Handler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 	})
 
+	h.Store.LogAuditAction(r.Context(), user.Email, http.MethodPost, "/api/auth/login", http.StatusOK, "Success", r.RemoteAddr)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(user)
 }
@@ -125,6 +125,13 @@ func (h *Handler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 // HandleLogout destroys the user's session in the database and clears their cookie.
 func (h *Handler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(SessionCookieName)
+	if err == nil {
+		if session, serr := h.Store.GetSession(r.Context(), cookie.Value); serr == nil {
+			if user, uerr := h.Store.GetUserByID(r.Context(), session.UserID); uerr == nil {
+				h.Store.LogAuditAction(r.Context(), user.Email, http.MethodPost, "/api/auth/logout", http.StatusOK, "Success", r.RemoteAddr)
+			}
+		}
+	}
 
 	if err == nil && cookie.Value != "" {
 		_ = h.Store.DeleteSession(r.Context(), cookie.Value)

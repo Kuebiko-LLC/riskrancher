@@ -38,7 +38,7 @@ func RegisterRoutes(app *App) {
 		return authH.RequireAuth(auditH(http.HandlerFunc(h)))
 	}
 	protectedUI := func(h http.HandlerFunc) http.Handler {
-		return authH.RequireUIAuth(http.HandlerFunc(h))
+		return auditH(authH.RequireUIAuth(http.HandlerFunc(h)))
 	}
 	sheriffOnly := func(h http.HandlerFunc) http.Handler {
 		return authH.RequireAuth(auditH(authH.RequireRole("Sheriff")(http.HandlerFunc(h))))
@@ -84,7 +84,7 @@ func RegisterRoutes(app *App) {
 	app.Router.Handle("PATCH /api/tickets/{id}/review", sheriffOnly(ticketH.HandleSheriffReview))
 
 	// Portals (owner and risk approver): the link is the authorization, no account
-	byLink := func(h http.HandlerFunc) http.Handler { return auditH(http.HandlerFunc(h)) }
+	byLink := func(h http.HandlerFunc) http.Handler { return ticketH.NameLinkActor(auditH(http.HandlerFunc(h))) }
 	app.Router.Handle("GET /api/share/{token}", byLink(ticketH.HandleMagicLink))
 	app.Router.Handle("PATCH /api/share/{token}", byLink(ticketH.HandleMagicLinkSubmit))
 	app.Router.Handle("POST /api/share/{token}/reject", byLink(ticketH.HandleWranglerReject))

@@ -1,12 +1,14 @@
 package tickets
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
 	"strconv"
 
+	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
 	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
@@ -266,6 +268,23 @@ func (h *Handler) HandleSheriffReview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+// NameLinkActor puts the person behind a link into the request context, so
+// the audit log can name them: the owner an owner link was minted for, or
+// the approver for an approver link. Unknown links fall through to the
+// handler, which answers 404.
+func (h *Handler) NameLinkActor(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if batch, err := h.Store.GetMagicBatch(r.Context(), r.PathValue("token")); err == nil {
+			actor := "Risk approver (link)"
+			if batch.Kind == "owner" {
+				actor = portalActor(h, r, batch)
+			}
+			r = r.WithContext(context.WithValue(r.Context(), auth.ActorKey, actor))
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // portalActor names who acted through a link: the owner the findings are

@@ -62,7 +62,9 @@ func AuditLogger(store domain.Store, logger *slog.Logger) func(http.Handler) htt
 
 			// 🚀 FIX: Actually extract the User from the context!
 			actor := "Unknown User"
-			if userIDVal := r.Context().Value(UserIDKey); userIDVal != nil {
+			if named, ok := r.Context().Value(ActorKey).(string); ok && named != "" {
+				actor = named
+			} else if userIDVal := r.Context().Value(UserIDKey); userIDVal != nil {
 				userID := userIDVal.(int)
 				// Fetch the user to get their email/name
 				user, err := store.GetUserByID(r.Context(), userID)

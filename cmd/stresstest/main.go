@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/auth"
@@ -56,7 +57,12 @@ func main() {
        ('Manual Entry API', 'Manual', '.', 'title', 'asset', 'severity')`
 	db.Exec(adapterQuery)
 
-	validHash, _ := auth.HashPassword("password123")
+	// The stress user's password comes from the environment, never from the code
+	password := os.Getenv("RR_STRESS_PASSWORD")
+	if password == "" {
+		log.Fatal("set RR_STRESS_PASSWORD for the stress user (stress@ranch.com)")
+	}
+	validHash, _ := auth.HashPassword(password)
 
 	_, err := db.Exec("INSERT OR REPLACE INTO users (id, email, full_name, password_hash, global_role, is_active) VALUES (999, 'stress@ranch.com', 'Stress Tester', ?, 'Sheriff', 1)", validHash)
 	if err != nil {
@@ -146,7 +152,7 @@ func main() {
 	log.Println("\n🎉 STRESS TEST COMPLETE!")
 	log.Println("==========================================================================")
 	log.Println("🤠 The ranch is fully loaded. Go check the Dashboard!")
-	log.Println("🔑 Login -> Email: stress@ranch.com | Password: password123")
+	log.Println("🔑 Login -> Email: stress@ranch.com | Password: the RR_STRESS_PASSWORD you set")
 	log.Println("==========================================================================")
 }
 

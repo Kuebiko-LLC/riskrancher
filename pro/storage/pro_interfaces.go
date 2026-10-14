@@ -9,13 +9,13 @@ import (
 )
 
 type ProStoreInterface interface {
-	core.Store // Inherits all Free OSS methods!
+	core.Store
 
-	// --- 💎 PRO TICKET EXTENSIONS ---
+	// --- Ticket workflow ---
 	BulkUpdateStatusAndAssign(ctx context.Context, ticketIDs []int, status, assignee, comment, actor string) (string, error)
 	RejectTicketFromWrangler(ctx context.Context, ticketIDs []int, reason, comment string) error
 
-	// --- 💎 PRO ADMIN EXTENSIONS (Rules Engine) ---
+	// --- Rules engine ---
 	CreateAutoTriageRule(ctx context.Context, rule *proModels.AutoTriageRule) error
 	GetAutoTriageRules(ctx context.Context, workspaceID int) ([]proModels.AutoTriageRule, error)
 	DeleteAutoTriageRule(ctx context.Context, ruleID int) error
@@ -24,17 +24,17 @@ type ProStoreInterface interface {
 	CreateRoutingRule(ctx context.Context, rule *proModels.RoutingRule) error
 	GetRoutingRules(ctx context.Context) ([]proModels.RoutingRule, error)
 	DeleteRoutingRule(ctx context.Context, id int) error
-	// --- 💎 PRO COMPLIANCE & LOGGING ---
+	// --- Audit logging ---
 	LogAuditAction(ctx context.Context, actor, action, resource string, statusCode int, errorDetails, ip string) error
 
-	// 🤠 PRO: Service Accounts
+	// Service accounts
 	CreateAPIKey(ctx context.Context, key proModels.APIKey) (string, error)
 	GetAPIKeyByHash(ctx context.Context, hash string) (*proModels.APIKey, error)
 
-	// --- 💎 PRO INTEGRATIONS (CISA) ---
+	// --- CISA KEV ---
 	SyncCISACatalog(ctx context.Context, feed *proModels.CISAFeed) error
 
-	// --- 💎 ENGAGEMENTS (a pentest owned by a Bounty Hunter) ---
+	// --- Engagements (a pentest owned by a Bounty Hunter) ---
 	CreateEngagement(ctx context.Context, e *proModels.Engagement) (int, error)
 	GetEngagement(ctx context.Context, id int) (*proModels.Engagement, error)
 	ListEngagements(ctx context.Context) ([]proModels.Engagement, error)
@@ -44,7 +44,7 @@ type ProStoreInterface interface {
 	AddFindingsToEngagement(ctx context.Context, engagementID int, ticketIDs []int) error
 	ListEngagementFindings(ctx context.Context, engagementID int) ([]core.Ticket, error)
 
-	// --- 💎 SEVERITY PROPOSALS (RangeHand <-> Bounty Hunter negotiation) ---
+	// --- Severity proposals (RangeHand <-> Bounty Hunter negotiation) ---
 	ProposeSeverityChange(ctx context.Context, ticketID int, toSeverity, justification, proposedBy string) (*proModels.SeverityProposal, error)
 	GetSeverityProposal(ctx context.Context, id int) (*proModels.SeverityProposal, error)
 	ListProposalsForTicket(ctx context.Context, ticketID int) ([]proModels.SeverityProposal, error)
@@ -55,7 +55,7 @@ type ProStoreInterface interface {
 	ListContestedProposals(ctx context.Context) ([]proModels.SeverityProposal, error)
 	EngagementOwnerForProposal(ctx context.Context, proposalID int) (string, error)
 
-	// --- 💎 FINDING TEMPLATES (reusable finding library) ---
+	// --- Finding templates (reusable finding library) ---
 	CreateFindingTemplate(ctx context.Context, t *proModels.FindingTemplate) (int, error)
 	GetFindingTemplate(ctx context.Context, id int) (*proModels.FindingTemplate, error)
 	ListFindingTemplates(ctx context.Context) ([]proModels.FindingTemplate, error)
@@ -63,7 +63,7 @@ type ProStoreInterface interface {
 	DeleteFindingTemplate(ctx context.Context, id int) error
 	CreateFindingFromTemplate(ctx context.Context, templateID, engagementID int, asset, actor string) (int, error)
 
-	// --- 💎 EVIDENCE (screenshots attached to findings) ---
+	// --- Evidence (screenshots attached to findings) ---
 	AddEvidence(ctx context.Context, ev *proModels.Evidence, web, thumb []byte) (int, error)
 	ListEvidenceForTicket(ctx context.Context, ticketID int) ([]proModels.Evidence, error)
 	GetEvidenceMeta(ctx context.Context, id int) (*proModels.Evidence, error)
@@ -71,7 +71,7 @@ type ProStoreInterface interface {
 	DeleteEvidence(ctx context.Context, id int) error
 	EngagementOwnerForTicket(ctx context.Context, ticketID int) (string, error)
 
-	// --- 💎 PRO PENTEST REPORTS (findings -> deliverable) ---
+	// --- Pentest reports (findings -> deliverable) ---
 	CreatePentestReport(ctx context.Context, report *proModels.PentestReport) (int, error)
 	UpdateReport(ctx context.Context, report *proModels.PentestReport) error
 	ListPentestReportsByAuthor(ctx context.Context, author string) ([]proModels.PentestReport, error)

@@ -30,10 +30,10 @@ func setupTestTickets(t *testing.T) (*ProHandler, *sql.DB) {
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	)`)
 	if err != nil {
-		t.Fatalf("🚨 PRO TEST FATAL: Failed to create magic_batches table: %v", err)
+		t.Fatalf("Failed to create magic_batches table: %v", err)
 	}
 
-	// Initialize your Enterprise store here
+	// Initialize the store
 	store := storage.NewProSQLiteStore(db)
 
 	return NewProHandler(store), db

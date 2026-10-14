@@ -4,16 +4,15 @@ package storage
 import (
 	"context"
 	"database/sql"
-	_ "embed" // 🚀 THE FIX: Import the embed package
+	_ "embed"
 	"log"
 
 	models "github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 )
 
-// 🚀 THE FIX: This tells the Go compiler to read the file and inject it into this variable at compile-time!
 //
 
-// InjectProSchema applies the $4,999 Enterprise tables to the Core database
+// InjectProSchema is kept for its callers; the schema is applied by InitDB.
 func InjectProSchema(db *sql.DB) {
 	// The whole schema lives in pkg/datastore/schema.sql and is applied by
 	// InitDB. Kept so existing callers keep compiling.
@@ -21,17 +20,17 @@ func InjectProSchema(db *sql.DB) {
 }
 
 // ==========================================
-// 💎 PRO ADMIN METHODS (Batch Ingestion Interceptor)
+// Batch ingestion: rules first, then the base store
 // ==========================================
 
 func (s *ProSQLiteStore) ProcessIngestionBatch(ctx context.Context, source string, asset string, batch []models.Ticket) error {
-	// 1. Run Pro Logic (Engine is now in the same package)
+	// 1. Run the suppression rules
 	engine := NewSuppressionEngine(s.db)
 	err := engine.EvaluateBatch(ctx, batch)
 	if err != nil {
 		return err
 	}
 
-	// 2. Hand off cleanly to Core Logic's embedded store
+	// 2. Hand off to the embedded base store
 	return s.SQLiteStore.ProcessIngestionBatch(ctx, source, asset, batch)
 }

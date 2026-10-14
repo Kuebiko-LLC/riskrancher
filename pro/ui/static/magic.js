@@ -69,7 +69,7 @@
 
             const ticketList = document.getElementById('ticketList');
             if (ticketList) {
-                // 🚀 THE FIX: Filter the list so the Wrangler ONLY sees their pending tasks
+                // Filter the list so the Wrangler ONLY sees their pending tasks
                 data.tickets = data.tickets.filter(t => (t.Status || t.status) === 'Assigned Out');
 
                 // If they've processed everything, trigger the custom Success Screen!
@@ -78,11 +78,11 @@
                 renderWranglerTree(data);
                 document.getElementById("assigneeName").innerText = data.assignee || "IT Wrangler";
             } else if (document.getElementById('magAsset')) {
-                // 🚀 THE FIX: The Magistrate UI will render everything the backend sent (Pending Risk, etc.)
+                // The Magistrate UI will render everything the backend sent (Pending Risk, etc.)
                 renderMagistrate(data);
             }
         } catch (err) {
-            // 🚀 THE FIX: Beautiful contextual error/success screens!
+            // Beautiful contextual error/success screens!
             if (err.message === "InboxZero") {
                 document.body.innerHTML = `
                     <div style="text-align:center; padding: 100px; max-width: 600px; margin: 0 auto;">
@@ -136,7 +136,7 @@
             tbody.appendChild(dRow);
 
             const innerBody = document.getElementById(`body-${safeId}`);
-// 🚀 THE FIX: Use the actual Ticket ID so the backend knows what to update!
+// Use the actual Ticket ID so the backend knows what to update!
             findings.forEach(f => {
                 const tr = document.createElement("tr");
                 const sev = (f.Severity || f.severity || "info").toLowerCase();

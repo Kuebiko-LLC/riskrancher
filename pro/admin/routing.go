@@ -24,7 +24,7 @@ func (h *ProHandler) HandleCreateRoutingRule(w http.ResponseWriter, r *http.Requ
 
 	proStore, ok := h.Store.(storage.ProStoreInterface)
 	if !ok {
-		http.Error(w, "Enterprise storage driver not loaded", http.StatusInternalServerError)
+		http.Error(w, "storage not available", http.StatusInternalServerError)
 		return
 	}
 

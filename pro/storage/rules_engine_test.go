@@ -20,7 +20,7 @@ func setupTestDB(t *testing.T) *storage.ProSQLiteStore {
 		t.Fatalf("Failed to mock workspaces table: %v", err)
 	}
 
-	_, err = db.Exec("INSERT OR IGNORE INTO workspaces (id, name) VALUES (1, 'Enterprise Global')")
+	_, err = db.Exec("INSERT OR IGNORE INTO workspaces (id, name) VALUES (1, 'Global')")
 	if err != nil {
 		t.Fatalf("Failed to insert workspace: %v", err)
 	}
@@ -30,7 +30,7 @@ func setupTestDB(t *testing.T) *storage.ProSQLiteStore {
 	return storage.NewProSQLiteStore(db)
 }
 
-func TestEnterpriseRulesEngine_BDD(t *testing.T) {
+func TestRulesEngine_BDD(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now()
 

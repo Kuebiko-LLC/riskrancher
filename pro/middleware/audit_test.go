@@ -29,13 +29,13 @@ func (m *MockAuditStore) LogAuditAction(ctx context.Context, actor, action, reso
 	return nil
 }
 
-func TestEnterpriseAuditLogger_BDD(t *testing.T) {
+func TestAuditLogger_BDD(t *testing.T) {
 	// Silence standard output for tests
 	nopLogger := slog.New(slog.NewTextHandler(bytes.NewBuffer(nil), nil))
 
 	t.Run("Given a handler that panics, When a request is made, Then it returns 500 and logs the stack trace", func(t *testing.T) {
 		mockStore := &MockAuditStore{}
-		middleware := EnterpriseAuditLogger(mockStore, nopLogger)
+		middleware := AuditLogger(mockStore, nopLogger)
 
 		// 1. Arrange: A handler guaranteed to explode
 		panicHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +62,7 @@ func TestEnterpriseAuditLogger_BDD(t *testing.T) {
 
 	t.Run("Given a successful POST request, When it completes, Then it logs the mutating action for compliance", func(t *testing.T) {
 		mockStore := &MockAuditStore{}
-		middleware := EnterpriseAuditLogger(mockStore, nopLogger)
+		middleware := AuditLogger(mockStore, nopLogger)
 
 		// 1. Arrange: A normal handler
 		successHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

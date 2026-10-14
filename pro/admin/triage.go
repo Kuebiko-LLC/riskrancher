@@ -22,7 +22,7 @@ func (h *ProHandler) HandleCreateTriageRule(w http.ResponseWriter, r *http.Reque
 
 	proStore, ok := h.Store.(storage.ProStoreInterface)
 	if !ok {
-		http.Error(w, "Enterprise storage driver not loaded", http.StatusInternalServerError)
+		http.Error(w, "storage not available", http.StatusInternalServerError)
 		return
 	}
 
@@ -39,7 +39,7 @@ func (h *ProHandler) HandleCreateTriageRule(w http.ResponseWriter, r *http.Reque
 func (h *ProHandler) HandleGetTriageRules(w http.ResponseWriter, r *http.Request) {
 	proStore, ok := h.Store.(storage.ProStoreInterface)
 	if !ok {
-		http.Error(w, "Enterprise storage driver not loaded", http.StatusInternalServerError)
+		http.Error(w, "storage not available", http.StatusInternalServerError)
 		return
 	}
 
@@ -64,7 +64,7 @@ func (h *ProHandler) HandleDeleteTriageRule(w http.ResponseWriter, r *http.Reque
 
 	proStore, ok := h.Store.(storage.ProStoreInterface)
 	if !ok {
-		http.Error(w, "Enterprise storage driver not loaded", http.StatusInternalServerError)
+		http.Error(w, "storage not available", http.StatusInternalServerError)
 		return
 	}
 

@@ -29,8 +29,8 @@ func (r *responseRecorder) Write(b []byte) (int, error) {
 	return r.ResponseWriter.Write(b)
 }
 
-// EnterpriseAuditLogger catches panics and logs structured JSON for SIEMs, plus immutable SQLite logs.
-func EnterpriseAuditLogger(proStore storage.ProStoreInterface, logger *slog.Logger) func(http.Handler) http.Handler {
+// AuditLogger catches panics and logs structured JSON for SIEMs, plus immutable SQLite logs.
+func AuditLogger(proStore storage.ProStoreInterface, logger *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()

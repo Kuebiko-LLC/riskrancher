@@ -18,12 +18,12 @@ type FreeAuth struct{}
 
 func (f *FreeAuth) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// In the OSS version, we just pass the request to the next handler for now.
+		// Passes the request to the next handler.
 		next.ServeHTTP(w, r)
 	})
 }
 
-// NewApp creates a  Risk Rancher Core application with OSS defaults.
+// NewApp wires the store into an application with its router, auth, and SLA calculator.
 func NewApp(store domain.Store) *App {
 	return &App{
 		Store:  store,

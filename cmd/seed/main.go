@@ -43,7 +43,7 @@ func main() {
 		{"SonarQube", "legacy-crm-repo", "Code Smell: Cognitive Complexity", "Function exceeds complexity threshold.", "Low"},
 	}
 
-	log.Printf("🌱 Seeding Enterprise Database with %d standard tickets...", TotalTickets)
+	log.Printf("🌱 Seeding the database with %d standard tickets...", TotalTickets)
 	start := time.Now()
 	successCount := 0
 

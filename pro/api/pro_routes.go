@@ -27,7 +27,7 @@ import (
 func ProUIInterceptor(app *core.App, next http.Handler) http.Handler {
 	authH := auth.NewHandler(app.Store)
 
-	// 🚀 NEW: Initialize the ProAdmin handler here so we can use it in the interceptor
+	// The admin handler is used by the interceptor
 	proAdminH := proAdmin.NewProHandler(app.Store)
 
 	sheriffOnly := func(h http.HandlerFunc) http.Handler {
@@ -197,14 +197,14 @@ func ProUIInterceptor(app *core.App, next http.Handler) http.Handler {
 				proDashboardUI.ServeHTTP(w, r)
 				return
 			}
-			// 🚀 THE FIX: Intercept the logs API call before it hits the Core Mux!
+			// The logs API is served here, ahead of the mux
 			if path == "/api/admin/logs" {
 				proLogsAPI.ServeHTTP(w, r)
 				return
 			}
 		}
 
-		// Otherwise, pass through to core (serves JS, CSS, Core Endpoints)
+		// Otherwise, pass through to the mux
 		next.ServeHTTP(w, r)
 	})
 }
@@ -219,7 +219,7 @@ func RegisterProRoutes(app *core.App) {
 	proAdminH := proAdmin.NewProHandler(app.Store)
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	auditH := middleware.EnterpriseAuditLogger(proStore, logger)
+	auditH := middleware.AuditLogger(proStore, logger)
 
 	// Flow: Auth Check -> Audit Logger -> Role Check -> Handler
 	protected := func(h http.HandlerFunc) http.Handler {
@@ -276,7 +276,7 @@ func RegisterProRoutes(app *core.App) {
 	app.Router.Handle("DELETE /api/evidence/{id}", bountyHunter(proAdminH.HandleDeleteEvidence))
 
 	// ==========================================
-	// 💎 CORE OVERRIDES
+	// Overrides of base routes
 	// ==========================================
 	app.Router.Handle("PUT /api/config", authH.RequireUIAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var payload struct {
@@ -303,7 +303,7 @@ func RegisterProRoutes(app *core.App) {
 	})))
 
 	// ==========================================
-	// 💎 E2E EXCEPTION PIPELINE & MAGIC LINKS
+	// Exception pipeline and magic links
 	// ==========================================
 	// The IT View (Wrangler)
 	app.Router.Handle("GET /share/{token}", proUI.HandleMagicLinkUI())
@@ -312,19 +312,17 @@ func RegisterProRoutes(app *core.App) {
 	app.Router.Handle("POST /api/share/{token}/reject", protected(proTicketH.HandleWranglerReject))
 	app.Router.Handle("POST /api/share/{token}/risk", protected(proTicketH.HandleSubmitRiskRequest))
 
-	// 🚀 THE FIX: Added the missing Magistrate UI route!
 	app.Router.Handle("GET /review/{token}", proUI.HandleMagistrateUI())
 	app.Router.Handle("PATCH /api/risk/{token}/review", execOnly(proTicketH.HandleMagistrateReview))
 
 	// ==========================================
-	// 💎 ANALYST GOD-MODE (Bulk Actions)
+	// Bulk actions
 	// ==========================================
 	app.Router.Handle("PATCH /api/tickets/bulk", protected(proTicketH.HandleBulkUpdate))
 
 	// ==========================================
-	// 💎 PRO ADMIN SETTINGS (Sheriff Only)
+	// Admin settings (Sheriff only)
 	// ==========================================
-	// 🚀 DELETED the conflicting route from here so Core can own it, and Pro can intercept it!
 
 	app.Router.Handle("GET /api/admin/routing", sheriffOnly(proAdminH.HandleGetRoutingRules))
 	app.Router.Handle("POST /api/admin/routing", sheriffOnly(proAdminH.HandleCreateRoutingRule))
@@ -343,13 +341,13 @@ func RegisterProRoutes(app *core.App) {
 	app.Router.Handle("DELETE /api/admin/apikeys/{id}", sheriffOnly(proAdminH.HandleRevokeAPIKey))
 
 	// ==========================================
-	// 💎 CISA KEV & DATA INTEGRATIONS
+	// CISA KEV and data integrations
 	// ==========================================
 	app.Router.Handle("POST /api/integrations/cisa/sync", sheriffOnly(proAdminH.HandleSyncCISAKEV))
 	app.Router.Handle("GET /api/integrations/cisa", protected(proAdminH.HandleGetCISACatalog))
 
 	// ==========================================
-	// 💎 AUDITOR & REPORTING ENGINE
+	// Reporting
 	// ==========================================
 	app.Router.Handle("POST /api/reports/branded", protected(proAdminH.HandleGenerateBrandedReport))
 	app.Router.Handle("PUT /api/reports/branded/{id}", protected(proAdminH.HandleUpdateReport))
@@ -357,7 +355,7 @@ func RegisterProRoutes(app *core.App) {
 	app.Router.Handle("GET /api/reports/generated", protected(proAdminH.HandleListPentestReports))
 
 	// ==========================================
-	// 💎 EXECUTIVE OPS DASHBOARD
+	// Executive dashboard
 	// ==========================================
 	app.Router.Handle("GET /api/analytics/executive", execOnly(proAdminH.HandleExecDashboardData))
 

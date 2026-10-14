@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// Store embeds all sub interfaces for Core
+// Store is the whole persistence contract, one interface per area.
 type Store interface {
 	TicketStore
 	IdentityStore
@@ -16,7 +16,7 @@ type Store interface {
 	DraftStore
 }
 
-// TicketStore: Core CRUD and Workflow
+// TicketStore: ticket CRUD and workflow
 type TicketStore interface {
 	GetTickets(ctx context.Context) ([]Ticket, error)
 	GetDashboardTickets(ctx context.Context, tabStatus, filter, assetFilter, userEmail, userRole string, limit, offset int) ([]Ticket, int, map[string]int, error)
@@ -76,7 +76,7 @@ type AnalyticsStore interface {
 	GetPaginatedActivityFeed(ctx context.Context, filter string, limit int, offset int) ([]FeedItem, int, error)
 }
 
-// DraftStore: The Pentest Desk OSS, word docx
+// DraftStore: pentest report intake (docx parsing into draft findings)
 type DraftStore interface {
 	SaveDraft(ctx context.Context, draft DraftTicket) error
 	GetDraftsByReport(ctx context.Context, reportID string) ([]DraftTicket, error)

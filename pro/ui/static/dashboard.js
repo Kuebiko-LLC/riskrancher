@@ -85,15 +85,15 @@ window.openDrawer = function(id, title, asset, severity) {
 // Grab the raw markdown from the hidden textareas using .value!
     const rawDesc = document.getElementById('desc-' + id) ? document.getElementById('desc-' + id).value : "";
     const rawRem = document.getElementById('rem-' + id) ? document.getElementById('rem-' + id).value : "";
-    // 🚀 THE FIX: Grab the evidence!
+    // Grab the evidence!
     const rawEv = document.getElementById('ev-' + id) ? document.getElementById('ev-' + id).value : "";
-// 🚀 THE FIX: Grab Status and Comment
+// Grab Status and Comment
     const status = document.getElementById('status-' + id) ? document.getElementById('status-' + id).value : "";
     const rawComment = document.getElementById('comment-' + id) ? document.getElementById('comment-' + id).value : "";
     document.getElementById('drawerDescEdit').value = rawDesc;
     document.getElementById('drawerRemEdit').value = rawRem;
 
-    // 🚀 THE FIX: Toggle the Evidence Box if evidence exists
+    // Toggle the Evidence Box if evidence exists
     const evBlock = document.getElementById('drawerEvidenceBlock');
     const evText = document.getElementById('drawerEvidenceText');
     if (evBlock && evText) {
@@ -106,7 +106,7 @@ window.openDrawer = function(id, title, asset, severity) {
         }
     }
 
-    // 🚀 THE FIX: Toggle Return Reason Box
+    // Toggle Return Reason Box
     const retBlock = document.getElementById('drawerReturnedBlock');
     const retText = document.getElementById('drawerReturnedText');
     if (retBlock && retText) {
@@ -119,7 +119,7 @@ window.openDrawer = function(id, title, asset, severity) {
         }
     }
 
-    // 🚀 THE FIX: Contextual Rendering for the Drawer UI
+    // Contextual Rendering for the Drawer UI
     const standardActions = document.getElementById('drawerStandardActions');
     const verifyActions = document.getElementById('drawerVerifyActions');
     const editControls = document.getElementById('drawerEditControls');
@@ -179,7 +179,7 @@ window.rejectTicket = async function(id) {
     } catch(e) { alert("Network error"); }
 };
 
-// 🚀 THE FIX: Drawer action wrappers
+// Drawer action wrappers
 window.verifyFromDrawer = function() {
     const id = document.getElementById("drawerTicketID").value;
     window.verifyTicket(id);
@@ -353,7 +353,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
             this.innerText = "Saving..."; this.disabled = true;
             try {
-                // 🚀 THE FIX: Hit the inline update endpoint (/api/tickets/{id}) instead of the Bulk endpoint!
+                // Hit the inline update endpoint (/api/tickets/{id}) instead of the Bulk endpoint!
                 const res = await fetch(`/api/tickets/${id}`, {
                     method: 'PATCH', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ severity: newSev, comment: comment, description: newDesc, recommended_remediation: newRem, actor: "Analyst" })
@@ -368,7 +368,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const bulkBtn = document.getElementById("bulkActionBtn");
     const modal = document.getElementById("bulkModal");
 
-// 🚀 THE FIX: Support both standard and contextual bulk buttons
+// Support both standard and contextual bulk buttons
     window.updateBulkButton = function() {
         const checkedCount = document.querySelectorAll('.ticket-cb:checked').length;
 
@@ -456,7 +456,7 @@ document.addEventListener("DOMContentLoaded", function() {
             } catch (err) { alert("Network error."); this.disabled = false; }
         });
     }
-    // 🚀 THE FIX: Execute Bulk Verify/Reject without the modal
+    // Execute Bulk Verify/Reject without the modal
     const bulkVerifyBtn = document.getElementById("bulkVerifyBtn");
     if (bulkVerifyBtn) {
         bulkVerifyBtn.addEventListener("click", async function() {

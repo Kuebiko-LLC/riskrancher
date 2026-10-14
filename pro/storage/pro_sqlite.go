@@ -15,8 +15,8 @@ import (
 
 // ProSQLiteStore wraps the core store and implements ProStoreInterface
 type ProSQLiteStore struct {
-	*coreStorage.SQLiteStore // 💎 Embed the Free Core store methods!
-	db                       *sql.DB
+	*coreStorage.SQLiteStore
+	db *sql.DB
 }
 
 // Update your constructor to accept the AI Engine
@@ -28,7 +28,7 @@ func NewProSQLiteStore(db *sql.DB) *ProSQLiteStore {
 	}
 }
 
-// --- 💎 PRO TICKET EXTENSIONS ---
+// --- Ticket workflow ---
 func (s *ProSQLiteStore) BulkUpdateStatusAndAssign(ctx context.Context, ticketIDs []int, status, assignee, comment, actor string) (string, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -97,7 +97,7 @@ func (s *ProSQLiteStore) RejectTicketFromWrangler(ctx context.Context, ticketIDs
 	return nil
 }
 
-// --- 💎 PRO ADMIN EXTENSIONS (Auto-Triage) ---
+// --- Auto-triage rules ---
 func (s *ProSQLiteStore) CreateAutoTriageRule(ctx context.Context, rule *proModels.AutoTriageRule) error {
 	res, err := s.db.ExecContext(ctx,
 		"INSERT INTO auto_triage_rules (workspace_id, match_source, match_asset, match_cve, action_type, action_value) VALUES (?, ?, ?, ?, ?, ?)",
@@ -110,7 +110,7 @@ func (s *ProSQLiteStore) CreateAutoTriageRule(ctx context.Context, rule *proMode
 	return nil
 }
 
-// 💎 PRO FEATURE: Real Audit Log Feed
+// Audit log feed
 func (s *ProSQLiteStore) GetGlobalActivityFeed(ctx context.Context, limit int) ([]models.FeedItem, error) {
 	query := `
 		SELECT actor, action || ' ' || target_resource, status_code, 
@@ -163,16 +163,16 @@ func (s *ProSQLiteStore) DeleteAutoTriageRule(ctx context.Context, ruleID int) e
 	return err
 }
 
-// 💎 PRO FEATURE: Wrap the core open-source ticket with Enterprise fields
+// ProDashboardTicket is a ticket with its portal token
 type ProDashboardTicket struct {
 	models.Ticket        // Embed the base open-source ticket
 	MagicToken    string `json:"magic_token,omitempty"` // Add the Pro field
 }
 
-// 💎 PRO FEATURE: Shadow the Core Dashboard query to enrich tickets with Enterprise data
+// GetProDashboardTickets is the dashboard query plus the portal token per ticket
 func (s *ProSQLiteStore) GetProDashboardTickets(ctx context.Context, tabStatus, filter, assetFilter, userEmail, userRole string, limit, offset int) ([]ProDashboardTicket, int, map[string]int, error) {
 
-	// 1. Call the underlying Core method to get the base tickets
+	// 1. The base dashboard query
 	coreTickets, total, metrics, err := s.SQLiteStore.GetDashboardTickets(ctx, tabStatus, filter, assetFilter, userEmail, userRole, limit, offset)
 	if err != nil {
 		return nil, 0, nil, err
@@ -185,7 +185,7 @@ func (s *ProSQLiteStore) GetProDashboardTickets(ctx context.Context, tabStatus, 
 		return proTickets, total, metrics, nil
 	}
 
-	// 3. 🚀 PRO ENRICHMENT: Fetch Magic Tokens only for the returned tickets
+	// 3. Fetch the portal tokens for the returned tickets
 	for _, t := range coreTickets {
 		pt := ProDashboardTicket{Ticket: t}
 		var token string
@@ -204,7 +204,7 @@ func (s *ProSQLiteStore) GetProDashboardTickets(ctx context.Context, tabStatus, 
 	return proTickets, total, metrics, nil
 }
 
-// 💎 PRO FEATURE: Immutable Audit Logging
+// Immutable audit logging
 func (s *ProSQLiteStore) LogAuditAction(ctx context.Context, actor, action, resource string, statusCode int, errorDetails, ip string) error {
 	_, err := s.db.ExecContext(ctx,
 		`INSERT INTO audit_logs (actor, action, target_resource, status_code, error_details, ip_address) 
@@ -213,7 +213,7 @@ func (s *ProSQLiteStore) LogAuditAction(ctx context.Context, actor, action, reso
 	return err
 }
 
-// 💎 PRO FEATURE: The Ingestion Rules Engine (Suppression, Triage, Routing)
+// The ingestion rules engine: suppression, triage, routing
 func (s *ProSQLiteStore) CreateTicket(ctx context.Context, ticket *models.Ticket) error {
 	// ==========================================
 	// 🛡️ LAYER 1: GLOBAL SUPPRESSION
@@ -225,7 +225,7 @@ func (s *ProSQLiteStore) CreateTicket(ctx context.Context, ticket *models.Ticket
 		ticket.DedupeHash, ticket.AssetIdentifier).Scan(&isSuppressed)
 
 	if err == nil {
-		// It's a known False Positive. We mutate the status before sending it to Core.
+		// A known false positive: set the status before the insert.
 		ticket.Status = "False Positive"
 	}
 
@@ -258,7 +258,7 @@ func (s *ProSQLiteStore) CreateTicket(ctx context.Context, ticket *models.Ticket
 	// ==========================================
 	// 💾 EXECUTE BASE CREATION
 	// ==========================================
-	// Hand the ticket off to the Open Source core driver to actually insert it
+	// Insert through the base store
 	err = s.SQLiteStore.CreateTicket(ctx, ticket)
 	if err != nil {
 		return err
@@ -287,7 +287,7 @@ func (s *ProSQLiteStore) CreateTicket(ctx context.Context, ticket *models.Ticket
 }
 
 // ==========================================
-// 💎 PRO ADMIN METHODS (Rules Engine CRUD)
+// Rules engine CRUD
 // ==========================================
 
 func (s *ProSQLiteStore) CreateSuppressionRule(ctx context.Context, rule *proModels.SuppressionRule) error {
@@ -315,7 +315,7 @@ func (s *ProSQLiteStore) CreateRoutingRule(ctx context.Context, rule *proModels.
 }
 
 // ==========================================
-// 💎 PRO ADMIN METHODS (CISA Integration)
+// CISA KEV catalog
 // ==========================================
 
 func (s *ProSQLiteStore) SyncCISACatalog(ctx context.Context, feed *proModels.CISAFeed) error {

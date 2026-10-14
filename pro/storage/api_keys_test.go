@@ -16,7 +16,7 @@ func TestAPIKeys_BDD(t *testing.T) {
 	db := core.InitDB(":memory:")
 	defer db.Close()
 
-	// 🤠 THE FIX: Disable Foreign Key enforcement so we can test the API Key logic in isolation
+	// Disable foreign-key enforcement to test the API key logic in isolation
 	// without needing to perfectly mock the free tier's Users and Workspaces tables.
 	_, _ = db.Exec("PRAGMA foreign_keys = OFF;")
 

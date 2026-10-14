@@ -19,7 +19,7 @@ async function processFile(file) {
 
         // 🚀 JSON API ROUTE
         if (file.name.toLowerCase().endsWith('.json')) {
-            // 🚀 THE FIX: If no adapter is selected, redirect to Builder instead of throwing an error!
+            // If no adapter is selected, redirect to Builder instead of throwing an error!
             if (!adapterName) {
                 statusText.innerText = "Unknown JSON format. Redirecting to Adapter Builder...";
                 setTimeout(() => {

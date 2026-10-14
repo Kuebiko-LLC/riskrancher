@@ -129,7 +129,7 @@ func main() {
 		fmt.Printf("✅ Ingested batch %d/%d (%d tickets)\n", b+1, totalTickets/batchSize, len(payload))
 	}
 
-	log.Println("\n🔀 PHASE 2: Distributing tickets to valid Core workflows...")
+	log.Println("\n🔀 PHASE 2: Distributing tickets across the workflow states...")
 
 	unassignedEnd := int(float64(totalTickets) * 0.60) // 60% stay in Holding Pen
 	assignedEnd := int(float64(totalTickets) * 0.75)   // 15% go to Chute
@@ -145,7 +145,7 @@ func main() {
 
 	log.Println("\n🎉 STRESS TEST COMPLETE!")
 	log.Println("==========================================================================")
-	log.Println("🤠 The ranch is fully loaded with Core data. Go check the Dashboard!")
+	log.Println("🤠 The ranch is fully loaded. Go check the Dashboard!")
 	log.Println("🔑 Login -> Email: stress@ranch.com | Password: password123")
 	log.Println("==========================================================================")
 }

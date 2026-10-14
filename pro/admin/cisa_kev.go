@@ -37,7 +37,7 @@ func (h *ProHandler) HandleSyncCISAKEV(w http.ResponseWriter, r *http.Request) {
 
 	proStore, ok := h.Store.(storage.ProStoreInterface)
 	if !ok {
-		http.Error(w, "Enterprise storage driver not loaded", http.StatusInternalServerError)
+		http.Error(w, "storage not available", http.StatusInternalServerError)
 		return
 	}
 

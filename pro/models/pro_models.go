@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// 💎 PRO: SuppressionRule silences known False Positives forever
+// SuppressionRule silences known False Positives forever
 type SuppressionRule struct {
 	ID              int       `json:"id"`
 	DedupeHash      string    `json:"dedupe_hash"`
@@ -15,7 +15,7 @@ type SuppressionRule struct {
 	CreatedAt       time.Time `json:"created_at"`
 }
 
-// 💎 PRO: RoutingRule automatically assigns incoming tickets
+// RoutingRule automatically assigns incoming tickets
 type RoutingRule struct {
 	ID          int       `json:"id"`
 	WorkspaceID int       `json:"workspace_id"` // 🚀 FIX: Added missing WorkspaceID
@@ -26,7 +26,7 @@ type RoutingRule struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-// 💎 PRO: AutoTriageRule mutates ticket severity based on assets/sources
+// AutoTriageRule mutates ticket severity based on assets/sources
 type AutoTriageRule struct {
 	ID          int       `json:"id"`
 	WorkspaceID int       `json:"workspace_id"`
@@ -38,7 +38,7 @@ type AutoTriageRule struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-// 💎 PRO: CISA KEV JSON Schema
+// CISAFeed is the CISA KEV catalog JSON schema
 type CISAFeed struct {
 	Title           string `json:"title"`
 	CatalogVersion  string `json:"catalogVersion"`
@@ -53,7 +53,7 @@ type CISAFeed struct {
 
 // Add to File: RiskRancher/pro/models/pro_models.go
 
-// 🤠 PRO: APIKey represents a Service Account token for automated systems
+// APIKey represents a Service Account token for automated systems
 type APIKey struct {
 	ID          int        `json:"id"`
 	TokenHash   string     `json:"-"` // Never expose the hash via JSON

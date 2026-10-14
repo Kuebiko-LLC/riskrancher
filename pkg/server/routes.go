@@ -53,7 +53,7 @@ func RegisterRoutes(app *App) {
 	app.Router.Handle("GET /", http.RedirectHandler("/dashboard", http.StatusSeeOther))
 	app.Router.Handle("GET /dashboard", protectedUI(ui.HandleDashboard(app.Store)))
 
-	// Core Tickets
+	// Tickets
 	app.Router.Handle("GET /api/tickets", protected(ticketH.HandleGetTickets))
 	app.Router.Handle("POST /api/tickets", protected(ticketH.HandleCreateTicket))
 	app.Router.Handle("PATCH /api/tickets/{id}", protected(ticketH.HandleUpdateTicket))

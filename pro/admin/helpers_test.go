@@ -19,7 +19,7 @@ func setupTestAdmin(t *testing.T) (*ProHandler, *sql.DB) {
 	// 🚀 FIX: Call InitDB from the datastore package
 	db := datastore.InitDB(":memory:")
 
-	// 🚀 FIX: Inject the Enterprise Schema specifically for the tests.
+	// Apply the schema for the tests.
 	// We execute the DDL directly to avoid os.ReadFile relative path issues
 	// during sub-package test execution.
 	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS auto_triage_rules (
@@ -33,10 +33,10 @@ func setupTestAdmin(t *testing.T) (*ProHandler, *sql.DB) {
 	   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	)`)
 	if err != nil {
-		t.Fatalf("🚨 PRO TEST FATAL: Failed to create test schema: %v", err)
+		t.Fatalf("Failed to create test schema: %v", err)
 	}
 
-	// Initialize the Enterprise Database
+	// Initialize the database
 	store := storage.NewProSQLiteStore(db)
 
 	return NewProHandler(store), db

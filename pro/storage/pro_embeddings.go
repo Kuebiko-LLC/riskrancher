@@ -8,7 +8,7 @@ import (
 
 // SaveTicketEmbedding saves the float32 array AND the asset boundary
 func (s *ProSQLiteStore) SaveTicketEmbedding(ctx context.Context, ticketID int, assetIdentifier string, embedding []float32) error {
-	// 🤠 PRO TIP: You don't need a loop. binary.Write can serialize the entire slice at once.
+	// Note: no loop needed; binary.Write can serialize the entire slice at once.
 	// This is significantly faster and prevents memory fragmentation.
 	buf := new(bytes.Buffer)
 	if err := binary.Write(buf, binary.LittleEndian, embedding); err != nil {

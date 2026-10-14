@@ -19,7 +19,7 @@ func (h *ProHandler) HandleGetLogs(w http.ResponseWriter, r *http.Request) {
 	// Fetch the real audit logs using the method we added to pro_sqlite.go
 	feed, _ := h.ProStore.GetGlobalActivityFeed(r.Context(), 100)
 
-	// Wrap it in the pagination struct that pro_admin.js expects
+	// Wrap it in the pagination struct that admin.js expects
 	json.NewEncoder(w).Encode(map[string]any{
 		"feed":  feed,
 		"total": len(feed),

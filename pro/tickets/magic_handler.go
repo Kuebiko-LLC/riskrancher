@@ -33,7 +33,7 @@ type BulkUpdateRequest struct {
 	Actor     string `json:"actor"`
 }
 
-// 💎 PRO FEATURE: Analyst God-Mode (Bulk Assignment & Magic Link Generation)
+// Bulk assignment and magic-link generation.
 func (h *ProHandler) HandleBulkUpdate(w http.ResponseWriter, r *http.Request) {
 	var req BulkUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -42,12 +42,12 @@ func (h *ProHandler) HandleBulkUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 1. Verify the Enterprise Driver is loaded
+	// 1. The store must carry the workflow methods
 	proStore, ok := h.Store.(storage.ProStoreInterface)
 	if !ok {
 		// 🚀 If it fails here, we know main.go didn't inject the database correctly
 		log.Printf("🚨 CRITICAL INIT ERROR: Store is of type %T, which does not implement ProStoreInterface!", h.Store)
-		http.Error(w, "Enterprise storage driver not loaded", http.StatusInternalServerError)
+		http.Error(w, "storage not available", http.StatusInternalServerError)
 		return
 	}
 
@@ -107,7 +107,7 @@ func (h *ProHandler) HandleMagistrateReview(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusOK)
 }
 
-// 🚀 THE FIX: Extract TicketIDs from the JSON payload and pass them to the DB
+// Extract the ticket IDs from the JSON payload and pass them to the store
 func (h *ProHandler) HandleWranglerReject(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		TicketIDs []int  `json:"ticket_ids"`
@@ -133,7 +133,7 @@ func (h *ProHandler) HandleWranglerReject(w http.ResponseWriter, r *http.Request
 	// Assuming the Store has been updated to include the Pro interface methods
 	proStore, ok := h.Store.(storage.ProStoreInterface)
 	if !ok {
-		http.Error(w, "Enterprise storage driver not loaded", http.StatusInternalServerError)
+		http.Error(w, "storage not available", http.StatusInternalServerError)
 		return
 	}
 
@@ -174,7 +174,7 @@ func (h *ProHandler) RejectTicketsHandler(w http.ResponseWriter, r *http.Request
 	// 3. Cast the store to the Pro Interface
 	proStore, ok := h.Store.(storage.ProStoreInterface)
 	if !ok {
-		http.Error(w, "Enterprise database driver not configured", http.StatusInternalServerError)
+		http.Error(w, "storage not available", http.StatusInternalServerError)
 		return
 	}
 

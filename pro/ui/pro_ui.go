@@ -2,7 +2,6 @@
 package ui
 
 import (
-	"context"
 	"embed"
 	"html/template"
 	"net/http"
@@ -28,10 +27,6 @@ func init() {
 func InjectProTemplates(proStore storage.ProStoreInterface) {
 	funcMap := template.FuncMap{
 		"lower": strings.ToLower,
-		"getProRules": func() any {
-			rules, _ := proStore.GetRoutingRules(context.Background())
-			return rules
-		},
 	}
 
 	ProTemplates["wrangler"] = template.Must(template.New("base").Funcs(funcMap).ParseFS(ProUIFS, "templates/magic/wrangler.gohtml", "templates/components/*.gohtml"))

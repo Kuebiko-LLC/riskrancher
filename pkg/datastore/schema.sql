@@ -61,6 +61,8 @@ CREATE TABLE IF NOT EXISTS tickets (
                                        description TEXT,
                                        recommended_remediation TEXT,
                                        severity TEXT NOT NULL,
+                                       scanner_severity TEXT NOT NULL DEFAULT '', -- the scanner's word, normalized, before the rubric, the rules and KEV
+                                       rubric_score REAL,                         -- base x exposure x criticality; NULL when the asset is not in the inventory
                                        status TEXT DEFAULT 'Waiting to be Triaged'
                                        CHECK(status IN (
                                        'Waiting to be Triaged',
@@ -203,6 +205,36 @@ CREATE TABLE IF NOT EXISTS auto_triage_rules (
     action_value TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+-- ==========================================
+-- 2b. ASSET INVENTORY AND PRIORITY RUBRIC
+-- ==========================================
+-- The book's chapter-two inventory: an asset's exposure and criticality
+-- multiply the scanner's severity into a priority at ingest. Owner is shown,
+-- not routed on; routing rules take an email.
+CREATE TABLE IF NOT EXISTS assets (
+    asset_identifier TEXT PRIMARY KEY,
+    exposure    TEXT NOT NULL CHECK (exposure IN ('internet', 'internal', 'isolated')),
+    criticality TEXT NOT NULL CHECK (criticality IN ('crown-jewel', 'standard', 'dev')),
+    owner       TEXT NOT NULL DEFAULT '',
+    notes       TEXT NOT NULL DEFAULT '',
+    updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- The weights are configuration: seeded with the book's numbers, edited in
+-- Configuration. score = base x exposure x criticality; a band is the lowest
+-- score for that severity, and below Medium is Low.
+CREATE TABLE IF NOT EXISTS rubric_weights (
+    kind   TEXT NOT NULL CHECK (kind IN ('base', 'exposure', 'criticality', 'band')),
+    name   TEXT NOT NULL,
+    weight REAL NOT NULL,
+    PRIMARY KEY (kind, name)
+);
+INSERT OR IGNORE INTO rubric_weights (kind, name, weight) VALUES
+    ('base', 'Critical', 4), ('base', 'High', 3), ('base', 'Medium', 2), ('base', 'Low', 1), ('base', 'Info', 0),
+    ('exposure', 'internet', 2), ('exposure', 'internal', 1), ('exposure', 'isolated', 0.5),
+    ('criticality', 'crown-jewel', 2), ('criticality', 'standard', 1), ('criticality', 'dev', 0.5),
+    ('band', 'Critical', 12), ('band', 'High', 6), ('band', 'Medium', 3);
 
 CREATE TABLE IF NOT EXISTS suppression_rules (
                                                  id INTEGER PRIMARY KEY AUTOINCREMENT,

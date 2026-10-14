@@ -24,6 +24,7 @@ type Store interface {
 	ConfigStore
 	AnalyticsStore
 	DraftStore
+	AssetStore
 }
 
 // TicketStore: ticket CRUD and workflow
@@ -114,6 +115,16 @@ type RulesStore interface {
 	CreateRoutingRule(ctx context.Context, rule *RoutingRule) error
 	GetRoutingRules(ctx context.Context) ([]RoutingRule, error)
 	DeleteRoutingRule(ctx context.Context, id int) error
+}
+
+// AssetStore: the asset inventory and the priority rubric
+type AssetStore interface {
+	// UpsertAssets loads inventory rows, replacing any asset already known.
+	UpsertAssets(ctx context.Context, assets []Asset) error
+	ListAssets(ctx context.Context) ([]Asset, error)
+	// GetRubric is the fourteen weights of the priority rubric, in display order.
+	GetRubric(ctx context.Context) ([]RubricWeight, error)
+	UpdateRubric(ctx context.Context, weights []RubricWeight) error
 }
 
 // AuditStore: the immutable audit log

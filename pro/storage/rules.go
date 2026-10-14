@@ -87,16 +87,6 @@ func (s *ProSQLiteStore) BulkUpdateStatusAndAssign(ctx context.Context, ticketID
 	return batchToken, tx.Commit()
 }
 
-func (s *ProSQLiteStore) RejectTicketFromWrangler(ctx context.Context, ticketIDs []int, reason, comment string) error {
-	for _, id := range ticketIDs {
-		_, err := s.db.ExecContext(ctx, "UPDATE tickets SET status = 'Returned to Security' WHERE id = ?", id)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // --- Auto-triage rules ---
 func (s *ProSQLiteStore) CreateAutoTriageRule(ctx context.Context, rule *proModels.AutoTriageRule) error {
 	res, err := s.db.ExecContext(ctx,
@@ -214,77 +204,6 @@ func (s *ProSQLiteStore) LogAuditAction(ctx context.Context, actor, action, reso
 }
 
 // The ingestion rules engine: suppression, triage, routing
-func (s *ProSQLiteStore) CreateTicket(ctx context.Context, ticket *models.Ticket) error {
-	// ==========================================
-	// 🛡️ LAYER 1: GLOBAL SUPPRESSION
-	// ==========================================
-	var isSuppressed bool
-	// If a rule exists matching this exact vulnerability hash on this exact asset
-	err := s.db.QueryRowContext(ctx,
-		"SELECT 1 FROM suppression_rules WHERE dedupe_hash = ? AND asset_identifier = ?",
-		ticket.DedupeHash, ticket.AssetIdentifier).Scan(&isSuppressed)
-
-	if err == nil {
-		// A known false positive: set the status before the insert.
-		ticket.Status = "False Positive"
-	}
-
-	// ==========================================
-	// 📉 LAYER 2: AUTO-TRIAGE
-	// ==========================================
-	if ticket.Status != "False Positive" {
-		rows, err := s.db.QueryContext(ctx, "SELECT match_source, match_asset, action_type, action_value FROM auto_triage_rules WHERE workspace_id = 1")
-		if err == nil {
-			defer rows.Close()
-			for rows.Next() {
-				var mSource, mAsset, aType, aVal sql.NullString
-				rows.Scan(&mSource, &mAsset, &aType, &aVal)
-
-				match := true
-				if mSource.Valid && mSource.String != "" && mSource.String != ticket.Source {
-					match = false
-				}
-				if mAsset.Valid && mAsset.String != "" && mAsset.String != ticket.AssetIdentifier {
-					match = false
-				}
-
-				if match && aType.String == "DowngradeSeverity" {
-					ticket.Severity = aVal.String
-				}
-			}
-		}
-	}
-
-	// ==========================================
-	// 💾 EXECUTE BASE CREATION
-	// ==========================================
-	// Insert through the base store
-	err = s.SQLiteStore.CreateTicket(ctx, ticket)
-	if err != nil {
-		return err
-	}
-
-	// ==========================================
-	// 🔀 LAYER 3: AUTO-ROUTING (Assignments)
-	// ==========================================
-	if ticket.Status != "False Positive" {
-		var assignee, role string
-		err := s.db.QueryRowContext(ctx, `
-          SELECT assignee, role FROM routing_rules 
-          WHERE (rule_type = 'Asset' AND match_value = ?) 
-             OR (rule_type = 'Source' AND match_value = ?) 
-          ORDER BY (CASE WHEN rule_type = 'Asset' THEN 1 ELSE 2 END) ASC LIMIT 1`,
-			ticket.AssetIdentifier, ticket.Source).Scan(&assignee, &role)
-
-		if err == nil && assignee != "" {
-			s.db.ExecContext(ctx, "INSERT INTO ticket_assignments (ticket_id, role, assignee) VALUES (?, ?, ?)", ticket.ID, role, assignee)
-			s.db.ExecContext(ctx, "UPDATE tickets SET status = 'Assigned Out' WHERE id = ?", ticket.ID)
-			s.db.ExecContext(ctx, "INSERT INTO ticket_activity (ticket_id, actor, activity_type, new_value) VALUES (?, 'Rules Engine', 'assigned_to', ?)", ticket.ID, assignee)
-		}
-	}
-
-	return nil
-}
 
 // ==========================================
 // Rules engine CRUD

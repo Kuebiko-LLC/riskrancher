@@ -70,9 +70,8 @@ func (e *SuppressionEngine) EvaluateBatch(ctx context.Context, batch []domain.Ti
 				continue
 			}
 
-			// All defined conditions matched. Suppress the ticket.
-			batch[i].Status = "Suppressed"
-			batch[i].Description = "[AUTO-SUPPRESSED: " + rule.Rationale + "]\n\n" + batch[i].Description
+			// All defined conditions matched: a known false positive.
+			batch[i].Status = "False Positive"
 
 			// Stop evaluating rules for this ticket once suppressed
 			break

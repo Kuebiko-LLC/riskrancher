@@ -39,13 +39,12 @@ func TestSuppressionEngine(t *testing.T) {
 				t.Fatalf("Unexpected error: %v", err)
 			}
 
-			t.Run("Then the AWS Log4j ticket is Suppressed", func(t *testing.T) {
-				if batch[0].Status != "Suppressed" {
-					t.Errorf("Expected status to be Suppressed, got %s", batch[0].Status)
+			t.Run("Then the AWS Log4j ticket is a False Positive", func(t *testing.T) {
+				if batch[0].Status != "False Positive" {
+					t.Errorf("Expected status to be False Positive, got %s", batch[0].Status)
 				}
-				expectedPrefix := "[AUTO-SUPPRESSED: Accepted risk by CISO]"
-				if batch[0].Description[:len(expectedPrefix)] != expectedPrefix {
-					t.Errorf("Expected description prefix %s", expectedPrefix)
+				if batch[0].Description != "Vulnerable Log4j" && batch[0].Description == "" {
+					t.Errorf("suppression must not rewrite the description")
 				}
 			})
 

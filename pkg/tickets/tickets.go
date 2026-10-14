@@ -32,6 +32,7 @@ type MagistrateReviewRequest struct {
 	Actor         string `json:"actor"`
 	Comment       string `json:"comment"`
 	ExtensionDays int    `json:"extension_days"`
+	TicketIDs     []int  `json:"ticket_ids"`
 }
 
 // actor names the signed-in user for the audit trail. A body may carry an

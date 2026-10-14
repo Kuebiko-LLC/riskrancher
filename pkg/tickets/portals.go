@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/datastore"
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
@@ -38,14 +39,28 @@ func (h *Handler) HandleBulkUpdate(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// portalBatch resolves the link in the path. The link is the authorization.
-func (h *Handler) portalBatch(w http.ResponseWriter, r *http.Request) (*domain.MagicBatch, bool) {
+// portalBatch resolves the link in the path. The link is the authorization,
+// and a link only does the work of its own kind: an owner's link cannot
+// decide, an approver's link cannot fix, return or ask.
+func (h *Handler) portalBatch(w http.ResponseWriter, r *http.Request, kind string) (*domain.MagicBatch, bool) {
 	batch, err := h.Store.GetMagicBatch(r.Context(), r.PathValue("token"))
 	if err != nil {
 		http.Error(w, "This link is not valid: "+err.Error(), http.StatusNotFound)
 		return nil, false
 	}
+	if batch.Kind != kind {
+		http.Error(w, "This link cannot do that", http.StatusForbidden)
+		return nil, false
+	}
 	return batch, true
+}
+
+// ownerBatch and approverBatch name the two kinds at the call sites.
+func (h *Handler) ownerBatch(w http.ResponseWriter, r *http.Request) (*domain.MagicBatch, bool) {
+	return h.portalBatch(w, r, "owner")
+}
+func (h *Handler) approverBatch(w http.ResponseWriter, r *http.Request) (*domain.MagicBatch, bool) {
+	return h.portalBatch(w, r, "approver")
 }
 
 // inBatch keeps a request to the findings its link covers.
@@ -68,7 +83,7 @@ func inBatch(batch *domain.MagicBatch, requested []int) []int {
 
 // HandleMagicLink is the owner's view: the findings this link covers.
 func (h *Handler) HandleMagicLink(w http.ResponseWriter, r *http.Request) {
-	batch, ok := h.portalBatch(w, r)
+	batch, ok := h.ownerBatch(w, r)
 	if !ok {
 		return
 	}
@@ -91,7 +106,7 @@ func (h *Handler) HandleMagicLink(w http.ResponseWriter, r *http.Request) {
 
 // HandleMagicLinkSubmit is the owner saying a finding is fixed, with evidence.
 func (h *Handler) HandleMagicLinkSubmit(w http.ResponseWriter, r *http.Request) {
-	batch, ok := h.portalBatch(w, r)
+	batch, ok := h.ownerBatch(w, r)
 	if !ok {
 		return
 	}
@@ -117,7 +132,7 @@ func (h *Handler) HandleMagicLinkSubmit(w http.ResponseWriter, r *http.Request) 
 
 // HandleSubmitRiskRequest is the owner asking for more time or for the risk to be accepted.
 func (h *Handler) HandleSubmitRiskRequest(w http.ResponseWriter, r *http.Request) {
-	batch, ok := h.portalBatch(w, r)
+	batch, ok := h.ownerBatch(w, r)
 	if !ok {
 		return
 	}
@@ -147,7 +162,7 @@ func (h *Handler) HandleSubmitRiskRequest(w http.ResponseWriter, r *http.Request
 
 // HandleMagistrateReview is the approver's decision on the findings this link covers.
 func (h *Handler) HandleMagistrateReview(w http.ResponseWriter, r *http.Request) {
-	batch, ok := h.portalBatch(w, r)
+	batch, ok := h.approverBatch(w, r)
 	if !ok {
 		return
 	}
@@ -164,7 +179,84 @@ func (h *Handler) HandleMagistrateReview(w http.ResponseWriter, r *http.Request)
 	if actor == "" {
 		actor = "Risk approver"
 	}
-	err := h.Store.ReviewRiskRequest(r.Context(), batch.TicketIDs, req.Action, actor, req.Comment, req.ExtensionDays)
+	ids := inBatch(batch, req.TicketIDs)
+	if len(ids) == 0 {
+		http.Error(w, "No findings on this link match the request", http.StatusBadRequest)
+		return
+	}
+	err := h.Store.ReviewRiskRequest(r.Context(), ids, req.Action, actor, req.Comment, req.ExtensionDays)
+	if errors.Is(err, datastore.ErrExtensionCapReached) {
+		http.Error(w, "This finding has had every extension its SLA policy allows", http.StatusConflict)
+		return
+	}
+	if err != nil {
+		http.Error(w, "Failed to record the decision: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+// HandleApproverView is the approver's page: the findings on their link that
+// still wait for a decision, each with the owner's rationale and the
+// Sheriff's context, plus the configured default extension days.
+func (h *Handler) HandleApproverView(w http.ResponseWriter, r *http.Request) {
+	batch, ok := h.approverBatch(w, r)
+	if !ok {
+		return
+	}
+	all, err := h.Store.TicketsByIDs(r.Context(), batch.TicketIDs)
+	if err != nil {
+		http.Error(w, "Failed to load findings", http.StatusInternalServerError)
+		return
+	}
+	tickets := []domain.Ticket{}
+	for _, t := range all {
+		if t.Status == "Pending Risk Approval" {
+			tickets = append(tickets, t)
+		}
+	}
+	defaultDays := 30
+	if cfg, err := h.Store.GetAppConfig(r.Context()); err == nil && cfg.DefaultExtensionDays > 0 {
+		defaultDays = cfg.DefaultExtensionDays
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{"token": batch.Token, "tickets": tickets, "default_extension_days": defaultDays})
+}
+
+// HandleMintReviewLink is the Sheriff's Copy Link: an approver's link over
+// the findings given, with the Sheriff's context for the approver to read.
+func (h *Handler) HandleMintReviewLink(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		TicketIDs []int  `json:"ticket_ids"`
+		Context   string `json:"context"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || len(req.TicketIDs) == 0 {
+		http.Error(w, "ticket_ids are required", http.StatusBadRequest)
+		return
+	}
+	token, err := h.Store.MintApproverLink(r.Context(), req.TicketIDs, h.actor(r, ""), req.Context)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"token": token})
+}
+
+// HandleSheriffReview is the Sheriff deciding one finding from the office,
+// without a link: usually a denial with a reason.
+func (h *Handler) HandleSheriffReview(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(r.PathValue("id"))
+	var req MagistrateReviewRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid payload", http.StatusBadRequest)
+		return
+	}
+	if req.Action == "Deny" && req.Comment == "" {
+		http.Error(w, "A comment is required to deny", http.StatusBadRequest)
+		return
+	}
+	err := h.Store.ReviewRiskRequest(r.Context(), []int{id}, req.Action, h.actor(r, req.Actor), req.Comment, req.ExtensionDays)
 	if errors.Is(err, datastore.ErrExtensionCapReached) {
 		http.Error(w, "This finding has had every extension its SLA policy allows", http.StatusConflict)
 		return
@@ -189,7 +281,7 @@ func portalActor(h *Handler, r *http.Request, batch *domain.MagicBatch) string {
 
 // Extract the ticket IDs from the JSON payload and pass them to the store
 func (h *Handler) HandleWranglerReject(w http.ResponseWriter, r *http.Request) {
-	batch, ok := h.portalBatch(w, r)
+	batch, ok := h.ownerBatch(w, r)
 	if !ok {
 		return
 	}

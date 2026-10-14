@@ -67,7 +67,8 @@
     };
     async function init() {
         try {
-            const res = await fetch(`/api/share/${currentToken}`);
+            const isApprover = !!document.getElementById('magAsset');
+            const res = isApprover ? await fetch(`/api/share/${currentToken}/review`) : await fetch(`/api/share/${currentToken}`);
             if (!res.ok) throw new Error("This link is no longer valid.");
             const data = await res.json();
 

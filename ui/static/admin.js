@@ -16,54 +16,33 @@ window.toggleRiskGroup = function(safeAsset) {
 
 window.prepMagistrateLink = async function(tokenString, idsString, event) {
     if (event) event.stopPropagation();
-    const context = prompt("Enter your Security Context/Verification for the Magistrate.\n\n(This will be applied to ALL findings in this batch):");
-    if (!context) return alert("Action cancelled. You must provide context to proceed.");
-
+    const context = prompt("Context for the approver: what you verified, what you recommend.\n\n(Shown on the approver's page for every finding on this link.)");
+    if (!context) return alert("Action cancelled. Give the approver some context.");
     try {
-        const ids = idsString.split(',').map(id => parseInt(id));
-
-        // 1. Hit the Bulk API first to unify all these tickets and generate a fresh token!
-        const res = await fetch('/api/tickets/bulk', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            // We pass the status again to force the API to mint a new Batch Token for the Magistrate
-            body: JSON.stringify({ ticket_ids: ids, status: "Pending Risk Approval", comment: "[Sheriff Verification] " + context, actor: "Sheriff" })
+        const ids = idsString.split(',').map(id => parseInt(id, 10)).filter(n => !isNaN(n));
+        const res = await fetch('/api/tickets/review-link', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ticket_ids: ids, context: context })
         });
-
-        if (res.ok) {
-            const data = await res.json();
-
-            // 2. Grab the fresh, unified token from the server response
-            const newBatchToken = data.batch_token;
-            if (!newBatchToken) return alert("Failed to generate a unified Magistrate link.");
-
-            const url = window.location.origin + "/review/" + newBatchToken;
-
-            // 3. Copy the NEW URL to the clipboard
-            try {
-                await navigator.clipboard.writeText(url);
-            } catch (err) {
-                const tempInput = document.createElement("input");
-                tempInput.value = url; document.body.appendChild(tempInput); tempInput.select(); document.execCommand("copy"); document.body.removeChild(tempInput);
-            }
-
-            alert("✅ Context saved & Unified Magistrate Link copied to clipboard!");
-            window.location.reload();
-        } else {
-            alert("Failed to save context: " + await res.text());
+        if (!res.ok) return alert("Failed to mint the approver's link: " + await res.text());
+        const data = await res.json();
+        const url = window.location.origin + "/review/" + data.token;
+        try { await navigator.clipboard.writeText(url); } catch (err) {
+            const tempInput = document.createElement("input");
+            tempInput.value = url; document.body.appendChild(tempInput); tempInput.select(); document.execCommand("copy"); document.body.removeChild(tempInput);
         }
-    } catch (err) {
-        alert("Network error.");
-    }
+        alert("Approver's link copied. Send it to the person who signs.");
+        window.location.reload();
+    } catch (err) { alert("Network error."); }
 }
 
-window.denyRisk = async function(token) {
-    const comment = prompt("Enter rationale for denying this request back to IT (Required):");
-    if (!comment) return alert("Action cancelled. An audit comment is required.");
+window.denyRisk = async function(id) {
+    const comment = prompt("Why is this request denied? (Required; the owner sees it.)");
+    if (!comment) return alert("Action cancelled. A reason is required.");
     try {
-        const res = await fetch(`/api/share/${token}/review`, {
+        const res = await fetch(`/api/tickets/${id}/review`, {
             method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'Deny', comment: comment, extension_days: 0, actor: "Sheriff" })
+            body: JSON.stringify({ action: 'Deny', comment: comment, extension_days: 0 })
         });
         if (res.ok) window.location.reload(); else alert("Failed: " + await res.text());
     } catch (err) { alert("Network error."); }

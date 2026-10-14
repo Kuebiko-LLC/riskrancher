@@ -64,8 +64,8 @@ func (s *SQLiteStore) BulkUpdateStatusAndAssign(ctx context.Context, ticketIDs [
 		idsJSON, _ := json.Marshal(ticketIDs)
 
 		_, err = tx.ExecContext(ctx, `
-          INSERT INTO magic_batches (token, created_by, expires_at, ticket_ids) 
-          VALUES (?, ?, DATETIME('now', '+90 days'), ?)`,
+          INSERT INTO magic_batches (token, created_by, expires_at, kind, ticket_ids)
+          VALUES (?, ?, DATETIME('now', '+90 days'), 'owner', ?)`,
 			batchToken, actor, string(idsJSON))
 		if err != nil {
 			return "", err

@@ -2,7 +2,9 @@ package datastore
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -21,8 +23,8 @@ func (s *SQLiteStore) GetMagicBatch(ctx context.Context, token string) (*domain.
 	var b domain.MagicBatch
 	var idsJSON string
 	var revoked bool
-	err := s.DB.QueryRowContext(ctx, `SELECT token, created_by, expires_at, is_revoked, ticket_ids FROM magic_batches WHERE token = ?`, token).
-		Scan(&b.Token, &b.CreatedBy, &b.ExpiresAt, &revoked, &idsJSON)
+	err := s.DB.QueryRowContext(ctx, `SELECT token, created_by, expires_at, is_revoked, kind, ticket_ids FROM magic_batches WHERE token = ?`, token).
+		Scan(&b.Token, &b.CreatedBy, &b.ExpiresAt, &revoked, &b.Kind, &idsJSON)
 	if err != nil {
 		return nil, fmt.Errorf("unknown link")
 	}
@@ -36,6 +38,49 @@ func (s *SQLiteStore) GetMagicBatch(ctx context.Context, token string) (*domain.
 		return nil, err
 	}
 	return &b, nil
+}
+
+// MintApproverLink is the Sheriff handing a request to the person who signs:
+// a link of its own kind over the findings waiting for a decision, with the
+// Sheriff's context written where the approver's page reads it.
+func (s *SQLiteStore) MintApproverLink(ctx context.Context, ids []int, actor, context string) (string, error) {
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return "", err
+	}
+	defer tx.Rollback()
+	var pending []int
+	for _, id := range ids {
+		var status string
+		if err := tx.QueryRowContext(ctx, `SELECT status FROM tickets WHERE id = ?`, id).Scan(&status); err != nil {
+			return "", err
+		}
+		if status != "Pending Risk Approval" {
+			continue
+		}
+		pending = append(pending, id)
+		if context != "" {
+			if _, err := tx.ExecContext(ctx, `UPDATE tickets SET latest_comment = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, "Security context: "+context, id); err != nil {
+				return "", err
+			}
+			if _, err := tx.ExecContext(ctx, `INSERT INTO ticket_activity (ticket_id, actor, activity_type, new_value) VALUES (?, ?, 'security_context', ?)`, id, actor, context); err != nil {
+				return "", err
+			}
+		}
+	}
+	if len(pending) == 0 {
+		return "", fmt.Errorf("none of these findings is waiting for a decision")
+	}
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	token := hex.EncodeToString(b)
+	idsJSON, _ := json.Marshal(pending)
+	if _, err := tx.ExecContext(ctx, `INSERT INTO magic_batches (token, created_by, expires_at, kind, ticket_ids) VALUES (?, ?, DATETIME('now', '+90 days'), 'approver', ?)`, token, actor, string(idsJSON)); err != nil {
+		return "", err
+	}
+	return token, tx.Commit()
 }
 
 // TicketsByIDs loads findings in id order.

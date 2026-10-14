@@ -233,6 +233,7 @@ CREATE TABLE IF NOT EXISTS magic_batches (
                                              created_by TEXT NOT NULL,
                                              expires_at DATETIME NOT NULL,
                                              is_revoked BOOLEAN DEFAULT 0,
+                                             kind TEXT NOT NULL DEFAULT 'owner' CHECK (kind IN ('owner', 'approver')),
                                              ticket_ids TEXT NOT NULL, -- JSON array of IDs
                                              created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

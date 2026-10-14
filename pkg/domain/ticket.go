@@ -100,6 +100,9 @@ type MagicBatch struct {
 	CreatedBy string
 	ExpiresAt time.Time
 	TicketIDs []int
+	// Kind is who the link is for: "owner" (fix, return, ask) or "approver"
+	// (approve, deny). A link only ever does its own kind's work.
+	Kind string
 }
 
 // ActivityEntry is one line of a finding's history.

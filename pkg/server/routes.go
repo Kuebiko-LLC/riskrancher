@@ -80,6 +80,8 @@ func RegisterRoutes(app *App) {
 	app.Router.Handle("PATCH /api/tickets/{id}", protected(ticketH.HandleUpdateTicket))
 	app.Router.Handle("GET /api/tickets/{id}/activity", protected(ticketH.HandleTicketActivity))
 	app.Router.Handle("PATCH /api/tickets/bulk", protected(ticketH.HandleBulkUpdate))
+	app.Router.Handle("POST /api/tickets/review-link", sheriffOnly(ticketH.HandleMintReviewLink))
+	app.Router.Handle("PATCH /api/tickets/{id}/review", sheriffOnly(ticketH.HandleSheriffReview))
 
 	// Portals (owner and risk approver): the link is the authorization, no account
 	byLink := func(h http.HandlerFunc) http.Handler { return auditH(http.HandlerFunc(h)) }
@@ -87,6 +89,7 @@ func RegisterRoutes(app *App) {
 	app.Router.Handle("PATCH /api/share/{token}", byLink(ticketH.HandleMagicLinkSubmit))
 	app.Router.Handle("POST /api/share/{token}/reject", byLink(ticketH.HandleWranglerReject))
 	app.Router.Handle("POST /api/share/{token}/risk", byLink(ticketH.HandleSubmitRiskRequest))
+	app.Router.Handle("GET /api/share/{token}/review", byLink(ticketH.HandleApproverView))
 	app.Router.Handle("PATCH /api/share/{token}/review", byLink(ticketH.HandleMagistrateReview))
 
 	// Ingest

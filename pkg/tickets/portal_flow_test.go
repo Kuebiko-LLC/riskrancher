@@ -43,6 +43,16 @@ func TestPortalFlow_OwnerFixesAndApproverRules(t *testing.T) {
 		case method == http.MethodGet:
 			h.HandleMagicLink(rec, req)
 		case method == http.MethodPatch && strings.HasSuffix(path, "/review"):
+			// the approver acts on a link of their own kind, over the owner link's findings
+			ownerBatch, err := h.Store.GetMagicBatch(ctx, req.PathValue("token"))
+			if err != nil {
+				t.Fatalf("owner link: %v", err)
+			}
+			approver, err := h.Store.MintApproverLink(ctx, ownerBatch.TicketIDs, "sheriff@rr.test", "")
+			if err != nil {
+				t.Fatalf("mint approver link: %v", err)
+			}
+			req.SetPathValue("token", approver)
 			h.HandleMagistrateReview(rec, req)
 		case method == http.MethodPatch:
 			h.HandleMagicLinkSubmit(rec, req)

@@ -30,7 +30,12 @@ func pendingRequest(t *testing.T, app *App) (string, int) {
 	if err := app.Store.RequestRiskException(ctx, []int{tk.ID}, "Time Extension", "sprint lands late", "dana@rr.test"); err != nil {
 		t.Fatal(err)
 	}
-	return token, tk.ID
+	approver, err := app.Store.MintApproverLink(ctx, []int{tk.ID}, "sheriff@rr.test", "checked")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = token
+	return approver, tk.ID
 }
 
 func ticketState(t *testing.T, app *App, id int) (status, comment string, extensions int) {
@@ -60,10 +65,11 @@ func TestApproverPortal_ApproveAndDenyThroughRouter(t *testing.T) {
 		t.Fatalf("approved extension: status=%q extensions=%d", status, ext)
 	}
 
-	// A second request, denied this time
+	// A second request, denied this time, on a fresh approver link
 	if err := app.Store.RequestRiskException(context.Background(), []int{id}, "Time Extension", "again", "dana@rr.test"); err != nil {
 		t.Fatal(err)
 	}
+	token, _ = app.Store.MintApproverLink(context.Background(), []int{id}, "sheriff@rr.test", "")
 	body = `{"action":"Deny","actor":"Legal / Compliance","comment":"patch it","extension_days":0}`
 	req = httptest.NewRequest(http.MethodPatch, "/api/share/"+token+"/review", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -77,25 +83,25 @@ func TestApproverPortal_ApproveAndDenyThroughRouter(t *testing.T) {
 	}
 }
 
-// The Sheriff's deny button on the Risk Reviews tab goes through the same
-// portal review route with the action the store understands.
+// The Sheriff's deny button on the Risk Reviews tab decides that one finding
+// from the office, through the Sheriff-only route, not through anyone's link.
 func TestSheriffDeny_UsesPortalReviewRoute(t *testing.T) {
-	app := routerApp(t)
-	token, id := pendingRequest(t, app)
+	app, cookie := appWithUser(t, "Sheriff")
+	_, id := pendingRequest(t, app)
 	src, err := fsReadUI("static/admin.js")
 	if err != nil {
 		t.Fatal(err)
 	}
-	// The script must name the portal review route and the capitalized action
-	if !strings.Contains(src, "/api/share/${token}/review") || !strings.Contains(src, "action: 'Deny'") {
-		t.Fatalf("admin.js deny must call PATCH /api/share/{token}/review with action Deny")
+	if !strings.Contains(src, "/api/tickets/${id}/review") || !strings.Contains(src, "action: 'Deny'") {
+		t.Fatalf("admin.js deny must call PATCH /api/tickets/{id}/review with action Deny")
 	}
-	if !strings.Contains(src, `"/review/" + newBatchToken`) {
-		t.Fatalf("admin.js copy-link must hand out the approver's /review/ page, not the owner's /share/")
+	if !strings.Contains(src, "/api/tickets/review-link") || !strings.Contains(src, `"/review/" + data.token`) {
+		t.Fatalf("admin.js copy-link must mint an approver link and hand out the /review/ page")
 	}
-	body := `{"action":"Deny","comment":"patch it","extension_days":0,"actor":"Sheriff"}`
-	req := httptest.NewRequest(http.MethodPatch, "/api/share/"+token+"/review", strings.NewReader(body))
+	body := `{"action":"Deny","comment":"patch it","extension_days":0}`
+	req := httptest.NewRequest(http.MethodPatch, "/api/tickets/"+strconv.Itoa(id)+"/review", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(cookie)
 	rec := httptest.NewRecorder()
 	app.Router.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {

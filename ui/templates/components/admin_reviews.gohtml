@@ -44,7 +44,7 @@
                     </td>
                     <td style="text-align: right; vertical-align: top; padding: 15px 0; border-bottom: 1px solid #f1f5f9;">
                         <button class="btn" style="padding: 6px 10px; font-size: 0.75rem; background: #3b82f6; margin-bottom: 5px; width: 100%; color: white;" onclick="prepMagistrateLink('{{.MagicToken}}', '{{ .ID }}', event)">🔗 Copy Link</button><br>
-                        <button class="btn btn-secondary" style="padding: 6px 10px; font-size: 0.75rem; color: #dc2626; border-color: #fca5a5; width: 100%;" onclick="denyRisk('{{.MagicToken}}')">Deny Request</button>
+                        <button class="btn btn-secondary" style="padding: 6px 10px; font-size: 0.75rem; color: #dc2626; border-color: #fca5a5; width: 100%;" onclick="denyRisk({{.ID}})">Deny Request</button>
                     </td>
                 </tr>
             {{end}}

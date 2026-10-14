@@ -267,7 +267,8 @@ func (s *SQLiteStore) GetDashboardTickets(ctx context.Context, tabStatus, filter
 		COALESCE(t.latest_comment, '') as latest_comment,
 		COALESCE(t.risk_rationale, '') as risk_rationale,
 		COALESCE(t.extension_count, 0) as extension_count,
-		t.exception_expires_at
+		t.exception_expires_at,
+		COALESCE(t.scanner_severity, ''), t.rubric_score, COALESCE(t.is_cisa_kev, 0)
 	FROM tickets t
 	JOIN PagedAssets p ON p.asset_identifier = t.asset_identifier` + whereQ + `
 	` + orderClause
@@ -286,6 +287,7 @@ func (s *SQLiteStore) GetDashboardTickets(ctx context.Context, tabStatus, filter
 		var t domain2.Ticket
 		var assignee string
 		var triageDue, remediationDue, exceptionExpires sql.NullTime
+		var score sql.NullFloat64
 
 		err := rows.Scan(
 			&t.ID, &t.Source, &t.AssetIdentifier, &t.Title, &t.Description,
@@ -298,10 +300,15 @@ func (s *SQLiteStore) GetDashboardTickets(ctx context.Context, tabStatus, filter
 			&t.RiskRationale,
 			&t.ExtensionCount,
 			&exceptionExpires,
+			&t.ScannerSeverity, &score, &t.IsCISAKEV,
 		)
 
 		if err == nil {
 			t.Assignee = assignee
+			if score.Valid {
+				v := score.Float64
+				t.RubricScore = &v
+			}
 			if exceptionExpires.Valid {
 				exp := exceptionExpires.Time
 				t.ExceptionExpiresAt = &exp

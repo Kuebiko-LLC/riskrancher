@@ -86,6 +86,12 @@ type DashboardTicket struct {
 	// RequestKind is what the owner asked for on a finding waiting for review:
 	// Time Extension or Risk Acceptance.
 	RequestKind string `json:"request_kind,omitempty"`
+	// AssetExposure and AssetCriticality come from the inventory; empty when
+	// the asset is not in it.
+	AssetExposure    string `json:"asset_exposure,omitempty"`
+	AssetCriticality string `json:"asset_criticality,omitempty"`
+	// ContextLine is the drawer's one-line account of how the priority was reached.
+	ContextLine string `json:"context_line"`
 }
 
 // FindingDetails are the structured fields a pentester fills on a finding.

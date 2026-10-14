@@ -74,6 +74,10 @@ window.openDrawer = function(id, title, asset, severity) {
     document.getElementById('drawerTicketID').value = id;
     document.getElementById('drawerTitle').innerText = title;
     document.getElementById('drawerAsset').innerText = asset;
+    // How the priority was reached: the scanner's word, the asset's multipliers, the score
+    const ctx = document.getElementById('ctx-' + id);
+    const contextLine = document.getElementById('drawerContext');
+    if (contextLine) contextLine.innerText = ctx ? ctx.value : "";
 
     const badge = document.getElementById('drawerBadge');
     badge.innerText = severity;
@@ -278,6 +282,12 @@ function initializeAssetTree() {
         if (overdueCount > 0) badges += `<span class="badge" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; margin-left:8px;">overdue:${overdueCount}</span>`;
 
         const firstToken = findings[0].getAttribute("data-token");
+        // What the inventory says about the asset, when it is in it
+        const exposure = findings[0].getAttribute("data-exposure") || "";
+        const criticality = findings[0].getAttribute("data-criticality") || "";
+        const assetContext = (exposure && criticality)
+            ? `<span style="font-size: 0.75rem; color: #64748b; margin-left: 8px;">${exposure}, ${criticality}</span>`
+            : '';
         let shareButtonHtml = '';
         if (window.CurrentTab === 'chute') {
             shareButtonHtml = `<button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; background: #8b5cf6; color: white; border: none;" onclick="copyMagicLink('${firstToken}', this, event)">Share Asset Link</button>`;
@@ -291,7 +301,7 @@ function initializeAssetTree() {
             <td style="padding: 12px 20px; background: #ffffff; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;"><input type="checkbox" class="asset-cb" data-asset="${safeAsset}"></td>
             <td colspan="4" class="badges-cell" style="padding: 12px; background: #ffffff; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; cursor: pointer;" onclick="toggleAssetGroup('${safeAsset}')">
                 <span style="font-family: monospace; font-size: 1.05rem; color: #1e293b; font-weight: bold;">${asset}</span>
-                <span style="color: #64748b; font-size: 0.85rem; font-weight: normal; margin-left: 5px;">(${findings.length})</span> ${badges}
+                <span style="color: #64748b; font-size: 0.85rem; font-weight: normal; margin-left: 5px;">(${findings.length})</span>${assetContext} ${badges}
             </td>
             <td colspan="2" style="padding: 12px 20px; text-align: right; background: #ffffff; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">${shareButtonHtml}</td>
         `;

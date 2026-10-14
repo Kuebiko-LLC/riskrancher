@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
@@ -201,9 +202,30 @@ func (s *SQLiteStore) GetDashboardTicketsWithPortals(ctx context.Context, tabSta
 		return withPortals, total, metrics, nil
 	}
 
-	// 3. Fetch the portal tokens for the returned tickets
+	// 3. The inventory rows for the page's assets, one query
+	seen := map[string]bool{}
+	var assetIDs []string
+	for _, t := range coreTickets {
+		if !seen[t.AssetIdentifier] {
+			seen[t.AssetIdentifier] = true
+			assetIDs = append(assetIDs, t.AssetIdentifier)
+		}
+	}
+	assets, err := s.assetsByIDs(ctx, s.DB, assetIDs)
+	if err != nil {
+		return nil, 0, nil, err
+	}
+	triage, _ := loadTriageRules(ctx, s.DB)
+
+	// 4. Fetch the portal tokens for the returned tickets
 	for _, t := range coreTickets {
 		pt := domain.DashboardTicket{Ticket: t, RequestKind: requestKind(t.RiskRationale)}
+		var asset *domain.Asset
+		if a, ok := assets[t.AssetIdentifier]; ok {
+			asset = &a
+			pt.AssetExposure, pt.AssetCriticality = a.Exposure, a.Criticality
+		}
+		pt.ContextLine = contextLine(t, asset, triage)
 		var token string
 		err := s.DB.QueryRowContext(ctx, `
           SELECT m.token 
@@ -218,6 +240,33 @@ func (s *SQLiteStore) GetDashboardTicketsWithPortals(ctx context.Context, tabSta
 	}
 
 	return withPortals, total, metrics, nil
+}
+
+// contextLine is the one-line account of how a finding's priority was reached:
+// the scanner's word, the asset's two multipliers and the score when the asset
+// is in the inventory, and the rule or the KEV flag when one of those decided.
+func contextLine(t domain.Ticket, asset *domain.Asset, triage []triageRule) string {
+	scanner := t.ScannerSeverity
+	if scanner == "" {
+		scanner = t.Severity
+	}
+	line := "Scanner said " + scanner + "."
+	if asset != nil && t.RubricScore != nil {
+		line += " " + asset.Exposure + " x " + asset.Criticality + ", score " + strconv.FormatFloat(*t.RubricScore, 'f', -1, 64) + "."
+	} else {
+		line += " Asset not in the inventory."
+	}
+	if t.IsCISAKEV {
+		return line + " Known exploited: Critical."
+	}
+	for _, rule := range triage {
+		if rule.action != "DowngradeSeverity" || (rule.source != "" && rule.source != t.Source) || (rule.asset != "" && rule.asset != t.AssetIdentifier) {
+			continue
+		}
+		line += " Severity rule: " + domain.NormalizeSeverity(rule.value) + "."
+		break
+	}
+	return line
 }
 
 // requestKind reads what the owner asked for from the stored rationale,

@@ -4,6 +4,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"io/fs"
 	"log"
 	"log/slog"
 	"net/http"
@@ -363,7 +364,10 @@ func RegisterProRoutes(app *core.App) {
 	// ==========================================
 	// STATIC ASSETS (JS/CSS)
 	// ==========================================
-	// Serve files from pro/ui/static at the /static/pro/ path
-	proStaticFS := http.FileServer(http.FS(proUI.ProUIFS))
-	app.Router.Handle("GET /static/pro/", http.StripPrefix("/static/pro/", proStaticFS))
+	// Scripts only: the embedded templates are not web-served.
+	staticFS, err := fs.Sub(proUI.ProUIFS, "static")
+	if err != nil {
+		log.Fatalf("static assets: %v", err)
+	}
+	app.Router.Handle("GET /static/pro/", http.StripPrefix("/static/pro/", http.FileServer(http.FS(staticFS))))
 }

@@ -128,3 +128,22 @@ Deleted outright: `pro/license`, `pro/middleware/license.go`, `pro/admin/license
 - The empty executive-dashboard route is gone.
 
 The fold is complete. `pro/` does not exist; the words Pro, Core, OSS, Enterprise, license, paywall and the gem do not appear in code, templates or scripts.
+
+## Review against the book -- 2026-10-14
+
+The field manual was read claim by claim against the folded product. What the
+book claimed and the product did not do has been built, each with a test:
+the owner and approver portals (the pages were posting to routes that did
+not exist), request kind and selection from the owner's link, drawer edits
+that no longer wipe status, Risk Reviews showing the request, the scanner's
+remediation kept on upload, one spelling of severity so the SLA matrix
+matches, reopen with the matrix clock, KEV flags at ingest, a hand verify
+counted in MTTR, expired exceptions returned to the queue, pentest promote
+through the rules engine, a KEV status endpoint and an Admin upload for the
+catalog. Found on the way and fixed: report images served without a session,
+WriteOnly keys acting as admin, a deactivated user's keys still working,
+report text rendered unescaped, an update check that phoned GitHub, a
+shutdown that never exited, the tickets API leaking held findings, filters
+lost on paging, an audit filter that never matched. A contract test now
+checks every call the pages make against the router and lists API routes
+nothing reaches. Dead code and schema-only tables are gone.

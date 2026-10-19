@@ -107,12 +107,23 @@ func (s *SQLiteStore) GetUserByID(ctx context.Context, id int) (*domain.User, er
 	return &user, nil
 }
 
-// UpdateUserPassword allows an administrator to overwrite a forgotten password
+// UpdateUserPassword overwrites a user's password and, in the same transaction, revokes
+// every session they hold, so a password change (reset or rotation) logs out any existing
+// login (RR-L2). The cookie that was valid before the change stops working.
 func (s *SQLiteStore) UpdateUserPassword(ctx context.Context, id int, newPasswordHash string) error {
-	query := `UPDATE users SET password_hash = ? WHERE id = ?`
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-	_, err := s.DB.ExecContext(ctx, query, newPasswordHash, id)
-	return err
+	if _, err := tx.ExecContext(ctx, `UPDATE users SET password_hash = ? WHERE id = ?`, newPasswordHash, id); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM sessions WHERE user_id = ?`, id); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // UpdateUserRole promotes or demotes a user by updating their global_role.

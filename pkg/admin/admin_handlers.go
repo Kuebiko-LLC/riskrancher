@@ -44,6 +44,10 @@ func (h *Handler) HandleAdminResetPassword(w http.ResponseWriter, r *http.Reques
 		req.NewPassword = hex.EncodeToString(b)
 		generated = true
 	}
+	if err := auth.ValidatePassword(req.NewPassword); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	hashedPassword, err := auth.HashPassword(req.NewPassword)
 	if err != nil {
@@ -143,6 +147,10 @@ func (h *Handler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 
 	if req.Email == "" || req.FullName == "" || req.Password == "" || req.GlobalRole == "" {
 		http.Error(w, "Missing required fields", http.StatusBadRequest)
+		return
+	}
+	if err := auth.ValidatePassword(req.Password); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 

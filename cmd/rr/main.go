@@ -42,9 +42,13 @@ func main() {
 	if addr == "" {
 		addr = ":8080"
 	}
-	// Global middleware: bound every request body, then set the baseline security
-	// headers on every response. Outermost runs first, so headers wrap the limiter.
-	handler := server.SecurityHeaders(server.LimitBody(app.Router))
+	// Global middleware (outermost runs first): security headers, then a request-body
+	// limit, then cross-origin protection (CSRF) around the router. CSRF rejects a
+	// cross-site browser POST via Sec-Fetch-Site but allows same-origin requests and
+	// non-browser clients (scanners sending a Bearer key, which carry no Origin), so
+	// the UI, the portals and API ingest all keep working (RR-L6).
+	csrf := http.NewCrossOriginProtection()
+	handler := server.SecurityHeaders(server.LimitBody(csrf.Handler(app.Router)))
 	srv := &http.Server{Addr: addr, Handler: handler}
 	app.Shutdown = func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

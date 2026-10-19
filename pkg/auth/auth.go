@@ -3,10 +3,23 @@ package auth
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 
 	"github.com/Kuebiko-LLC/riskrancher/pkg/domain"
 	"golang.org/x/crypto/bcrypt"
 )
+
+// ValidatePassword enforces a minimum length and bcrypt's 72-byte input limit, so a
+// password is neither trivially weak nor silently truncated by bcrypt (RR-L3).
+func ValidatePassword(pw string) error {
+	if len(pw) < 12 {
+		return errors.New("password must be at least 12 characters")
+	}
+	if len(pw) > 72 {
+		return errors.New("password must be at most 72 bytes")
+	}
+	return nil
+}
 
 // Handler encapsulates all Identity and Access HTTP logic
 type Handler struct {

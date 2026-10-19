@@ -71,3 +71,26 @@ func TestUserAndSessionLifecycle(t *testing.T) {
 		t.Errorf("Password hash did not update in the database")
 	}
 }
+
+// Changing a password must revoke the user's existing sessions (RR-L2).
+func TestUpdateUserPasswordRevokesSessions(t *testing.T) {
+	store := setupTestDB(t) // InitDB applies the full schema, incl. users + sessions
+	defer store.DB.Close()
+	ctx := context.Background()
+	user, err := store.CreateUser(ctx, "u@rr.test", "U", "oldhash", "Sheriff")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.CreateSession(ctx, "tok-123", user.ID, time.Now().Add(time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.GetSession(ctx, "tok-123"); err != nil {
+		t.Fatalf("session should exist before the change: %v", err)
+	}
+	if err := store.UpdateUserPassword(ctx, user.ID, "newhash"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.GetSession(ctx, "tok-123"); err == nil {
+		t.Error("changing the password should revoke the user's sessions")
+	}
+}

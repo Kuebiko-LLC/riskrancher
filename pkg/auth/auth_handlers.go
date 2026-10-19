@@ -56,6 +56,10 @@ func (h *Handler) HandleRegister(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Missing required fields", http.StatusBadRequest)
 		return
 	}
+	if err := ValidatePassword(req.Password); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	hashedPassword, err := HashPassword(req.Password)
 	if err != nil {

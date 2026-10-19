@@ -23,7 +23,7 @@
             div.style.padding = "10px";
             div.style.borderBottom = "1px solid #e2e8f0";
             const sev = (t.Severity || t.severity).toLowerCase();
-            div.innerHTML = `<strong>${t.Title || t.title}</strong> <span class="badge ${sev}">${t.Severity || t.severity}</span><br><span style="font-size:0.85rem;color:#64748b;">${t.Description || t.description}</span>`;
+            div.innerHTML = `<strong>${esc(t.Title || t.title)}</strong> <span class="badge ${esc(sev)}">${esc(t.Severity || t.severity)}</span><br><span style="font-size:0.85rem;color:#64748b;">${esc(t.Description || t.description)}</span>`;
             list.appendChild(div);
         });
 
@@ -96,7 +96,7 @@
                         <p style="color: #64748b; font-size: 1.1rem;">This assignment has been fully completed, returned, or routed to Legal. You can safely close this window.</p>
                     </div>`;
             } else {
-                document.body.innerHTML = `<div style="text-align:center; padding: 100px;"><h2>Token Error</h2><p>${err.message}</p></div>`;
+                document.body.innerHTML = `<div style="text-align:center; padding: 100px;"><h2>Token Error</h2><p>${esc(err.message)}</p></div>`;
             }
         }
     }
@@ -122,7 +122,7 @@
             hRow.innerHTML = `
                 <td style="padding: 15px 20px; width: 40px;"><input type="checkbox" class="asset-cb" data-target="${safeId}"></td>
                 <td colspan="4" style="padding: 15px; cursor: pointer; font-weight: bold;" onclick="toggleFolder('${safeId}')">
-                    ${assetName} <span style="color: #64748b; font-weight: normal; margin-left: 10px;">(${findings.length} findings)</span>
+                    ${esc(assetName)} <span style="color: #64748b; font-weight: normal; margin-left: 10px;">(${findings.length} findings)</span>
                 </td>
             `;
             tbody.appendChild(hRow);
@@ -147,9 +147,9 @@
                 const sev = (f.Severity || f.severity || "info").toLowerCase();
                 tr.innerHTML = `
                     <td style="padding: 8px 20px; width: 30px;"><input type="checkbox" class="ticket-cb" value="${f.ID || f.id}"></td>
-                    <td style="width: 80px;"><span class="badge ${sev}">${sev}</span></td>
-                    <td>${f.Title || f.title}</td>
-                    <td style="color: #64748b; font-size: 0.8rem;">${f.Status || f.status}</td>
+                    <td style="width: 80px;"><span class="badge ${esc(sev)}">${esc(sev)}</span></td>
+                    <td>${esc(f.Title || f.title)}</td>
+                    <td style="color: #64748b; font-size: 0.8rem;">${esc(f.Status || f.status)}</td>
                 `;
                 innerBody.appendChild(tr);
             });

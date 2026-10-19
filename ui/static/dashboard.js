@@ -56,8 +56,12 @@ window.submitNewTicket = async function() {
 // 1. The Markdown Renderer
 window.renderMarkdown = function(text) {
     if (!text) return "<i style='color:#94a3b8;'>No description provided.</i>";
+    // Escape first: the text is ingested (scanner/operator), so every character is inert
+    // before we add our own trusted markup. The markdown syntax below survives escaping,
+    // and the captured image URL is escaped so it cannot break out of the src attribute.
+    let html = esc(text);
     // Render images with constraints so they don't break the drawer layout!
-    let html = text.replace(/!\[.*?\]\((.*?)\)/g, '<br><img src="$1" style="max-width: 100%; max-height: 400px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 4px; margin: 10px 0; display: block; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><br>');
+    html = html.replace(/!\[.*?\]\((.*?)\)/g, '<br><img src="$1" style="max-width: 100%; max-height: 400px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 4px; margin: 10px 0; display: block; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"><br>');
     // Render line breaks
     html = html.replace(/\n/g, '<br>');
     return html;

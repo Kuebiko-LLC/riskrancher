@@ -120,7 +120,8 @@ window.updateDraftField = function(id) {
 
 window.renderMarkdown = function(text) {
     if (!text) return "";
-    let html = text.replace(/!\[.*?\]\((.*?)\)/g, '<br><img src="$1" style="max-width: 100%; max-height: 200px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 4px; margin: 10px 0; display: block;"><br>');
+    // Escape ingested text first, then add our own trusted image markup (see dashboard.js).
+    let html = esc(text).replace(/!\[.*?\]\((.*?)\)/g, '<br><img src="$1" style="max-width: 100%; max-height: 200px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 4px; margin: 10px 0; display: block;"><br>');
     return html;
 }
 

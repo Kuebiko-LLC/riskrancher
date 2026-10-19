@@ -34,6 +34,10 @@ func RegisterRoutes(app *App) {
 
 	auditH := auth.AuditLogger(app.Store, slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
+	// Rate-limit the public auth endpoints per client IP, so credential stuffing
+	// against login (and spam against register) gets a 429 instead of unlimited tries.
+	authThrottle := auth.NewLoginThrottle()
+
 	protected := func(h http.HandlerFunc) http.Handler {
 		return authH.RequireAuth(auditH(http.HandlerFunc(h)))
 	}
@@ -56,8 +60,8 @@ func RegisterRoutes(app *App) {
 	// Public
 	app.Router.Handle("GET /login", ui.HandleLoginUI())
 	app.Router.Handle("GET /register", ui.HandleRegisterUI())
-	app.Router.HandleFunc("POST /api/auth/register", authH.HandleRegister)
-	app.Router.HandleFunc("POST /api/auth/login", authH.HandleLogin)
+	app.Router.Handle("POST /api/auth/register", authThrottle.Guard(http.HandlerFunc(authH.HandleRegister)))
+	app.Router.Handle("POST /api/auth/login", authThrottle.Guard(http.HandlerFunc(authH.HandleLogin)))
 	app.Router.HandleFunc("POST /api/auth/logout", authH.HandleLogout)
 	app.Router.Handle("GET /static/", ui.StaticHandler())
 

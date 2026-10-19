@@ -42,7 +42,10 @@ func main() {
 	if addr == "" {
 		addr = ":8080"
 	}
-	srv := &http.Server{Addr: addr, Handler: app.Router}
+	// Global middleware: bound every request body, then set the baseline security
+	// headers on every response. Outermost runs first, so headers wrap the limiter.
+	handler := server.SecurityHeaders(server.LimitBody(app.Router))
+	srv := &http.Server{Addr: addr, Handler: handler}
 	app.Shutdown = func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()

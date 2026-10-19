@@ -283,7 +283,7 @@ CREATE TABLE IF NOT EXISTS api_keys (
                                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                                         token_hash TEXT UNIQUE NOT NULL,
     name TEXT NOT NULL,
-    permissions TEXT NOT NULL CHECK(permissions IN ('WriteOnly', 'ReadOnly', 'FullAdmin')),
+    permissions TEXT NOT NULL CHECK(permissions IN ('Ingest', 'WriteOnly', 'ReadOnly', 'FullAdmin')),
     created_by INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     expires_at DATETIME,

@@ -1,11 +1,13 @@
 package admin
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 // A Sheriff mints a key, sees it once, lists keys without hashes, and revokes it.
@@ -52,5 +54,52 @@ func TestAPIKeyLifecycle(t *testing.T) {
 	h.HandleGetAPIKeys(rec, httptest.NewRequest(http.MethodGet, "/api/admin/apikeys", nil))
 	if strings.TrimSpace(rec.Body.String()) != "[]" {
 		t.Fatalf("revoked key should be gone, got %s", rec.Body.String())
+	}
+}
+
+// A new key with no permissions or expiry defaults to the least-privilege Ingest scope
+// and a 90-day lifetime, so a leaked scanner key is neither admin nor eternal (RR-H2).
+func TestCreateAPIKeyDefaults(t *testing.T) {
+	h, db := setupTestAdmin(t)
+	defer db.Close()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/admin/apikeys", strings.NewReader(`{"name":"scanner"}`))
+	req.AddCookie(GetVIPCookie(h.Store))
+	req = req.WithContext(ctxWithUser(t, h, req))
+	rec := httptest.NewRecorder()
+	h.HandleCreateAPIKey(rec, req)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create: %d %s", rec.Code, rec.Body.String())
+	}
+	var created map[string]any
+	json.Unmarshal(rec.Body.Bytes(), &created)
+	if created["permissions"] != "Ingest" {
+		t.Errorf("default permission = %v, want Ingest", created["permissions"])
+	}
+	if created["expires_at"] == nil || created["expires_at"] == "" {
+		t.Error("a default key must carry an expiry")
+	}
+
+	keys, _ := h.Store.ListAPIKeys(context.Background())
+	if len(keys) != 1 || keys[0].ExpiresAt == nil {
+		t.Fatalf("expected one key with an expiry, got %v", keys)
+	}
+	if d := time.Until(*keys[0].ExpiresAt); d < 89*24*time.Hour || d > 91*24*time.Hour {
+		t.Errorf("default expiry = %v, want ~90 days", d)
+	}
+}
+
+// A bogus permission is rejected.
+func TestCreateAPIKeyRejectsBadPermission(t *testing.T) {
+	h, db := setupTestAdmin(t)
+	defer db.Close()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/admin/apikeys", strings.NewReader(`{"name":"x","permissions":"Superuser"}`))
+	req.AddCookie(GetVIPCookie(h.Store))
+	req = req.WithContext(ctxWithUser(t, h, req))
+	rec := httptest.NewRecorder()
+	h.HandleCreateAPIKey(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("bad permission = %d, want 400", rec.Code)
 	}
 }

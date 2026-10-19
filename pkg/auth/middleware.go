@@ -48,6 +48,13 @@ func (h *Handler) RequireAuth(next http.Handler) http.Handler {
 				h.refuse(w, r, "Unknown User", "Forbidden: read-only API key", http.StatusForbidden)
 				return
 			}
+			// An Ingest key is for scanners pushing findings. It acts as its creator for
+			// ownership and audit, but may reach ONLY the ingest endpoints, so a leaked
+			// scanner key cannot touch user, config or key-management routes.
+			if key.Permissions == "Ingest" && !(r.Method == http.MethodPost && strings.HasPrefix(r.URL.Path, "/api/ingest")) {
+				h.refuse(w, r, "Unknown User", "Forbidden: ingest-only API key", http.StatusForbidden)
+				return
+			}
 			// A key is only as alive as the person it acts for
 			if owner, err := h.Store.GetUserByID(r.Context(), key.CreatedBy); err != nil || !owner.IsActive {
 				h.refuse(w, r, "Unknown User", "Unauthorized: API key owner is not active", http.StatusUnauthorized)

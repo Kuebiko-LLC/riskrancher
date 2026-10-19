@@ -25,9 +25,13 @@ func (h *Handler) HandleGetAPIKeys(w http.ResponseWriter, r *http.Request) {
 
 type createAPIKeyRequest struct {
 	Name        string `json:"name"`
-	Permissions string `json:"permissions"` // ReadOnly, WriteOnly, FullAdmin
+	Permissions string `json:"permissions"` // Ingest (default), ReadOnly, FullAdmin
 	ExpiresAt   string `json:"expires_at,omitempty"`
 }
+
+// defaultKeyLifetime is how long a key lives when the caller gives no expiry. A leaked
+// scanner key should not be valid forever.
+const defaultKeyLifetime = 90 * 24 * time.Hour
 
 func (h *Handler) HandleCreateAPIKey(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(auth.UserIDKey).(int)
@@ -40,11 +44,12 @@ func (h *Handler) HandleCreateAPIKey(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "name is required", http.StatusBadRequest)
 		return
 	}
+	// Default to the least-privilege scope: most keys are scanners that only ingest.
 	if req.Permissions == "" {
-		req.Permissions = "FullAdmin"
+		req.Permissions = "Ingest"
 	}
-	if req.Permissions != "FullAdmin" && req.Permissions != "ReadOnly" {
-		http.Error(w, "permissions must be FullAdmin or ReadOnly", http.StatusBadRequest)
+	if req.Permissions != "Ingest" && req.Permissions != "FullAdmin" && req.Permissions != "ReadOnly" {
+		http.Error(w, "permissions must be Ingest, ReadOnly or FullAdmin", http.StatusBadRequest)
 		return
 	}
 	key := domain.APIKey{Name: req.Name, Permissions: req.Permissions, CreatedBy: userID}
@@ -55,6 +60,9 @@ func (h *Handler) HandleCreateAPIKey(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		key.ExpiresAt = &t
+	} else {
+		exp := time.Now().Add(defaultKeyLifetime)
+		key.ExpiresAt = &exp
 	}
 	raw, err := h.Store.CreateAPIKey(r.Context(), key)
 	if err != nil {
@@ -63,7 +71,7 @@ func (h *Handler) HandleCreateAPIKey(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]any{"name": key.Name, "permissions": key.Permissions, "key": raw, "note": "shown once; store it now"})
+	json.NewEncoder(w).Encode(map[string]any{"name": key.Name, "permissions": key.Permissions, "expires_at": key.ExpiresAt, "key": raw, "note": "shown once; store it now"})
 }
 
 func (h *Handler) HandleRevokeAPIKey(w http.ResponseWriter, r *http.Request) {
